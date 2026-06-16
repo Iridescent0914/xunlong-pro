@@ -1,0 +1,580 @@
+"""
+ - 
+"""
+import asyncio
+from typing import List, Dict, Any, Optional
+from loguru import logger
+
+from ...llm.manager import LLMManager
+from ...llm.prompts import PromptManager
+
+
+class SectionWriter:
+    """TODO: Add docstring."""
+
+    def __init__(self, llm_manager: LLMManager, prompt_manager: PromptManager):
+        self.llm_manager = llm_manager
+        self.prompt_manager = prompt_manager
+        self.name = ""
+
+    async def write_section(
+        self,
+        section: Dict[str, Any],
+        available_content: List[Dict[str, Any]],
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """TODO: Add docstring."""
+
+        section_id = section.get("id")
+        section_title = section.get("title")
+
+        logger.info(f"[{self.name}]  {section_id}: {section_title}")
+
+        try:
+            # 
+            relevant_content = self._filter_relevant_content(
+                section, available_content
+            )
+
+            # 
+            section_images = []
+
+            # 
+            writing_prompt = self._build_writing_prompt(
+                section, relevant_content, context
+            )
+
+            # LLM
+            client = self.llm_manager.get_client("default")
+            response = await client.simple_chat(
+                writing_prompt,
+                ""
+            )
+
+            # Clean LLM preamble/postamble
+            enhanced_content = self._clean_llm_response(response)
+
+            # 
+            confidence = self._calculate_confidence(
+                enhanced_content, section, relevant_content
+            )
+
+            # 
+            issues = self._identify_issues(enhanced_content, section)
+
+            result = {
+                "section_id": section_id,
+                "title": section_title,
+                "content": enhanced_content,
+                "confidence": confidence,
+                "sources_used": [c.get("url", "") for c in relevant_content[:5]],
+                "word_count": len(enhanced_content),
+                "issues": issues,
+                "status": "success",
+                "images": section_images,
+                "image_count": len(section_images),
+                "images_inserted": bool(section_images)
+            }
+
+            logger.info(
+                f"[{self.name}]  {section_id} "
+                f": {len(enhanced_content)}, "
+                f": {confidence:.2f}"
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"[{self.name}]  {section_id} : {e}")
+            return {
+                "section_id": section_id,
+                "title": section_title,
+                "content": "",
+                "confidence": 0.0,
+                "sources_used": [],
+                "word_count": 0,
+                "issues": [f": {str(e)}"],
+                "status": "error",
+                "error": str(e),
+                "images": [],
+                "image_count": 0,
+                "images_inserted": False
+            }
+
+    async def rewrite_section(
+        self,
+        section_result: Dict[str, Any],
+        suggestions: List[str],
+        additional_content: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """TODO: Add docstring."""
+
+        section_id = section_result.get("section_id")
+        logger.info(f"[{self.name}]  {section_id}")
+
+        try:
+            # 
+            rewrite_prompt = self._build_rewrite_prompt(
+                section_result, suggestions, additional_content
+            )
+
+            # LLM
+            client = self.llm_manager.get_client("default")
+            response = await client.simple_chat(
+                rewrite_prompt,
+                ""
+            )
+
+            # 
+            section_result["content"] = response
+            section_result["word_count"] = len(response)
+            section_result["confidence"] = self._calculate_confidence(
+                response, {"requirements": section_result.get("title", "")}, []
+            )
+
+            logger.info(f"[{self.name}]  {section_id} ")
+
+            return section_result
+
+        except Exception as e:
+            logger.error(f"[{self.name}]  {section_id} : {e}")
+            section_result["issues"].append(f": {str(e)}")
+            return section_result
+
+    def _filter_relevant_content(
+        self,
+        section: Dict[str, Any],
+        available_content: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """TODO: Add docstring."""
+
+        section_title = section.get("title", "").lower()
+        requirements = section.get("requirements", "").lower()
+        suggested_sources = section.get("suggested_sources", [])
+
+        relevant = []
+
+        for content in available_content:
+            score = 0
+
+            # 
+            title = content.get("title", "").lower()
+            if any(word in title for word in section_title.split()):
+                score += 2
+
+            # 
+            text = content.get("content", "").lower()
+            if any(word in text for word in requirements.split()):
+                score += 1
+
+            # 
+            if title in [s.lower() for s in suggested_sources]:
+                score += 3
+
+            if score > 0:
+                relevant.append((score, content))
+
+        # 
+        relevant.sort(key=lambda x: x[0], reverse=True)
+
+        return [content for score, content in relevant[:10]]
+
+    def _build_writing_prompt(
+        self,
+        section: Dict[str, Any],
+        relevant_content: List[Dict[str, Any]],
+        context: Optional[Dict[str, Any]]
+    ) -> str:
+        """根据类型选择 fiction 或 report 的 prompt。"""
+
+        section_id = section.get("id")
+        title = section.get("title")
+        requirements = section.get("requirements")
+        word_count = section.get("word_count", 500)
+        report_type = context.get("report_type", "comprehensive") if context else "comprehensive"
+
+        # fiction 走专用 prompt，与报告完全隔离
+        if report_type == "fiction":
+            return self._build_fiction_writing_prompt(section, context, relevant_content, word_count)
+
+        # report 走原有 prompt
+        references = self._format_references(relevant_content)
+        query = context.get("query", "") if context else ""
+        previous_section = context.get("previous_section", "") if context else ""
+
+        prompt = f"""# 
+
+## 
+- : {section_id}
+- : {title}
+- : {word_count} 
+
+## 
+{requirements}
+
+## 
+{query}
+
+## 
+{report_type}
+
+{"## " if previous_section else ""}
+{previous_section[:200] + "..." if previous_section else ""}
+
+## 
+
+
+
+{references}
+
+## 
+
+
+
+1. ****:
+   - ""
+   - 
+   - 
+   - 
+
+2. ****:
+   - Markdown
+   - 
+   -  {word_count}  20% 
+
+3. ****:
+   - 
+   - 
+   - 
+   - 
+
+4. ****:
+   - 
+   - 
+   - 
+
+##
+
+
+
+-
+-
+-
+-
+
+## **CRITICAL**:
+
+- **  Markdown**
+- **"", "", "", "", ""等**
+- **""**
+- **Markdown#开头**
+
+
+
+"""
+
+        return prompt
+
+    def _build_fiction_writing_prompt(
+        self,
+        section: Dict[str, Any],
+        context: Dict[str, Any],
+        relevant_content: List[Dict[str, Any]],
+        word_count: int
+    ) -> str:
+        """构建小说章节写作 prompt，与报告 prompt 完全隔离。"""
+        section_id = section.get("id")
+        title = section.get("title")
+
+        fiction_elements = context.get("fiction_elements", {})
+        characters = fiction_elements.get("characters", [])
+        time_info = fiction_elements.get("time", {})
+        place_info = fiction_elements.get("place", {})
+        plot_info = fiction_elements.get("plot", {})
+        theme_info = fiction_elements.get("theme", {})
+
+        character_profiles = []
+        for c in characters[:5]:
+            character_profiles.append(
+                f"- **{c.get('name', '')}**（{c.get('role', '')}）: "
+                f"{c.get('personality', '')}。动机: {c.get('motivation', '')}"
+            )
+
+        prev_title = context.get("previous_section_title", "")
+        prev_summary = context.get("previous_section_summary", "")
+
+        ref_section = ""
+        if relevant_content:
+            ref_parts = []
+            for c in relevant_content[:3]:
+                ref_parts.append(f"- {c.get('title', '')}: {c.get('content', '')[:200]}...")
+            if ref_parts:
+                ref_section = "## 参考资料\n" + "\n".join(ref_parts) + "\n\n"
+
+        prompt = f"""# 小说章节写作
+
+## 本章信息
+- 章节序号: {section_id}
+- 章节标题: {title}
+- 目标字数: 约 {word_count} 字（允许上下浮动20%）
+
+## 故事设定（必须严格遵守）
+
+### 时间背景
+{time_info.get('period', '当代')} | {time_info.get('duration', '')}
+
+### 主要场景
+{place_info.get('main_location', '')}: {place_info.get('description', '')}
+
+### 登场人物
+{chr(10).join(character_profiles) if character_profiles else '（见正文）'}
+
+### 核心主题
+{theme_info.get('core_theme', '')}
+情感基调: {theme_info.get('tone', '')}
+
+### 情节走向
+{plot_info.get('core_conflict', '')}
+起点事件: {plot_info.get('inciting_incident', '')}
+转折点: {', '.join(plot_info.get('turning_points', []))}
+高潮: {plot_info.get('climax', '')}
+结局: {plot_info.get('resolution', '')}
+
+{ref_section}## 章节衔接
+{"上一章: " + prev_title if prev_title else ""}
+{"上一章梗概: " + prev_summary if prev_summary else ""}
+
+## 写作指令
+
+1. **纯小说文体**：直接开始叙事，不要插入任何元数据表格、人物设定框、背景说明等。
+2. **禁止**：不要输出 Markdown 表格、`## 人物设定`、`## 背景设定`、`**角色**` 等非故事内容。
+3. **字数**：确保本章内容达到约 {word_count} 字。
+4. **衔接自然**：本章开头需与上一章末尾形成情绪或事件上的承接。
+5. **仅输出正文**：只输出本章的故事情节，不要有任何前言、后记、总结。
+
+直接开始写：
+
+"""
+
+        return prompt
+
+    def _collect_section_images(
+        self,
+        relevant_content: List[Dict[str, Any]],
+        section_title: Optional[str] = None,
+        max_images: int = 4
+    ) -> List[Dict[str, Any]]:
+        """TODO: Add docstring."""
+
+        collected: List[Dict[str, Any]] = []
+        seen_keys = set()
+
+        for content in relevant_content:
+            images = content.get("images") or []
+            if not images:
+                continue
+
+            for img in images:
+                if not isinstance(img, dict):
+                    continue
+
+                key = img.get("url") or img.get("local_path")
+                if not key or key in seen_keys:
+                    continue
+
+                seen_keys.add(key)
+
+                alt_text = img.get("alt") or content.get("title") or section_title or ""
+                sanitized = {
+                    "url": img.get("url"),
+                    "local_path": "",  # 
+                    "alt": alt_text,
+                    "width": img.get("width"),
+                    "height": img.get("height"),
+                    "source": content.get("title") or content.get("url"),
+                    "source_title": content.get("title", ""),
+                    "source_url": content.get("url", ""),
+                    "search_query": content.get("search_query"),
+                    "original_local_path": img.get("local_path")
+                }
+
+                collected.append(sanitized)
+
+                if len(collected) >= max_images:
+                    return collected
+
+        return collected
+
+    def _format_references(self, content_list: List[Dict[str, Any]]) -> str:
+        """TODO: Add docstring."""
+
+        if not content_list:
+            return ""
+
+        formatted = []
+        for i, content in enumerate(content_list[:8], 1):
+            title = content.get("title", "")
+            url = content.get("url", "")
+            text = content.get("content", "")[:500]
+
+            formatted.append(f"""
+###  {i}: {title}
+**URL**: {url}
+****: {text}...
+""")
+
+        return "\n".join(formatted)
+
+    def _calculate_confidence(
+        self,
+        content: str,
+        section: Dict[str, Any],
+        sources: List[Dict[str, Any]]
+    ) -> float:
+        """TODO: Add docstring."""
+
+        confidence = 0.5  # 
+
+        # 
+        word_count = len(content)
+        target_count = section.get("word_count", 500)
+
+        if 0.8 * target_count <= word_count <= 1.2 * target_count:
+            confidence += 0.2
+        elif 0.6 * target_count <= word_count <= 1.4 * target_count:
+            confidence += 0.1
+
+        # Markdown
+        if "#" in content or "**" in content or "-" in content:
+            confidence += 0.1
+
+        # 
+        if sources:
+            confidence += min(0.2, len(sources) * 0.05)
+
+        return min(1.0, confidence)
+
+    def _identify_issues(
+        self,
+        content: str,
+        section: Dict[str, Any]
+    ) -> List[str]:
+        """TODO: Add docstring."""
+
+        issues = []
+
+        # 
+        word_count = len(content)
+        target_count = section.get("word_count", 500)
+
+        if word_count < 0.6 * target_count:
+            issues.append(f" ({word_count}  <  {target_count} )")
+
+        if word_count > 1.4 * target_count:
+            issues.append(f" ({word_count}  >  {target_count} )")
+
+        # 
+        if content.count("") < 3:
+            issues.append("")
+
+        # 
+        if not any(marker in content for marker in ["#", "**", "-", ""]):
+            issues.append("")
+
+        return issues
+
+    def _build_rewrite_prompt(
+        self,
+        section_result: Dict[str, Any],
+        suggestions: List[str],
+        additional_content: Optional[List[Dict[str, Any]]]
+    ) -> str:
+        """TODO: Add docstring."""
+
+        original_content = section_result.get("content", "")
+        section_title = section_result.get("title", "")
+
+        additional_refs = ""
+        if additional_content:
+            additional_refs = self._format_references(additional_content)
+
+        prompt = f"""# 
+
+## 
+### {section_title}
+{original_content}
+
+## 
+{chr(10).join(f"- {s}" for s in suggestions)}
+
+{"## " if additional_refs else ""}
+{additional_refs}
+
+## 
+
+
+
+
+1. ****
+2. ****
+3. ****
+4. ****
+
+"""
+
+        return prompt
+
+    def _clean_llm_response(self, response: str) -> str:
+        """
+        Clean LLM response by removing common preambles and postambles.
+
+        Args:
+            response: Raw LLM response
+
+        Returns:
+            Cleaned content without preamble/postamble
+        """
+        import re
+
+        # Common preamble patterns to remove
+        preamble_patterns = [
+            r'^好的[,，].*?[:：]\s*',
+            r'^根据.*?[,，].*?[:：]\s*',
+            r'^以下是.*?[:：]\s*',
+            r'^这是.*?[:：]\s*',
+            r'^.*?为您.*?[:：]\s*',
+            r'^让我.*?[:：]\s*',
+            r'^我将.*?[:：]\s*',
+            r'^我来.*?[:：]\s*',
+            r'^现在.*?[:：]\s*',
+            r'^接下来.*?[:：]\s*',
+            r'^Sure[,，].*?[:：]\s*',
+            r'^Here.*?[:：]\s*',
+            r'^Okay[,，].*?[:：]\s*',
+        ]
+
+        # Common postamble patterns to remove
+        postamble_patterns = [
+            r'\s*希望.*?帮助.*?$',
+            r'\s*如果.*?需要.*?$',
+            r'\s*如有.*?问题.*?$',
+            r'\s*请.*?告诉我.*?$',
+            r'\s*I hope.*?$',
+            r'\s*If you need.*?$',
+            r'\s*Feel free.*?$',
+        ]
+
+        cleaned = response.strip()
+
+        # Remove preambles (only first occurrence at start)
+        for pattern in preamble_patterns:
+            match = re.match(pattern, cleaned, re.MULTILINE | re.DOTALL)
+            if match:
+                cleaned = cleaned[match.end():]
+                break  # Only remove one preamble
+
+        # Remove postambles (only last occurrence at end)
+        for pattern in postamble_patterns:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.MULTILINE | re.DOTALL)
+
+        return cleaned.strip()

@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XunLong 可视化工作台</title>
+  <style>
+    :root {
+      --bg-start: #eef2ff;
+      --bg-end: #fff1f2;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.7);
+      --ink: #1f2933;
+      --subtle: #6b7280;
+      --border: #e5e7eb;
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --fuchsia: #db2777;
+      --fuchsia-hover: #be185d;
+      --emerald: #059669;
+      --emerald-hover: #047857;
+      --amber: #d97706;
+      --violet: #7c3aed;
+      --danger: #dc2626;
+      --ok: #16a34a;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg-start), #ffffff, var(--bg-end));
+      color: var(--ink);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner {
+      max-width: 80rem;
+      margin: 0 auto;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .topbar p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--subtle);
+    }
+    .topbar a {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #374151;
+      text-decoration: none;
+    }
+    .topbar a:hover { background: #f9fafb; }
+
+    .layout {
+      max-width: 80rem;
+      margin: 0 auto;
+      width: 100%;
+      padding: 28px 24px 34px;
+      display: grid;
+      grid-template-columns: 18rem 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    .rail {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel {
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    }
+    .panel + .panel { margin-top: 0; }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 4px;
+    }
+    .panel-header h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 650;
+    }
+    .panel-header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--subtle);
+    }
+
+    .module-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+    }
+    .module-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.62);
+      padding: 12px 14px;
+      cursor: pointer;
+      color: #4b5563;
+    }
+    .module-btn:hover {
+      border-color: #e5e7eb;
+      background: #ffffff;
+    }
+    .module-btn.active {
+      border-style: solid;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+    .module-icon {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+    .module-text { display: flex; flex-direction: column; gap: 2px; }
+    .module-name { font-size: 14px; font-weight: 600; }
+    .module-desc { font-size: 12px; color: var(--subtle); }
+    .module-tag {
+      margin-left: auto;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .task-history { padding: 14px; }
+    .task-history ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      border-radius: 16px;
+      border: 1px solid #f3f4f6;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 12px 14px;
+      cursor: pointer;
+    }
+    .task-item:hover { border-color: #bfdbfe; background: #eff6ff; }
+    .task-title { font-size: 13px; font-weight: 600; color: #111827; }
+    .task-meta { font-size: 12px; color: var(--subtle); margin-top: 2px; }
+
+    .stage {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .stage-form {
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      padding: 24px;
+    }
+    .stage-form .grid-2 > div,
+    .stage-form .grid-3 > div {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .stage-right {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: sticky;
+      top: 20px;
+    }
+
+    .form-title { margin: 0 0 6px; font-size: 17px; font-weight: 650; }
+    .form-desc { margin: 0 0 14px; font-size: 13px; color: var(--subtle); }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      margin: 12px 0 6px;
+    }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 14px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    #module-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 0 16px;
+    }
+    #module-form > div {
+      padding: 0;
+    }
+    #module-form > div > label {
+      display: block;
+      margin: 12px 0 6px;
+    }
+    #module-form > div > textarea,
+    #module-form > div > input[type="text"],
+    #module-form > div > input[type="number"],
+    #module-form > div > input[type="file"],
+    #module-form > div > select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #module-form > textarea,
+    #module-form > input[type="text"],
+    #module-form > input[type="number"],
+    #module-form > input[type="file"],
+    #module-form > select {
+      width: calc(100% - 32px);
+      margin: 0 16px;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+    textarea { resize: vertical; }
+    input[type="file"] { padding: 8px 2px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .grid-2 > div,
+    .grid-3 > div {
+      padding: 4px 0;
+    }
+
+    .primary-btn {
+      margin-top: 16px;
+      align-self: flex-end;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 14px;
+      color: white;
+      cursor: pointer;
+    }
+    .primary-btn.blue { background: var(--blue); }
+    .primary-btn.blue:hover { background: var(--blue-hover); }
+    .primary-btn.fuchsia { background: var(--fuchsia); }
+    .primary-btn.fuchsia:hover { background: var(--fuchsia-hover); }
+    .primary-btn.emerald { background: var(--emerald); }
+    .primary-btn.emerald:hover { background: var(--emerald-hover); }
+    .primary-btn.amber { background: var(--amber); }
+    .primary-btn.amber:hover { background: #b45309; }
+    .primary-btn.violet { background: var(--violet); }
+    .primary-btn.violet:hover { background: #6d28d9; }
+    .primary-btn:disabled { opacity: 0.72; cursor: not-allowed; }
+
+    .ghost-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374151;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .ghost-btn:hover { background: #f9fafb; }
+
+    .hint {
+      border-radius: 16px;
+      border-style: dashed;
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid rgba(0,0,0,0.04);
+      background: #f9fafb;
+      color: #374151;
+    }
+    .badge.ok { color: var(--ok); background: #f0fdf4; border-color: #bbf7d0; }
+    .badge.err { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
+    .badge.blue { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+
+    .monitor-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 10px;
+    }
+
+    .field-error { color: var(--danger); font-size: 12px; margin-top: 6px; }
+    .empty { color: var(--subtle); font-size: 13px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .chip:hover { background: #f9fafb; }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 10px;
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      width: 0%;
+      background: var(--blue);
+      transition: width 0.3s ease;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.68);
+      text-align: center;
+      font-size: 12px;
+      color: var(--subtle);
+      padding: 16px;
+    }
+
+    .placeholder-card {
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      padding: 16px;
+      font-size: 13px;
+    }
+    .placeholder-card ul { margin: 10px 0 0; padding-left: 18px; color: #374151; }
+    .placeholder-card li + li { margin-top: 6px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .stage { grid-template-columns: 1fr; }
+      .stage-right { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div>
+          <h1>XunLong 可视化工作台</h1>
+          <p>基于现有 API 预留数据分析与 RAG 接口</p>
+        </div>
+        <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">查看 API 文档</a>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="rail">
+        <div class="panel">
+          <div class="module-list" id="module-list">
+            <button class="module-btn active" data-module="report">
+              <span class="module-icon">📄</span>
+              <span class="module-text">
+                <span class="module-name">研究报告</span>
+                <span class="module-desc">生成商业/学术/技术报告</span>
+              </span>
+            </button>
+            <button class="module-btn" data-module="fiction">
+              <span class="module-icon">📚</span>
+              <span class="module-text">
+                <span class="module-name">小说创作</span>
+                <span class="module-desc">生成多风格多章节小说</span>
+              </span>
+            </button>
+            <button class="module-btn" data-module="ppt">
+              <span class="module-icon">🎬</span>
+              <span class="module-text">
+                <span class="module-name">演示文稿</span>
+                <span class="module-desc">生成可导出 PPTX 的演示文稿</span>
+              </span>
+            </button>
+            <button class="module-btn" data-module="analysis">
+              <span class="module-icon">📈</span>
+              <span class="module-text">
+                <span class="module-name">数据分析</span>
+                <span class="module-desc">数据分析 agent 占位模块</span>
+              </span>
+              <span class="module-tag">占位</span>
+            </button>
+            <button class="module-btn" data-module="rag">
+              <span class="module-icon">🧠</span>
+              <span class="module-text">
+                <span class="module-name">知识检索</span>
+                <span class="module-desc">RAG 检索模块占位入口</span>
+              </span>
+              <span class="module-tag">占位</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>任务记录</h2>
+              <p>查看最近创建的生成任务，点击可继续查看结果。</p>
+            </div>
+            <button class="ghost-btn" id="refresh-history">刷新</button>
+          </div>
+          <div class="task-history">
+            <div class="empty" id="history-empty">暂无任务记录。</div>
+            <ul id="history-list"></ul>
+          </div>
+        </div>
+      </aside>
+
+      <main id="stage" class="stage">
+        <section id="stage-form" class="panel"></section>
+        <aside class="stage-right" id="stage-right"></aside>
+      </main>
+    </section>
+
+    <footer class="footer">前端原型已完成；数据分析 agent、RAG 检索与系统集成接口可在此基础上继续接入。</footer>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:8000/api/v1';
+    const $ = id => document.getElementById(id);
+
+    const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]);
+
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    async function readFileContent(fileInput) {
+      if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+      const file = fileInput.files[0];
+      let content;
+      if (file.name.endsWith('.pdf')) {
+        const buf = await file.arrayBuffer();
+        content = '[PDF_BASE64]' + arrayBufferToBase64(buf);
+      } else {
+        content = await file.text();
+      }
+      return { filename: file.name, content };
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(`${API_BASE}${path}`, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || data.message || res.statusText || '请求失败');
+      return data;
+    }
+
+    function statusLabel(status) {
+      const map = { pending: '等待中', running: '执行中', completed: '已完成', failed: '失败', cancelled: '已取消' };
+      return map[status] || status || '-';
+    }
+
+    function statusBadge(status) {
+      const cls = status === 'completed' ? 'ok' : status === 'failed' ? 'err' : 'blue';
+      return `<span class="badge ${cls}">${esc(statusLabel(status))}</span>`;
+    }
+
+    const modules = {
+      report: {
+        name: '研究报告',
+        color: '#2563eb',
+        accent: '#eff6ff',
+        hint: '输入研究主题，系统将自动检索并生成结构化报告。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">创建报告任务</h2>
+                <p class="form-desc">${esc(modules.report.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>研究主题</label>
+                <textarea id="field-query" rows="3" placeholder="例如：2025年生成式 AI 行业趋势分析"></textarea>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>报告类型</label>
+                  <select id="field-report_type">
+                    <option value="comprehensive">综合报告</option>
+                    <option value="daily">日报</option>
+                    <option value="analysis">分析报告</option>
+                    <option value="research">研究报告</option>
+                  </select>
+                </div>
+                <div>
+                  <label>检索深度</label>
+                  <select id="field-search_depth">
+                    <option value="surface">浅层</option>
+                    <option value="medium">标准</option>
+                    <option value="deep">深度</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>最大检索数量</label>
+                <input id="field-max_results" type="number" value="20" min="1" max="100" />
+              </div>
+
+              <div class="grid-3" style="padding:0 16px;">
+                <div>
+                  <label>输出格式</label>
+                  <select id="field-output_format">
+                    <option value="html">HTML</option>
+                    <option value="md">Markdown</option>
+                  </select>
+                </div>
+                <div>
+                  <label>HTML 模板</label>
+                  <input id="field-html_template" value="enhanced_professional" />
+                </div>
+                <div>
+                  <label>主题</label>
+                  <select id="field-html_theme">
+                    <option value="light">浅色</option>
+                    <option value="dark">深色</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>上下文文档</label>
+                <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
+              </div>
+
+              <button type="submit" class="primary-btn blue" id="submit-btn">创建报告任务</button>
+            </form>
+          `;
+        },
+        submit() {
+          return {
+            path: '/tasks/report',
+            async body() {
+              const fileData = await readFileContent($('field-file'));
+              return {
+                query: ($('field-query').value || '').trim(),
+                report_type: $('field-report_type').value,
+                search_depth: $('field-search_depth').value,
+                max_results: Number($('field-max_results').value),
+                output_format: $('field-output_format').value,
+                html_template: $('field-html_template').value,
+                html_theme: $('field-html_theme').value,
+                ...(fileData ? { user_document: fileData } : {})
+              };
+            }
+          };
+        }
+      },
+      fiction: {
+        name: '小说创作',
+        color: '#db2777',
+        accent: '#fdf2f8',
+        hint: '提供核心创意和风格要求，系统将自动扩写为小说初稿。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">创建小说任务</h2>
+                <p class="form-desc">${esc(modules.fiction.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>故事创意</label>
+                <textarea id="field-query" rows="3" placeholder="例如：未来城市中一名AI维修员发现城市核心程序正在自我进化"></textarea>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>题材</label>
+                  <select id="field-genre">
+                    <option value="mystery">悬疑</option>
+                    <option value="scifi">科幻</option>
+                    <option value="fantasy">玄幻</option>
+                    <option value="horror">恐怖</option>
+                    <option value="romance">言情</option>
+                    <option value="wuxia">武侠</option>
+                  </select>
+                </div>
+                <div>
+                  <label>篇幅</label>
+                  <select id="field-length">
+                    <option value="short">短篇</option>
+                    <option value="medium">中篇</option>
+                    <option value="long">长篇</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>视角</label>
+                <select id="field-viewpoint">
+                  <option value="first">第一人称</option>
+                  <option value="third">第三人称</option>
+                  <option value="omniscient">全知视角</option>
+                </select>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>约束条件</label>
+                <textarea id="field-constraints" rows="3" placeholder="每行一个约束，例如：禁止使用超能力设定"></textarea>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>上下文文档</label>
+                <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
+              </div>
+
+              <button type="submit" class="primary-btn fuchsia" id="submit-btn">创建小说任务</button>
+            </form>
+          `;
+        },
+        submit() {
+          return {
+            path: '/tasks/fiction',
+            body() {
+              return {
+                query: ($('field-query').value || '').trim(),
+                genre: $('field-genre').value,
+                length: $('field-length').value,
+                viewpoint: $('field-viewpoint').value,
+                constraints: ($('field-constraints').value || '').split('\n').map(s => s.trim()).filter(Boolean),
+                output_format: $('field-output_format')?.value || 'html',
+                html_template: $('field-html_template')?.value || 'novel',
+                html_theme: $('field-html_theme')?.value || 'sepia'
+              };
+            }
+          };
+        }
+      },
+      ppt: {
+        name: '演示文稿',
+        color: '#059669',
+        accent: '#ecfdf5',
+        hint: '输入演讲主题与风格偏好，生成可导出为 PPTX 的演示文稿。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">创建演示文稿</h2>
+                <p class="form-desc">${esc(modules.ppt.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>演示主题</label>
+                <input id="field-query" placeholder="例如：2026年市场进入策略汇报" />
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>页数</label>
+                  <input id="field-slides" type="number" value="12" min="1" max="100" />
+                </div>
+                <div>
+                  <label>深度</label>
+                  <select id="field-depth">
+                    <option value="surface">概览</option>
+                    <option value="medium">标准</option>
+                    <option value="deep">深度</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>风格</label>
+                  <select id="field-style">
+                    <option value="business">商务</option>
+                    <option value="academic">学术</option>
+                    <option value="creative">创意</option>
+                    <option value="simple">简约</option>
+                  </select>
+                </div>
+                <div>
+                  <label>主题</label>
+                  <select id="field-theme">
+                    <option value="corporate-blue">企业蓝</option>
+                    <option value="default">默认</option>
+                    <option value="minimal">极简</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>演说稿说明</label>
+                <textarea id="field-speech_notes" rows="2" placeholder="用于生成每页幻灯片的演讲稿"></textarea>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>参考文档</label>
+                <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
+              </div>
+
+              <button type="submit" class="primary-btn emerald" id="submit-btn">创建 PPT 任务</button>
+            </form>
+          `;
+        },
+        submit() {
+          return {
+            path: '/tasks/ppt',
+            body() {
+              return {
+                query: ($('field-query').value || '').trim(),
+                slides: Number($('field-slides').value),
+                style: $('field-style').value,
+                theme: $('field-theme').value,
+                depth: $('field-depth').value,
+                speech_notes: ($('field-speech_notes').value || '').trim(),
+                output_format: $('field-output_format')?.value || 'html',
+                html_template: $('field-html_template')?.value || 'presentation',
+                html_theme: $('field-html_theme')?.value || 'light'
+              };
+            }
+          };
+        }
+      },
+      analysis: {
+        name: '数据分析',
+        color: '#d97706',
+        accent: '#fffbeb',
+        hint: '后续将由组员接入数据分析 agent；当前界面先保留任务创建入口和状态监控。',
+        form(container) {
+          const samples = ['上传销售 Excel 后，自动生成月度分析摘要', '生成用户增长关键指标趋势', '对数据库查询结果进行异常检测'];
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">数据分析 Agent（占位）</h2>
+                <p class="form-desc">${esc(modules.analysis.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>分析目标</label>
+                <textarea id="field-query" rows="3" placeholder="描述希望从数据中分析出的结论"></textarea>
+              </div>
+              <div id="sample-chips" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;padding:0 16px;"></div>
+
+              <div style="padding:0 16px;">
+                <label>数据来源</label>
+                <select id="field-data_source">
+                  <option value="excel">Excel</option>
+                  <option value="database">数据库</option>
+                  <option value="upload">上传文件</option>
+                </select>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>上传数据文件</label>
+                <input id="field-file" type="file" accept=".csv,.xlsx,.xls,.json" />
+              </div>
+
+              <div style="padding:0 16px;">
+                <button type="submit" class="primary-btn amber" id="submit-btn">创建数据分析任务</button>
+                <p class="field-error" id="form-error"></p>
+              </div>
+            </form>
+          `;
+          const wrap = $('sample-chips');
+          samples.forEach(text => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'chip';
+            btn.textContent = text;
+            btn.addEventListener('click', () => { $('field-query').value = text; });
+            wrap.appendChild(btn);
+          });
+        },
+        submit() {
+          return {
+            path: '/tasks/analysis',
+            body() {
+              return {
+                query: ($('field-query').value || '').trim(),
+                data_source: $('field-data_source').value,
+                context: { analysis_mode: 'auto', visualization: true, rag_enabled: true }
+              };
+            }
+          };
+        }
+      },
+      rag: {
+        name: 'RAG 知识检索',
+        color: '#7c3aed',
+        accent: '#f5f3ff',
+        hint: '后续由组员接入 RAG 检索模块和系统集成；当前保留检索表单与结果占位展示。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">RAG 知识检索（占位）</h2>
+                <p class="form-desc">${esc(modules.rag.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>检索问题</label>
+                <textarea id="field-query" rows="3" placeholder="描述你想从知识库中检索的信息"></textarea>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>知识库</label>
+                  <select id="field-knowledge_base">
+                    <option value="default">默认知识库</option>
+                    <option value="internal">内部文档库</option>
+                    <option value="product">产品文档库</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Top-K</label>
+                  <input id="field-top_k" type="number" value="5" min="1" max="20" />
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                  <input id="field-enable_rerank" type="checkbox" checked />
+                  <span>启用重排序</span>
+                </label>
+              </div>
+
+              <div style="padding:0 16px;">
+                <button type="submit" class="primary-btn violet" id="submit-btn">发起检索</button>
+                <p class="field-error" id="form-error"></p>
+              </div>
+            </form>
+          `;
+        },
+        submit() {
+          return {
+            path: '/tasks/rag',
+            body() {
+              return {
+                query: ($('field-query').value || '').trim(),
+                filters: { knowledge_base: $('field-knowledge_base').value, top_k: Number($('field-top_k').value), enable_rerank: !!$('field-enable_rerank').checked },
+                context: { retrieval_mode: 'hybrid', enable_summarization: true, enable_system_integration: true }
+              };
+            }
+          };
+        }
+      }
+    };
+
+    const state = {
+      activeModule: 'report',
+      currentTaskId: null,
+      monitorTimer: null,
+      monitorStatus: null
+    };
+
+    function setModule(module) {
+      if (!modules[module]) return;
+      state.activeModule = module;
+      stopMonitor();
+      render();
+    }
+
+    function stopMonitor() {
+      if (state.monitorTimer) {
+        clearInterval(state.monitorTimer);
+        state.monitorTimer = null;
+      }
+      state.monitorStatus = null;
+      state.currentTaskId = null;
+    }
+
+    function startMonitor(taskId) {
+      state.currentTaskId = taskId;
+      state.monitorStatus = null;
+      renderMonitor();
+      if (state.monitorTimer) clearInterval(state.monitorTimer);
+      state.monitorTimer = setInterval(pollMonitor, 1500);
+      pollMonitor();
+    }
+
+    async function pollMonitor() {
+      const taskId = state.currentTaskId;
+      if (!taskId) return;
+      try {
+        const info = await api(`/tasks/${encodeURIComponent(taskId)}`);
+        state.monitorStatus = info;
+        renderMonitor();
+        if (['completed', 'failed', 'cancelled'].includes(info.status)) {
+          clearInterval(state.monitorTimer);
+          state.monitorTimer = null;
+        }
+      } catch (err) {
+        state.monitorStatus = { task_id: taskId, status: 'error', error: err.message, progress: 0, current_step: '监听失败' };
+        renderMonitor();
+        clearInterval(state.monitorTimer);
+        state.monitorTimer = null;
+      }
+    }
+
+    function renderModuleButtons() {
+      const list = $('module-list');
+      list.querySelectorAll('.module-btn').forEach(btn => {
+        const isActive = btn.dataset.module === state.activeModule;
+        btn.classList.toggle('active', isActive);
+        if (!isActive) {
+          btn.style.borderColor = 'transparent';
+          btn.style.background = 'rgba(255,255,255,0.62)';
+          btn.style.color = '#4b5563';
+          btn.style.boxShadow = 'none';
+        } else {
+          const module = modules[state.activeModule];
+          btn.style.borderColor = module.color;
+          btn.style.background = module.accent;
+          btn.style.color = '#111827';
+          btn.style.boxShadow = '0 10px 22px rgba(15,23,42,0.08)';
+        }
+      });
+    }
+
+    function renderForm() {
+      const module = modules[state.activeModule];
+      module.form($('stage-form'));
+      $('module-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const submit = module.submit();
+        const body = await submit.body();
+        const errorEl = $('form-error');
+        if (errorEl) errorEl.textContent = '';
+        const btn = $('submit-btn');
+        if (!btn) return;
+        if (!body.query && state.activeModule !== 'analysis' && state.activeModule !== 'rag') {
+          if (errorEl) errorEl.textContent = '请填写必要内容后重试。';
+          return;
+        }
+        btn.disabled = true;
+        const prev = btn.textContent;
+        btn.textContent = '创建中...';
+        try {
+          const res = await api(submit.path, { method: 'POST', body: JSON.stringify(body) });
+          startMonitor(res.task_id);
+        } catch (err) {
+          if (errorEl) errorEl.textContent = '创建失败：' + err.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = prev;
+        }
+      });
+    }
+
+    function renderMonitor() {
+      const right = $('stage-right');
+      const taskId = state.currentTaskId;
+      if (!taskId) {
+        right.innerHTML = `
+          <div class="panel" style="padding:18px">
+            <p class="monitor-title">任务监控</p>
+            <p class="empty">暂无运行中的任务。</p>
+          </div>
+        `;
+        return;
+      }
+      const info = state.monitorStatus;
+      if (!info) {
+        right.innerHTML = `
+          <div class="panel" style="padding:18px">
+            <p class="monitor-title">任务监控</p>
+            <p class="empty">正在读取任务状态...</p>
+          </div>
+        `;
+        return;
+      }
+      const progress = Math.max(0, Math.min(100, Number(info.progress || 0)));
+      const actions = info.status === 'completed' ? `
+        <a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=html" target="_blank">${info.task_type === 'ppt' ? '下载 PPT' : '下载 HTML'}</a>
+        ${info.task_type !== 'ppt' ? `<a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=md" target="_blank">下载 Markdown</a>` : ''}
+      ` : '';
+      right.innerHTML = `
+        <div class="panel" style="padding:18px">
+          <p class="monitor-title">任务监控</p>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div>
+              <p style="margin:0;font-size:12px;color:#6b7280;">任务 ID</p>
+              <p style="margin:2px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;color:#111827;">${esc(taskId)}</p>
+            </div>
+            ${statusBadge(info.status)}
+          </div>
+          <div class="meta-row">
+            <span>${esc(info.current_step || '处理中')}</span>
+            <span>${progress}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${progress}%"></div>
+          </div>
+          <div class="info-row">
+            <div>类型：${esc(info.task_type || '-')}</div>
+            <div>创建时间：${esc(info.created_at || '-')}</div>
+            ${info.started_at ? `<div>开始时间：${esc(info.started_at)}</div>` : ''}
+            ${info.completed_at ? `<div>完成时间：${esc(info.completed_at)}</div>` : ''}
+            ${info.error ? `<div style="color:var(--danger)">错误：${esc(info.error)}</div>` : ''}
+          </div>
+          <div class="action-row">
+            <button class="ghost-btn" id="cancel-task">取消任务</button>
+            <button class="ghost-btn" id="show-detail">查看详情</button>
+            ${actions}
+          </div>
+        </div>
+      `;
+      $('cancel-task').addEventListener('click', async () => {
+        try {
+          await api(`/tasks/${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+          clearInterval(state.monitorTimer);
+          state.monitorTimer = null;
+          state.monitorStatus = { ...(info || {}), status: 'cancelled', current_step: '任务已取消', progress: 100 };
+          renderMonitor();
+        } catch (err) {
+          alert('取消失败：' + err.message);
+        }
+      });
+      $('show-detail').addEventListener('click', () => {
+        const taskNotReady = '该任务尚未完成，请等待执行结束后再查看详情。';
+        api(`/tasks/${encodeURIComponent(taskId)}/result`).then(data => {
+          $('stage-right').innerHTML = `
+            <div class="panel" style="padding:18px">
+              <p class="monitor-title">任务详情</p>
+              <pre style="white-space:pre-wrap;word-break:break-all;">${esc(JSON.stringify(data, null, 2))}</pre>
+            </div>
+          `;
+        }).catch(err => {
+          const fallback = err.message === '获取结果失败：Bad Request' ? taskNotReady : err.message;
+          alert('获取结果失败：' + fallback);
+        });
+      });
+    }
+
+    function renderHistory() {
+      const list = $('history-list');
+      const empty = $('history-empty');
+      empty.style.display = '';
+      list.innerHTML = '';
+      api('/tasks?limit=20').then(res => {
+        const tasks = res.tasks || [];
+        if (!tasks.length) {
+          empty.style.display = '';
+          return;
+        }
+        empty.style.display = 'none';
+        tasks.forEach(task => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <button class="task-item">
+              <span>
+                <span class="task-title">${esc(task.query || '未命名任务')}</span>
+                <span class="task-meta">${esc(task.task_type)} · ${esc(task.created_at)}</span>
+              </span>
+              <span class="badge ${task.status === 'completed' ? 'ok' : task.status === 'failed' ? 'err' : 'blue'}">${esc(statusLabel(task.status))}</span>
+            </button>
+          `;
+          li.querySelector('button').addEventListener('click', () => {
+            setModule(task.task_type === 'fiction' ? 'fiction' : task.task_type === 'ppt' ? 'ppt' : task.task_type === 'analysis' ? 'analysis' : task.task_type === 'rag' ? 'rag' : 'report');
+            startMonitor(task.task_id);
+          });
+          list.appendChild(li);
+        });
+      }).catch(() => {
+        empty.style.display = '';
+        empty.textContent = '加载任务记录失败。';
+      });
+    }
+
+    function render() {
+      renderModuleButtons();
+      renderForm();
+      renderMonitor();
+    }
+
+    document.querySelectorAll('.module-btn').forEach(btn => btn.addEventListener('click', () => setModule(btn.dataset.module)));
+    $('refresh-history').addEventListener('click', renderHistory);
+    render();
+    renderHistory();
+
+    window.addEventListener('DOMContentLoaded', () => setModule('report'));
+  </script>
+</body>
+</html>
