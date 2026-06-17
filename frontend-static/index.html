@@ -804,7 +804,8 @@
         submit() {
           return {
             path: '/tasks/ppt',
-            body() {
+            async body() {
+              const fileData = await readFileContent($('field-file'));
               return {
                 query: ($('field-query').value || '').trim(),
                 slides: Number($('field-slides').value),
@@ -812,9 +813,7 @@
                 theme: $('field-theme').value,
                 depth: $('field-depth').value,
                 speech_notes: ($('field-speech_notes').value || '').trim(),
-                output_format: $('field-output_format')?.value || 'html',
-                html_template: $('field-html_template')?.value || 'presentation',
-                html_theme: $('field-html_theme')?.value || 'light'
+                ...(fileData ? { user_document: fileData } : {})
               };
             }
           };

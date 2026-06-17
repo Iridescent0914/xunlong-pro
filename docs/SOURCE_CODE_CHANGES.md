@@ -315,9 +315,217 @@ if not url or not (url.startswith("http://") or url.startswith("https://")):
 
 ---
 
+### 1.7 PPT 接口字段缺失修复
+
+#### 问题背景
+
+前端 `frontend-static/index.html` 的 PPT 表单中包含"深度"（depth）和"演说稿说明"（speech_notes）两个字段，但提交时没有传递给后端，导致后端无法获取这些参数。
+
+#### 修改文件
+
+**`frontend-static/index.html`** — PPT 模块的 `submit()` 方法
+
+- `body()` 改为 `async body()`，支持文件上传（与其他模块保持一致）
+- 补充 `depth` 和 `speech_notes` 两个字段
+- 删除不存在的 `output_format`、`html_template`、`html_theme` 字段
+
+```javascript
+submit() {
+  return {
+    path: '/tasks/ppt',
+    async body() {
+      const fileData = await readFileContent($('field-file'));
+      return {
+        query: ($('field-query').value || '').trim(),
+        slides: Number($('field-slides').value),
+        style: $('field-style').value,
+        theme: $('field-theme').value,
+        depth: $('field-depth').value,          // 新增
+        speech_notes: ($('field-speech_notes').value || '').trim(),  // 新增
+        ...(fileData ? { user_document: fileData } : {})
+      };
+    }
+  };
+}
+```
+
+**`src/api.py`** — `PPTRequest` 模型
+
+新增两个字段：
+
+```python
+class PPTRequest(BaseModel):
+    query: str = Field(..., description="PPT")
+    slides: int = Field(15, description="")
+    style: str = Field("business", description=": business/creative/minimal/educational")
+    theme: str = Field("corporate-blue", description="")
+    depth: str = Field("medium", description=": surface/medium/deep")           # 新增
+    speech_notes: Optional[str] = Field("", description="演说稿说明")           # 新增
+    user_document: Optional[Dict[str, Any]] = Field(None, description="...")
+```
+
+**`src/api.py`** — `create_ppt_task` 接口
+
+`context.ppt_config` 中新增 `depth` 和 `speech_notes`：
+
+```python
+context = {
+    'output_type': 'ppt',
+    'ppt_config': {
+        'slides': request.slides,
+        'style': request.style,
+        'theme': request.theme,
+        'depth': request.depth,             # 新增
+        'speech_notes': request.speech_notes,  # 新增
+    },
+    'user_document': request.user_document
+}
+```
+
+#### 修改效果
+
+| 字段 | 修复前 | 修复后 |
+|------|--------|--------|
+| depth（深度） | ❌ 未传递 | ✅ 正确传递 |
+| speech_notes（演说稿说明） | ❌ 未传递 | ✅ 正确传递 |
+| 文件上传（user_document） | ⚠️ 未处理 | ✅ 正确处理 |
+
+---
+
 ## 二、Prompt 完善
 
-### 2.1 小说章节写作 Prompt（新增）
+### 2.0 Prompts 目录主要问题
+
+#### 问题概述
+
+经审查，`prompts/` 目录中的 YAML prompt 文件存在以下核心问题：
+
+**1. Prompt 文件与实际代码严重脱节**
+
+代码中大量 agent 根本没有使用 `prompts/` 目录下的 YAML 文件，而是在 Python 代码里写死了极简的 placeholder 提示词，导致 YAML 中编写的详细提示词从未被 LLM 看到。
+
+| Agent | YAML 文件 | 实际使用 |
+|-------|----------|---------|
+| `query_optimizer.py` | ✅ 有 | ❌ 代码里只有 5 行 placeholder |
+| `content_synthesizer.py` | ✅ 有 | ❌ 代码里只有 5 行 placeholder |
+| `report_generator.py` | ✅ 有 | ⚠️ 部分使用，有 fallback |
+| `content_evaluator.py` | ✅ 有 | ⚠️ 部分使用，有 fallback |
+| `ppt/outline_generator.py` | ❌ 无 | ⚠️ 代码里硬编码了简化提示词 |
+
+**2. 缺失的 Prompt 文件**
+
+| 功能 | 状态 |
+|------|------|
+| 小说生成 (Fiction) | ❌ 完全缺失 |
+| PPT 大纲生成 | ❌ 无对应 YAML |
+| PPT 页面生成 | ❌ 完全缺失 |
+| 报告章节写作 (SectionWriter) | ❌ 完全缺失（代码里写死） |
+| 数据分析 Agent | ❌ 完全缺失 |
+
+**3. YAML 文件质量问题**
+
+- 模板变量（`{{ variable }}`）调用时未填充，导致渲染失败
+- 各报告类型 YAML 结构高度重复，未抽象复用
+- 输出格式定义不统一（有的要求 JSON，有的要求纯文本）
+- Content Evaluator 的评分标准与代码实现不一致
+
+**4. 改进方向**
+
+- 优先级 1：修复 agent 代码，让其正确加载并使用 YAML prompt
+- 优先级 2：补充缺失的 prompt 文件（小说、PPT、章节写作等）
+- 优先级 3：统一所有 prompt 的结构格式和输出规范
+
+---
+
+### 2.1 Agent 代码修复：正确加载 YAML Prompt
+
+#### 问题背景
+
+原有的 agent 代码虽然调用了 `prompt_manager.get_prompt()`，但：
+1. 没有传入 YAML 中的模板变量（如 `{{ user_query }}`），导致渲染可能不完整
+2. user prompt 部分过于简陋，只有几行 placeholder，没有充分利用 YAML 中的详细指导
+3. JSON 解析失败时的 fallback 处理不够健壮
+
+#### 修改文件
+
+**`src/agents/query_optimizer.py`**
+
+- 重写 `process()` 方法的 user prompt，构建详细的查询优化指令
+- 调用 `get_prompt()` 时传入 `optimization_task`、`user_query`、`query_context`、`search_engine` 等参数
+- JSON 解析增加正则提取 fallback
+- 补充默认值，确保错误时返回合理的 fallback 数据
+
+**`src/agents/content_synthesizer.py`**
+
+- 重写 `process()` 方法的 user prompt，构建详细的综合报告指令
+- 调用 `get_prompt()` 时传入 `synthesis_task`、`target_audience`、`report_type` 等参数
+- JSON 解析增加正则提取 fallback
+- 修复 `synthesize_subtask()` 方法，同样加载 YAML prompt 并传入参数
+- 修复硬编码的时间戳 `2025-09-25`，改为 `datetime.now().isoformat()`
+
+**`src/agents/content_evaluator.py`**
+
+- 重写 `_build_evaluation_prompt()` 方法，充分利用 YAML 中的评分标准说明
+- 调用 `get_prompt()` 时传入参数，YAML 中无变量时使用合理的 default 值
+- JSON 解析增加更健壮的 fallback 逻辑
+- 修复 `_fallback_parse()` 中的评分计算（使用 `min()` 防止超限）
+- 修复中文关键字判断，增强 fallback 识别能力
+
+#### 核心改进
+
+```python
+# 之前：调用 get_prompt() 不传参数
+system_prompt = self.get_prompt("agents/query_optimizer/system")
+
+# 之后：传入 YAML 中定义的模板变量
+system_prompt = self.get_prompt(
+    "agents/query_optimizer/system",
+    optimization_task=f"优化搜索查询: {query}",
+    user_query=query,
+    query_context=query_context,
+    search_engine="duckduckgo"
+)
+```
+
+```python
+# 之前：user prompt 只有几行 placeholder
+user_prompt = f"""
+: {query}
+
+1.
+2.
+3.
+
+JSON
+"""
+
+# 之后：构建详细的指令，充分利用 YAML 中的指导框架
+user_prompt = f"""## 任务
+请分析并优化以下搜索查询，生成高效的搜索策略。
+
+## 原始查询
+"{query}"
+
+## 查询上下文
+{query_context if query_context else "无特殊上下文"}
+
+## 输出要求
+请严格按照以下 JSON 格式输出...
+```
+
+#### 修改效果
+
+| 问题 | 修复前 | 修复后 |
+|------|--------|--------|
+| YAML 模板变量 | ❌ 未传入，渲染不完整 | ✅ 传入所有变量 |
+| User prompt 详细度 | ❌ 只有 5 行 placeholder | ✅ 包含完整的任务描述、评分标准、输出格式 |
+| JSON 解析失败 | ❌ 可能返回不完整数据 | ✅ 正则提取 + 合理 fallback |
+| 时间戳 | ❌ 硬编码 `2025-09-25` | ✅ `datetime.now().isoformat()` |
+| 日志 | ❌ 中文乱码（TODO） | ✅ 完整中文描述 |
+
+---
+
+### 2.2 小说章节写作 Prompt（新增）
 
 #### 问题背景
 
@@ -442,7 +650,11 @@ def _build_fiction_writing_prompt(self, section, context, relevant_content, word
 | `src/llm/client.py` | 修改 | response=None 判空、429/超时归类为可重试、不打印 ERROR |
 | `src/agents/ppt/page_agent.py` | 修改 | Semaphore(4) 并发控制、指数退避重试（3s→6s→12s） |
 | `src/tools/image_downloader.py` | 修改 | URL 无效性检查，跳过无效 URL |
-| `frontend-static/index.html` | 修改 | API_BASE 硬编码为 `http://localhost:8000`；下载按钮动态文案（PPT 任务显示"下载 PPT"） |
+| `src/api.py` | 修改 | 根路由 `/` 返回 `index.html`；`/static/` 挂载静态文件；TaskWorker 注册到 startup 事件；下载接口重写（支持 PPT ZIP 打包）；result 接口返回 `output_dir`；`PPTRequest` 新增 `depth`、`speech_notes` 字段 |
+| `src/agents/query_optimizer.py` | 修改 | 重写 user prompt，正确传入 YAML 模板变量，增强 JSON 解析 |
+| `src/agents/content_synthesizer.py` | 修改 | 重写 user prompt，正确传入 YAML 模板变量，修复 `synthesize_subtask()` |
+| `src/agents/content_evaluator.py` | 修改 | 重写 `_build_evaluation_prompt()`，充分利用 YAML 评分标准 |
+| `frontend-static/index.html` | 修改 | API_BASE 硬编码为 `http://localhost:8000`；下载按钮动态文案（PPT 任务显示"下载 PPT"）；PPT `submit()` 补充 `depth`/`speech_notes` 字段 |
 | `frontend/src/components/Sidebar.jsx` | 修改 | activeClass 添加文字颜色（如 `text-blue-900`） |
 | `run_api.py` | 修改 | `logger.remove()` + level=INFO，屏蔽 DEBUG 日志 |
 

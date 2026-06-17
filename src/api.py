@@ -50,6 +50,8 @@ class PPTRequest(BaseModel):
     slides: int = Field(15, description="")
     style: str = Field("business", description=": business/creative/minimal/educational")
     theme: str = Field("corporate-blue", description="")
+    depth: str = Field("medium", description=": surface/medium/deep")
+    speech_notes: Optional[str] = Field("", description="演说稿说明")
     user_document: Optional[Dict[str, Any]] = Field(None, description="上传的上下文文档: {filename, content}")
 
 
@@ -293,13 +295,15 @@ async def create_ppt_task(request: PPTRequest):
     IDID
     """
     try:
-        # 
+        # 构建 context
         context = {
             'output_type': 'ppt',
             'ppt_config': {
                 'slides': request.slides,
                 'style': request.style,
                 'theme': request.theme,
+                'depth': request.depth,
+                'speech_notes': request.speech_notes,
             },
             'user_document': request.user_document
         }
