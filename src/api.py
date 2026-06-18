@@ -112,14 +112,6 @@ from .task_worker import TaskWorker
 task_worker = TaskWorker(task_manager=task_manager)
 
 
-@app.on_event("startup")
-async def startup_background_worker():
-    """TODO: Add docstring."""
-    import asyncio
-
-    asyncio.create_task(task_worker.run_forever(interval=3))
-
-
 @app.get("/")
 async def root():
     """Serve frontend or redirect to it."""
