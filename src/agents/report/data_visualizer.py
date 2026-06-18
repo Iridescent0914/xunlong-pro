@@ -26,14 +26,13 @@ class DataVisualizer(BaseAgent):
             name="",
             description="",
             llm_config_name="data_visualizer",
-            temperature=0.3,  # 
+            temperature=0.3,  #
             max_tokens=3000
         )
         super().__init__(llm_manager, prompt_manager, config)
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        
 
         Args:
             input_data: {
@@ -71,7 +70,11 @@ class DataVisualizer(BaseAgent):
             logger.info(f"[{self.name}] ...")
 
             # LLM
-            system_prompt = self._get_system_prompt()
+            system_prompt = self._get_system_prompt(
+                visualization_task="从文本中提取可可视化数据并生成图表建议",
+                content=content,
+                title=title
+            )
             user_prompt = self._build_user_prompt(content, title)
 
             response = await self.get_llm_response(user_prompt, system_prompt)
@@ -87,7 +90,7 @@ class DataVisualizer(BaseAgent):
                     "visualizations": []
                 }
 
-            # 
+            #
             visualizations = []
             for viz in viz_result["visualizations"]:
                 generated_viz = await self._generate_visualization(viz)
@@ -104,7 +107,7 @@ class DataVisualizer(BaseAgent):
             # Markdown
             return {
                 "status": "success",
-                "enhanced_content": content,  # 
+                "enhanced_content": content,  #
                 "visualizations": visualizations
             }
 
@@ -117,41 +120,56 @@ class DataVisualizer(BaseAgent):
                 "visualizations": []
             }
 
-    def _get_system_prompt(self) -> str:
-        """TODO: Add docstring."""
-        return """
+    def _get_system_prompt(self, visualization_task: str = "", content: str = "", title: str = "") -> str:
+        """获取系统提示词，优先从YAML加载，失败则使用硬编码提示词。"""
+        if self.prompt_manager:
+            try:
+                prompt = self.prompt_manager.get_prompt(
+                    "agents/data_visualizer/system",
+                    visualization_task=visualization_task,
+                    content=content,
+                    title=title
+                )
+                if prompt:
+                    return prompt
+            except Exception as e:
+                logger.warning(f"[{self.name}] 从YAML加载提示词失败，使用硬编码提示词: {e}")
 
+        # 硬编码的中文提示词作为后备
+        return """你是一个专业的数据可视化智能体，擅长从文本内容中提取数据，设计合适的图表来增强内容的可读性和说服力。
 
-1. 
-2. 
-3. 
-4. 
+## 核心职责
+1. **数据提取**: 从文本中识别和提取可量化信息
+2. **数据整理**: 整理提取的数据为结构化格式
+3. **图表选择**: 根据数据特点选择最合适的图表类型
+4. **可视化建议**: 生成图表配置建议
 
+## 图表选择指南
+### 图表类型及适用场景
+1. **柱状图**: 适用于比较不同类别的数量
+2. **折线图**: 适用于展示随时间变化的趋势
+3. **饼图**: 适用于展示占比关系
 
-- A vs B 
--  
--  
-- Top N 
--   
-
-JSON
+## 输出格式
+请按照以下JSON格式输出可视化建议：
 {
   "visualizations": [
     {
       "type": "table/bar/line/pie",
-      "title": "",
+      "title": "图表标题",
       "data": {
-        // type
+        // 根据类型不同，结构不同
       },
-      "position": "after_paragraph_X"  // 
+      "position": "after_paragraph_X"
     }
   ]
 }
 
-
-- 
-- 
-- 
+## 增强原则
+1. **适度使用**: 不要过度可视化，选择关键数据
+2. **准确呈现**: 确保图表准确反映数据
+3. **清晰说明**: 图表要有清晰的标题和说明
+4. **视觉协调**: 图表风格要与整体内容协调
 """
 
     def _build_user_prompt(self, content: str, title: str = "") -> str:
@@ -387,7 +405,7 @@ JSONvisualizations"""
         if not visualizations:
             return content
 
-        # 
+        #
         enhanced_content = content + "\n\n"
 
         for viz in visualizations:

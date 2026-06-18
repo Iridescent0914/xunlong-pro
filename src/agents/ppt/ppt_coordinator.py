@@ -86,7 +86,7 @@ class PPTCoordinator:
 
         # 设计协调器 - 生成全局设计规范
         llm_client = llm_manager.get_client("outline_generator")
-        self.design_coordinator = DesignCoordinator(llm_client)
+        self.design_coordinator = DesignCoordinator(llm_client, prompt_manager)
 
     async def generate_ppt_v2(
         self,

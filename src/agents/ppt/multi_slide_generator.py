@@ -41,6 +41,156 @@ class MultiSlidePPTGenerator:
 
         logger.info(f"[MultiSlidePPTGenerator] 初始化完成，模板目录: {self.template_dir}")
 
+    def _build_slide_content_prompt(
+        self,
+        content_task: str,
+        slide_number: int,
+        slide_type: str,
+        style: str
+    ) -> str:
+        """
+        构建幻灯片内容生成的Prompt
+
+        优先从YAML加载，失败时使用中文硬编码提示词
+
+        Args:
+            content_task: 内容任务描述
+            slide_number: 幻灯片序号
+            slide_type: 幻灯片类型 (cover, content, conclusion等)
+            style: 整体风格
+
+        Returns:
+            格式化后的系统提示词
+        """
+        if self.prompt_manager:
+            try:
+                prompt = self.prompt_manager.get_prompt(
+                    "agents/ppt/slide_content_generator",
+                    content_task=content_task,
+                    slide_number=slide_number,
+                    slide_type=slide_type,
+                    style=style
+                )
+                logger.info(f"[MultiSlidePPTGenerator] 已从YAML加载Prompt (slide_type={slide_type})")
+                return prompt
+            except (KeyError, Exception) as e:
+                logger.warning(f"[MultiSlidePPTGenerator] YAML Prompt加载失败，使用硬编码: {e}")
+
+        # 回退：使用中文硬编码提示词
+        return self._get_chinese_fallback_prompt(content_task, slide_number, slide_type, style)
+
+    def _get_chinese_fallback_prompt(
+        self,
+        content_task: str,
+        slide_number: int,
+        slide_type: str,
+        style: str
+    ) -> str:
+        """
+        获取中文硬编码回退提示词
+
+        Args:
+            content_task: 内容任务描述
+            slide_number: 幻灯片序号
+            slide_type: 幻灯片类型
+            style: 整体风格
+
+        Returns:
+            中文硬编码的系统提示词
+        """
+        return f"""你是专业的PPT幻灯片内容生成智能体，擅长根据大纲为每一页PPT生成具体、精准、有吸引力的内容。
+
+## 核心职责
+1. 内容精炼：将复杂信息精炼为简洁有力的要点
+2. 视觉配合：生成的文字内容要适合视觉呈现
+3. 风格一致：确保内容风格与整体PPT一致
+4. 信息分层：将信息分为标题、要点、详细三个层级
+
+## 幻灯片类型及内容策略
+### 封面页
+- 大标题：简洁有力，一句话概括主题
+- 副标题：补充说明或添加悬念
+- 可选：日期、演讲者信息、logo
+
+### 目录页
+- 清晰的章节列表
+- 每章用序号或图标标识
+- 可添加简短章节描述
+
+### 章节标题页
+- 章节编号和大标题
+- 简短章节描述或引言
+- 视觉上要有过渡感
+
+### 内容页
+- 页面标题：概括本页核心观点
+- 关键要点：3-5个精炼的要点
+- 详细内容：每个要点的支撑信息
+- 视觉建议：图标、图片、图表的使用建议
+
+### 数据页
+- 数据标题：清晰的数据主题
+- 关键数据：突出显示核心数据
+- 数据说明：解读数据含义
+- 图表建议：推荐使用的图表类型
+
+### 总结页
+- 核心回顾：3-5个最重要的要点
+- 关键洞见：最希望观众记住的内容
+- 行动号召：希望观众采取的行动
+
+### 结束页
+- 致谢语
+- 联系方式或二维码
+- 问答环节提示
+
+## 内容写作原则
+### 标题撰写
+- 简洁有力：控制在10字以内
+- 具体明确：避免空泛的表达
+- 有吸引力：能引起观众兴趣
+
+### 要点撰写
+- 精炼简洁：每个要点一句话
+- 逻辑清晰：要点之间有逻辑关系
+- 层次分明：用序号或层级区分
+- 重点突出：用粗体或颜色标注关键词
+
+### 详细说明撰写
+- 支撑要点：提供足够的背景信息
+- 数据支撑：用具体数据说话
+- 案例佐证：用真实案例增加说服力
+
+## 输出格式
+请按照以下JSON格式输出幻灯片内容：
+
+```json
+{{
+  "slide_number": {slide_number},
+  "type": "{slide_type}",
+  "title": "页面标题",
+  "subtitle": "副标题（可选）",
+  "content": {{
+    "points": ["要点1", "要点2", "要点3"],
+    "details": {{
+      "要点1": "详细说明...",
+      "要点2": "详细说明...",
+      "要点3": "详细说明..."
+    }},
+    "visuals": [
+      {{"type": "image", "description": "建议使用的图片或图表描述"}},
+      {{"type": "icon", "description": "建议使用的图标"}}
+    ]
+  }},
+  "speaker_notes": "演讲者备注"
+}}
+```
+
+当前任务: {content_task}
+幻灯片序号: {slide_number}
+幻灯片类型: {slide_type}
+整体风格: {style}"""
+
     def _get_default_template_dir(self) -> Path:
         """获取默认模板目录"""
         return Path(__file__).parent / 'templates'

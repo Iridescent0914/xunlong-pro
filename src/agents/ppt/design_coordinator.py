@@ -45,14 +45,16 @@ class DesignSpec(BaseModel):
 class DesignCoordinator:
     """PPT全局设计协调器"""
 
-    def __init__(self, llm_client):
+    def __init__(self, llm_client, prompt_manager=None):
         """
         初始化设计协调器
 
         Args:
             llm_client: LLM客户端
+            prompt_manager: Prompt管理器 (可选)
         """
         self.llm_client = llm_client
+        self.prompt_manager = prompt_manager
 
     async def generate_design_spec(
         self,
@@ -109,12 +111,30 @@ class DesignCoordinator:
         outline: Dict[str, Any],
         style: str
     ) -> str:
-        """构建设计生成提示词"""
+        """构建设计生成提示词，优先从 YAML 加载，fallback 到硬编码内容。"""
 
         # 提取大纲关键信息
         pages = outline.get('pages', [])
         page_topics = [p.get('topic', '') for p in pages[:5]]  # 前5个页面主题
 
+        # 尝试从 YAML 加载 prompt
+        if self.prompt_manager is not None:
+            try:
+                prompt = self.prompt_manager.get_prompt(
+                    "agents/ppt/design_coordinator",
+                    design_task="为PPT生成统一的视觉设计方案",
+                    topic=topic,
+                    style=style
+                )
+                # YAML prompt 中可能包含 {{ topic }} 等模板变量，需要替换
+                prompt = prompt.replace("{{ topic }}", topic)
+                prompt = prompt.replace("{{ style }}", style)
+                return prompt
+            except KeyError:
+                # YAML 不存在，继续使用硬编码内容
+                pass
+
+        # 硬编码的风格指南
         style_guides = {
             'ted': 'TED演讲风格，极简主义，每页只有大标题+核心观点，文字极少，适合现场演讲。配色根据主题灵活选择，要大胆有冲击力',
             'business': '商务汇报风格，内容详实，包含详细数据、图表、要点列表，适合专业汇报。配色根据主题内容灵活选择',

@@ -639,28 +639,190 @@ def _build_fiction_writing_prompt(self, section, context, relevant_content, word
 
 ---
 
-## 三、修改文件清单
+## 四、新增 Prompt 文件
+
+### 4.1 Prompt 目录结构
+
+为统一管理 Agent 的系统提示词，在 `prompts/agents/` 下创建了以下 YAML 文件：
+
+```
+prompts/
+├── agents/
+│   ├── content_evaluator/system.yaml      # 内容评估智能体
+│   ├── content_synthesizer/system.yaml     # 内容综合智能体
+│   ├── data_visualizer/system.yaml         # 数据可视化智能体
+│   ├── deep_searcher/system.yaml           # 深度搜索智能体
+│   ├── fiction/
+│   │   ├── elements_designer.yaml          # 小说元素设计智能体
+│   │   └── outline_generator.yaml          # 小说大纲生成智能体
+│   ├── output_type_detector/system.yaml    # 输出类型检测智能体
+│   ├── ppt/
+│   │   ├── design_coordinator.yaml         # PPT设计协调智能体
+│   │   ├── outline_generator.yaml          # PPT大纲生成智能体
+│   │   └── slide_content_generator.yaml    # PPT幻灯片内容生成智能体
+│   ├── query_optimizer/system.yaml          # 查询优化智能体
+│   ├── report/
+│   │   ├── outline_generator.yaml          # 报告大纲生成智能体
+│   │   ├── section_evaluator.yaml          # 报告章节评估智能体
+│   │   └── section_writer.yaml             # 报告章节撰写智能体
+│   ├── report_generator/                   # 报告生成器（已有）
+│   ├── search_analyzer/system.yaml         # 搜索结果分析智能体
+│   └── task_decomposer/system.yaml        # 任务分解智能体
+├── tasks/
+│   └── deep_search.yaml                    # 深度搜索任务模板
+└── tools/
+    └── web_search.yaml                     # 网页搜索工具模板
+```
+
+### 4.2 Prompt 文件说明
+
+| Prompt 文件 | 对应 Agent | 用途 |
+|-------------|------------|------|
+| `agents/content_evaluator/system.yaml` | ContentEvaluator | 评估报告/小说内容的质量 |
+| `agents/content_synthesizer/system.yaml` | ContentSynthesizerAgent | 综合多个搜索结果生成内容 |
+| `agents/data_visualizer/system.yaml` | DataVisualizer | 从文本中提取数据并设计图表 |
+| `agents/deep_searcher/system.yaml` | DeepSearcherAgent | 执行多轮、多角度的深度搜索 |
+| `agents/fiction/elements_designer.yaml` | FictionElementsDesigner | 设计小说的世界观、角色等元素 |
+| `agents/fiction/outline_generator.yaml` | FictionOutlineGenerator | 生成小说的章节大纲 |
+| `agents/output_type_detector/system.yaml` | OutputTypeDetector | 检测用户想要的输出类型 |
+| `agents/ppt/design_coordinator.yaml` | DesignCoordinator | 为PPT设计统一的视觉风格 |
+| `agents/ppt/outline_generator.yaml` | PPTOutlineGenerator | 生成PPT的整体大纲 |
+| `agents/ppt/slide_content_generator.yaml` | SlideContentGenerator | 为每页PPT生成具体内容 |
+| `agents/query_optimizer/system.yaml` | QueryOptimizerAgent | 优化用户查询的搜索策略 |
+| `agents/report/outline_generator.yaml` | OutlineGenerator | 生成研究报告大纲 |
+| `agents/report/section_evaluator.yaml` | SectionEvaluator | 评估报告章节质量 |
+| `agents/report/section_writer.yaml` | SectionWriter | 撰写报告各章节内容 |
+| `agents/search_analyzer/system.yaml` | SearchAnalyzerAgent | 分析搜索结果的相关性和质量 |
+| `agents/task_decomposer/system.yaml` | TaskDecomposerAgent | 将复杂任务分解为子任务 |
+
+### 4.3 Prompt YAML 格式
+
+每个 Prompt 文件采用统一格式：
+
+```yaml
+name: "智能体名称"
+description: "智能体功能描述"
+version: "1.0"
+
+content: |
+  系统提示词内容（支持 Markdown 格式）
+
+  模板变量使用 {{ variable_name }} 语法
+```
+
+### 4.4 代码调用方式
+
+Agent 通过 `PromptManager` 加载 YAML 文件：
+
+```python
+# 在 Agent 的 __init__ 中注入 prompt_manager
+self.prompt_manager = prompt_manager
+
+# 在需要使用 prompt 的地方调用
+system_prompt = self.prompt_manager.get_prompt(
+    "agents/xxx/system",  # YAML 文件路径（不含 .yaml 扩展名）
+    template_var="值"     # 模板变量
+)
+```
+
+### 4.5 验证方法
+
+```bash
+# 启动服务后检查 prompt 加载情况
+python -c "from src.llm.prompts import PromptManager; pm = PromptManager('prompts'); print(f'Loaded: {len(pm.list_prompts())} prompts')"
+```
+
+---
+
+## 六、后续补丁（Prompt 体系重构与搜索强化）
+
+本次是在上一轮修复基础上的进一步补丁，主要目标是把 Agent 提示词统一到 `prompts/agents/` YAML 体系，并继续夯实小说生成和搜索稳定性。
+
+### 6.1 Agent 提示词全面接入 PromptManager
+
+#### 改动原因
+
+上一轮虽然修复了 `output_type_detector`、`query_optimizer`、`content_synthesizer`、`content_evaluator` 等 Agent 的 prompt 加载，但整个项目仍有大量 Agent 使用硬编码 prompt 或零散 YAML，维护成本高且容易继续出现模板变量未渲染问题。
+
+#### 统一做法
+
+- 新增 `prompts/agents/<agent_name>/system.yaml` 作为统一系统提示词文件；
+- 在 Agent `__init__` 中注入 `PromptManager`；
+- 原有硬编码字符串替换为 `prompt_manager.get_prompt(..., **kwargs)` 调用；
+- prompt 文本统一使用 `{{ variable_name }}` 模板变量。
+
+#### 主要受影响模块
+
+- `src/agents/coordinator.py`：节点协调与任务编排提示词统一接入；
+- `src/agents/iteration_agent.py`：迭代修正流程提示词改为模板化加载；
+- `src/agents/output_type_detector.py`：检测提示词进一步对齐 YAML 模板变量；
+- `src/agents/ppt/design_coordinator.py`、`src/agents/ppt/multi_slide_generator.py`、`src/agents/ppt/outline_generator.py`、`src/agents/ppt/slide_content_generator.py`：PPT 全链路提示词统一；
+- `src/agents/report/data_visualizer.py`、`src/agents/report/outline_generator.py`、`src/agents/report/section_evaluator.py`、`src/agents/report/section_writer.py`：报告生成全链路提示词统一；
+- `src/agents/fiction/fiction_elements_designer.py`、`src/agents/fiction/fiction_outline_generator.py`：小说元素设计、大纲生成提示词统一。
+
+### 6.2 小说生成强化
+
+#### 背景
+
+上一轮已经解决了“小说输出混入元数据框”的问题，但在多章节连续生成中，仍可能出现人物设定和世界观前后不一致。
+
+#### 改进点
+
+- 小说元素设计提示词强化人物、时间、地点、情节、主题五要素约束；
+- 大纲生成提示词要求显式继承上一章梗概和已设定人物关系；
+- `coordinator.py` 在小说分支继续传递 `fiction_elements`，并在相关节点标注 `report_type="fiction"`，降低模型格式漂移概率。
+
+### 6.3 搜索侧增强
+
+#### 背景
+
+上一轮把搜索主链路切换为 `html.duckduckgo.com/html`，但在部分网络环境或代理异常时，仍可能出现空结果。
+
+#### 改进点
+
+- `src/searcher/duckduckgo.py` 进一步强化端点优先级与异常降级逻辑；
+- `src/tools/web_searcher.py` 继续保留 `_fetch_full_content_with_httpx()` 作为正文抓取兜底。
+
+### 6.4 验证方法
+
+```bash
+# 1. 启动服务后确认提示词加载数量没有明显下降
+python run_api.py
+python -c "from src.llm.prompts import PromptManager; pm = PromptManager('prompts'); print(f'Loaded: {len(pm.list_prompts())} prompts')"
+
+# 2. 小说多章连续生成
+#    - 观察人物设定和世界观是否前后一致
+#    - 章节结尾与下一章开头衔接自然
+
+# 3. 搜索稳定性
+#    - 在代理不稳定时仍尽可能返回搜索结果
+#    - 不再因单一端点失败直接返回 0 结果
+```
+
+---
+
+## 五、修改文件清单
 
 | 文件路径 | 修改类型 | 主要内容 |
 |---------|---------|---------|
 | `src/searcher/duckduckgo.py` | 修改 | 新增 `search_with_httpx()` 使用 DuckDuckGo HTML 端点 |
 | `src/tools/web_searcher.py` | 修改 | 移除 Playwright 调用，新增 httpx 搜索和 `_fetch_full_content_with_httpx()` |
 | `src/agents/coordinator.py` | 修改 | 返回值补上 `output_dir`；`_fiction_writer_node` 传递 `fiction_elements` 和 `report_type="fiction"` |
-| `src/api.py` | 修改 | 根路由 `/` 返回 `index.html`；`/static/` 挂载静态文件；TaskWorker 注册到 startup 事件；下载接口重写（支持 PPT ZIP 打包）；result 接口返回 `output_dir` |
+| `src/api.py` | 修改 | 根路由 `/` 返回 `index.html`；`/static/` 挂载静态文件；TaskWorker 注册到 startup 事件；下载接口重写（支持 PPT ZIP 打包）；result 接口返回 `output_dir`；`PPTRequest` 新增 `depth`、`speech_notes` 字段 |
 | `src/llm/client.py` | 修改 | response=None 判空、429/超时归类为可重试、不打印 ERROR |
 | `src/agents/ppt/page_agent.py` | 修改 | Semaphore(4) 并发控制、指数退避重试（3s→6s→12s） |
 | `src/tools/image_downloader.py` | 修改 | URL 无效性检查，跳过无效 URL |
-| `src/api.py` | 修改 | 根路由 `/` 返回 `index.html`；`/static/` 挂载静态文件；TaskWorker 注册到 startup 事件；下载接口重写（支持 PPT ZIP 打包）；result 接口返回 `output_dir`；`PPTRequest` 新增 `depth`、`speech_notes` 字段 |
 | `src/agents/query_optimizer.py` | 修改 | 重写 user prompt，正确传入 YAML 模板变量，增强 JSON 解析 |
 | `src/agents/content_synthesizer.py` | 修改 | 重写 user prompt，正确传入 YAML 模板变量，修复 `synthesize_subtask()` |
 | `src/agents/content_evaluator.py` | 修改 | 重写 `_build_evaluation_prompt()`，充分利用 YAML 评分标准 |
 | `frontend-static/index.html` | 修改 | API_BASE 硬编码为 `http://localhost:8000`；下载按钮动态文案（PPT 任务显示"下载 PPT"）；PPT `submit()` 补充 `depth`/`speech_notes` 字段 |
 | `frontend/src/components/Sidebar.jsx` | 修改 | activeClass 添加文字颜色（如 `text-blue-900`） |
 | `run_api.py` | 修改 | `logger.remove()` + level=INFO，屏蔽 DEBUG 日志 |
+| `prompts/agents/*` | 新增 | 新增 22 个 YAML prompt 文件，统一管理 Agent 系统提示词 |
 
 ---
 
-## 四、验证方法
+## 六、验证方法
 
 ```bash
 # 1. 启动后端（只需这一条命令，前端已集成到 API 中）
@@ -685,4 +847,8 @@ python run_api.py
 # 6. 测试下载
 #    - 点击"下载 HTML"/"下载 Markdown"不再返回 404，正常触发浏览器下载
 #    - PPT 任务下载得到的是 .zip 压缩包
+
+# 7. 测试 Prompt 加载
+#    - 启动后检查日志，确认 prompt 文件数量
+#    - 应加载约 22 个 prompt 文件
 ```

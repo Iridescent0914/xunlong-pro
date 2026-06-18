@@ -803,7 +803,7 @@ class DeepSearchCoordinator:
 
             # 
             fiction_content = f"# {fiction_outline.get('title', '')}\n\n"
-            fiction_content += f"****: {fiction_outline.get('synopsis', '')}\n\n"
+            fiction_content += f"## 故事梗概\n\n{fiction_outline.get('synopsis', '')}\n\n"
             fiction_content += "---\n\n"
 
             total_words = 0
@@ -814,16 +814,18 @@ class DeepSearchCoordinator:
                     logger.error(f" {i+1} : {result}")
                     # 
                     chapter = chapters[i]
-                    fiction_content += f"## {chapter['id']}: {chapter['title']}\n\n"
-                    fiction_content += f"\n\n"
-                    fiction_content += f"****: {chapter.get('writing_points', '')}\n\n"
+                    fiction_content += f"## {chapter.get('id', i+1)}: {chapter.get('title', '未命名章节')}\n\n"
+                    fiction_content += f"生成失败: {str(result)}\n\n"
+                    fiction_content += f"写作要点: {chapter.get('writing_points', '')}\n\n"
                     fiction_content += "---\n\n"
                 else:
                     # 
                     chapter_content = result.get("content", "")
-                    chapter_title = chapters[i].get("title", f"{i+1}")
+                    chapter = chapters[i]
+                    chapter_id = chapter.get("id", i + 1)
+                    chapter_title = chapter.get("title", f"章节 {i+1}")
 
-                    fiction_content += f"## {chapters[i]['id']}: {chapter_title}\n\n"
+                    fiction_content += f"## {chapter_id}: {chapter_title}\n\n"
                     fiction_content += chapter_content + "\n\n"
                     fiction_content += "---\n\n"
 
@@ -993,30 +995,30 @@ class DeepSearchCoordinator:
 
         requirements += f"""
 
-## 
-- ****: {place.get('main_location', '')}
-- ****: {place.get('description', '')}
+## 场景设定
+- **主要场景**: {place.get('main_location', '')}
+- **场景描述**: {place.get('description', '')}
 
-## 
-- ****: {theme.get('core_theme', '')}
-- ****: {theme.get('tone', '')}
+## 主题基调
+- **核心主题**: {theme.get('core_theme', '')}
+- **基调风格**: {theme.get('tone', '')}
 
-## 
+## 悬念设置
 {suspense}
 
-## 
-1. ****: 
-2. ****: 
-3. ****: 
-4. ****: 
-5. ****: {chapter.get('word_count', 800)}
-6. ****: 
+## 写作要求
+1. **逻辑连贯**: 保持情节逻辑清晰
+2. **细节丰富**: 注重场景和人物细节
+3. **人物鲜明**: 突出角色性格特征
+4. **氛围营造**: 营造合适的叙事氛围
+5. **字数控制**: 约 {chapter.get('word_count', 800)} 字
+6. **情节推进**: 确保故事向前发展
 
 
-- 
-- 
-- 
-- 
+- 使用生动的描写手法
+- 注意对话的自然性
+- 保持节奏感
+- 适当使用修辞手法
 """
 
         return requirements
@@ -1387,19 +1389,25 @@ class DeepSearchCoordinator:
         return steps
     
     async def quick_answer(self, query: str) -> str:
-        """TODO: Add docstring."""
+        """Quick answer using LLM."""
         try:
+            # Try to load from YAML
+            try:
+                system_prompt = self.prompt_manager.get_prompt(
+                    "agents/quick_answer/system",
+                    default="你是一个有用的AI助手，请简洁准确地回答用户问题。"
+                )
+            except (KeyError, Exception):
+                system_prompt = "你是一个有用的AI助手，请简洁准确地回答用户问题。"
+
             # LLM
             client = self.llm_manager.get_client("default")
-            answer = await client.simple_chat(
-                query,
-                "AI"
-            )
+            answer = await client.simple_chat(query, system_prompt)
             return answer
-            
+
         except Exception as e:
-            logger.error(f": {e}")
-            return f": {e}"
+            logger.error(f"Quick answer failed: {e}")
+            return f"Error: {e}"
     
     async def _convert_fiction_to_html(
         self,

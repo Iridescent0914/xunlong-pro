@@ -119,63 +119,64 @@ class OutputTypeDetector:
         }
 
     async def _llm_based_detection(self, query: str) -> Dict[str, Any]:
-        """LLM"""
+        """基于LLM的输出类型检测"""
 
-        prompt = f"""# 
+        # 尝试从YAML加载提示词
+        try:
+            prompt = self.prompt_manager.get_prompt(
+                "agents/output_type_detector/system",
+                detection_task="根据用户查询判断输出类型",
+                user_query=query
+            )
+        except (KeyError, Exception) as e:
+            logger.warning(f"[{self.name}] 加载YAML提示词失败，使用硬编码提示词: {e}")
+            # 硬编码提示词（中文版本）
+            prompt = """你是一个专业的输出类型检测智能体，擅长根据用户的查询意图，准确判断用户期望的输出类型。
 
+## 核心职责
+1. **意图分析**: 深度理解用户的真实需求
+2. **类型判断**: 判断用户想要的输出类型
+3. **置信度评估**: 评估判断的置信度
 
+## 输出类型
 
-## 
-{query}
+### 1. 报告类 (report)
+   - 综合分析、市场研究、趋势报告
+   - 需要数据支撑和专业分析
+   - 示例: "AI大模型市场分析报告"、"竞品对比报告"
 
-## 
+### 2. 小说类 (fiction/创作)
+   - 故事创作、情节构思、人物塑造
+   - 需要叙事性和创意性
+   - 示例: "写一个科幻故事"、"创作一段爱情小说"
 
-1. **report** ()
-   - 
-   - 
-   - 
-     - "AI"
-     - ""
-     - ""
+### 3. PPT类 (ppt)
+   - 演示文稿、幻灯片制作
+   - 需要结构化展示
+   - 示例: "制作项目汇报PPT"、"创建产品发布幻灯片"
 
-2. **fiction** (/)
-   - 
-   - 
-   - 
-     - ""
-     - ""
-     - ""
+## 用户查询
 
-3. **ppt** ()
-   - 
-   - PPT
-   - 
-     - "PPT"
-     - ""
+{user_query}
 
-##
+## 输出要求
 
-- ****
-- ****
-- ****
-
-## 
-
-JSON
+请按照以下JSON格式输出检测结果：
 
 ```json
-{{
-  "output_type": "report" | "fiction" | "ppt",
+{
+  "output_type": "report | fiction | ppt",
   "confidence": 0.95,
-  "reason": ""
-}}
+  "reason": "判断依据说明",
+  "sub_type": "具体子类型（如适用）"
+}
 ```
 
+## 注意事项
 
-- output_type  "report""fiction""ppt" 
-- confidence 0.0-1.0
-- reason 
-
+- output_type 只允许 "report"、"fiction"、"ppt" 三种值
+- confidence 取值范围 0.0-1.0
+- reason 简要说明判断依据
 
 """
 
@@ -186,7 +187,7 @@ JSON
                 ""
             )
 
-            # 
+            # 解析JSON响应
             import json
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:

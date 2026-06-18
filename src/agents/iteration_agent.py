@@ -1,5 +1,5 @@
 """
- - 
+ -
 """
 import json
 from pathlib import Path
@@ -7,6 +7,8 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from loguru import logger
 from pydantic import BaseModel, Field
+
+from src.llm.prompts import PromptManager
 
 
 class IterationRequest(BaseModel):
@@ -20,14 +22,32 @@ class IterationRequest(BaseModel):
 class IterationAgent:
     """TODO: Add docstring."""
 
-    def __init__(self, base_dir: str = "storage"):
+    def __init__(self, base_dir: str = "storage", prompt_manager: Optional[PromptManager] = None):
         """
-        
+
 
         Args:
-            base_dir: 
+            base_dir:
+            prompt_manager: PromptManager instance for loading YAML prompts.
         """
         self.base_dir = Path(base_dir)
+        self.prompt_manager = prompt_manager or PromptManager()
+
+    def _load_yaml_prompt(self, prompt_key: str, default: str = "") -> str:
+        """Load prompt from YAML, fallback to default if not found.
+
+        Args:
+            prompt_key: The key to load from prompts cache (e.g., "agents/content_evaluator/system")
+            default: Fallback prompt if YAML load fails
+
+        Returns:
+            The loaded prompt or default
+        """
+        try:
+            return self.prompt_manager.get_prompt(prompt_key)
+        except KeyError:
+            logger.debug(f"[IterationAgent] YAML prompt not found: {prompt_key}, using default")
+            return default
 
     async def iterate_project(
         self,
@@ -35,17 +55,17 @@ class IterationAgent:
         requirement: str
     ) -> Dict[str, Any]:
         """
-        
+
 
         Args:
             project_id: ID
-            requirement: 
+            requirement:
 
         Returns:
-            
+
         """
         try:
-            # 1. 
+            # 1.
             project_dir = self._find_project_dir(project_id)
             if not project_dir:
                 return {
@@ -55,7 +75,7 @@ class IterationAgent:
 
             logger.info(f"[IterationAgent] : {project_dir.name}")
 
-            # 2. 
+            # 2.
             context = self._load_project_context(project_dir)
             if not context:
                 return {
@@ -66,7 +86,7 @@ class IterationAgent:
             project_type = context['project_type']
             logger.info(f"[IterationAgent] : {project_type}")
 
-            # 3. 
+            # 3.
             logger.info(f"[IterationAgent] : {requirement}")
             iteration_request = await self._analyze_requirement(
                 requirement,
@@ -77,11 +97,11 @@ class IterationAgent:
             logger.info(f"[IterationAgent] : {iteration_request.modification_type}")
             logger.info(f"[IterationAgent] : {iteration_request.modification_scope}")
 
-            # 4. 
+            # 4.
             backup_version = self._create_backup(project_dir)
             logger.info(f"[IterationAgent] : {backup_version}")
 
-            # 5. 
+            # 5.
             if project_type == "ppt":
                 result = await self._iterate_ppt(
                     project_dir,
@@ -106,7 +126,7 @@ class IterationAgent:
                     "error": f": {project_type}"
                 }
 
-            # 6. 
+            # 6.
             if result["status"] == "success":
                 self._update_metadata(project_dir, iteration_request, backup_version)
 
@@ -134,20 +154,20 @@ class IterationAgent:
 
     def _load_project_context(self, project_dir: Path) -> Optional[Dict[str, Any]]:
         """
-        
+
 
         Returns:
-            
+
         """
         context = {}
 
-        # 
+        #
         metadata_file = project_dir / "metadata.json"
         if metadata_file.exists():
             with open(metadata_file, 'r', encoding='utf-8') as f:
                 context['metadata'] = json.load(f)
 
-        # 
+        #
         reports_dir = project_dir / "reports"
 
         if (reports_dir / "PPT_DATA.json").exists():
@@ -165,7 +185,7 @@ class IterationAgent:
         else:
             return None
 
-        # 
+        #
         intermediate_dir = project_dir / "intermediate"
 
         # /
@@ -173,7 +193,7 @@ class IterationAgent:
             with open(intermediate_dir / "01_task_decomposition.json", 'r', encoding='utf-8') as f:
                 context['task_decomposition'] = json.load(f)
 
-        # 
+        #
         if (intermediate_dir / "02_search_results.json").exists():
             with open(intermediate_dir / "02_search_results.json", 'r', encoding='utf-8') as f:
                 context['search_results'] = json.load(f)
@@ -190,41 +210,47 @@ class IterationAgent:
         LLM
 
         Returns:
-            
+
         """
         from src.llm.manager import LLMManager
 
         llm_manager = LLMManager()
         llm_client = llm_manager.get_client("default")
 
-        prompt = f"""
+        prompt = self._load_yaml_prompt(
+            "agents/content_evaluator/system",
+            default=""
+        )
 
-# 
+        if not prompt:
+            prompt = f"""
+
+#
 {project_type}
 
-# 
+#
 {requirement}
 
-# 
+#
 - : {context.get('metadata', {}).get('query', '')}
 - : {context.get('metadata', {}).get('created_at', '')}
 
-# 
+#
 
 
 
 ## 1. modification_type ()
 
-- **content**:  - 
-- **style**:  - 
+- **content**:  -
+- **style**:  -
 - **structure**:  - /
-- **data**:  - 
+- **data**:  -
 
 ## 2. modification_scope ()
 
-- **local**:  - 
+- **local**:  -
 - **partial**:  - /50%
-- **global**:  - 
+- **global**:  -
 
 ## 3. target_items ()
 
@@ -233,7 +259,7 @@ class IterationAgent:
 - "example_key_2"
 -  []
 
-# 
+#
 JSON
 """
 
@@ -246,17 +272,17 @@ JSON
 
     def _create_backup(self, project_dir: Path) -> str:
         """
-        
+
 
         Returns:
-            
+
         """
         import shutil
 
-        # 
+        #
         version = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # 
+        #
         versions_dir = project_dir / "versions"
         versions_dir.mkdir(exist_ok=True)
 
@@ -288,11 +314,11 @@ JSON
         prompt_manager = PromptManager()
         ppt_coordinator = PPTCoordinator(llm_manager, prompt_manager)
 
-        # 
+        #
         ppt_data = context['ppt_data']
         search_results = context.get('search_results', {}).get('all_content', [])
 
-        # 
+        #
         modification_instruction = f"""
 : {iteration_request.requirement}
 : {iteration_request.modification_type}
@@ -313,7 +339,7 @@ JSON
         )
 
         if result["status"] == "success":
-            # 
+            #
             self._save_updated_ppt(project_dir, result)
 
             return {
@@ -342,7 +368,7 @@ JSON
         llm_manager = LLMManager()
         llm_client = llm_manager.get_client("default")
 
-        # 
+        #
         report_file = project_dir / "reports" / "FINAL_REPORT.md"
         if not report_file.exists():
             return {
@@ -353,9 +379,9 @@ JSON
         with open(report_file, 'r', encoding='utf-8') as f:
             current_content = f.read()
 
-        # 
+        #
         if iteration_request.modification_scope == "local":
-            # 
+            #
             new_content = await self._modify_report_section(
                 llm_client,
                 current_content,
@@ -363,7 +389,7 @@ JSON
                 context
             )
         elif iteration_request.modification_scope == "partial":
-            # 
+            #
             new_content = await self._modify_report_partial(
                 llm_client,
                 current_content,
@@ -371,7 +397,7 @@ JSON
                 context
             )
         else:
-            # 
+            #
             new_content = await self._modify_report_global(
                 llm_client,
                 current_content,
@@ -379,7 +405,7 @@ JSON
                 context
             )
 
-        # 
+        #
         with open(report_file, 'w', encoding='utf-8') as f:
             f.write(new_content)
 
@@ -417,7 +443,7 @@ JSON
         llm_manager = LLMManager()
         llm_client = llm_manager.get_client("default")
 
-        # 
+        #
         fiction_file = project_dir / "reports" / "FINAL_REPORT.md"
         if not fiction_file.exists():
             return {
@@ -428,9 +454,9 @@ JSON
         with open(fiction_file, 'r', encoding='utf-8') as f:
             current_content = f.read()
 
-        # 
+        #
         if iteration_request.modification_scope == "local":
-            # 
+            #
             new_content = await self._modify_fiction_chapter(
                 llm_client,
                 current_content,
@@ -438,7 +464,7 @@ JSON
                 context
             )
         elif iteration_request.modification_scope == "partial":
-            # 
+            #
             new_content = await self._modify_fiction_partial(
                 llm_client,
                 current_content,
@@ -446,7 +472,7 @@ JSON
                 context
             )
         else:
-            # 
+            #
             new_content = await self._modify_fiction_global(
                 llm_client,
                 current_content,
@@ -454,7 +480,7 @@ JSON
                 context
             )
 
-        # 
+        #
         with open(fiction_file, 'w', encoding='utf-8') as f:
             f.write(new_content)
 
@@ -487,37 +513,46 @@ JSON
     ) -> str:
         """TODO: Add docstring."""
 
-        # 
+        #
         target_info = ", ".join(iteration_request.target_items) if iteration_request.target_items else ""
 
-        prompt = f"""
+        prompt = self._load_yaml_prompt(
+            "agents/content_synthesizer/system",
+            default=""
+        )
 
-# 
+        if not prompt:
+            prompt = ""
+
+        prompt += f"""
+
+#
 {iteration_request.requirement}
 
-# 
+#
 {target_info}
 
-# 
+#
 {current_content}
 
-# 
+#
 {self._format_search_results(context.get('search_results', {}))}
 
-# 
+"""
 
-## 
-1. ****: 
-2. ****: 
-3. ****: 
+        if prompt.strip().endswith("#"):
+            prompt += """
+##
+1. ****:
+2. ****:
+3. ****:
 4. ****: Markdown
 
-## 
+##
 - ****
 - Markdown
-- 
-- 
-
+-
+-
 
 """
 
@@ -548,50 +583,60 @@ JSON
     ) -> str:
         """TODO: Add docstring."""
 
-        # 
+        #
         content_to_show = current_content
         is_truncated = False
         if len(current_content) > 6000:
             content_to_show = current_content[:6000] + "\n\n... ()"
             is_truncated = True
 
-        prompt = f"""
+        prompt = self._load_yaml_prompt(
+            "agents/content_synthesizer/system",
+            default=""
+        )
 
-# 
+        if not prompt:
+            prompt = ""
+
+        prompt += f"""
+
+#
 {iteration_request.requirement}
 
-# 
+#
 {content_to_show}
 
-# 
+#
 {self._format_search_results(context.get('search_results', {}))}
 
-# 
+#
 - : {context.get('metadata', {}).get('query', '')}
 - : {context.get('metadata', {}).get('type', '')}
 
-# 
+#
 
-## 
+"""
 
-- ****: 
-- ****: 
-- ****: 
-- ****: 
+        if prompt.strip().endswith("#"):
+            prompt += """
+##
+- ****:
+- ****:
+- ****:
+- ****:
 
-## 
-1. ****: 
-2. ****: 
-3. ****: 
-4. ****: 
+##
+1. ****:
+2. ****:
+3. ****:
+4. ****:
 5. ****: Markdown
 
-## 
-{"- " if is_truncated else ""}
-- 
-- 
-- 
-
+##
+{""}
+-
+-
+-
 
 """
 
@@ -620,7 +665,7 @@ JSON
         context: Dict[str, Any]
     ) -> str:
         """TODO: Add docstring."""
-        # 
+        #
         return await self._modify_report_partial(
             llm_client,
             current_content,
@@ -639,56 +684,67 @@ JSON
 
         target_info = ", ".join(iteration_request.target_items) if iteration_request.target_items else ""
 
-        prompt = f"""
+        prompt = self._load_yaml_prompt(
+            "agents/content_synthesizer/system",
+            default=""
+        )
 
-# 
+        if not prompt:
+            prompt = ""
+
+        prompt += f"""
+
+#
 {iteration_request.requirement}
 
-# 
+#
 {target_info}
 
-# 
+#
 {current_content}
 
-# 
+#
 - : {context.get('metadata', {}).get('query', '')}
 - : {context.get('metadata', {}).get('style', '')}
 
-# 
+#
 
-## 
+"""
+
+        if prompt.strip().endswith("#"):
+            prompt += """
+##
 1. ****:
-   - 
-   - 
+   -
+   -
 
 2. ****:
-   - 
-   - 
-   - 
+   -
+   -
+   -
 
 3. ****:
    - /
-   - 
-   - 
+   -
+   -
 
 4. ****:
-   - 
-   - 
-   - 
+   -
+   -
+   -
 
-## 
+##
 - ****
 - Markdown
-- 
-- 
-
+-
+-
 
 """
 
         response = await llm_client.chat_completion(
             messages=[{"role": "user", "content": prompt}],
             max_tokens=8000,
-            temperature=0.8  # 
+            temperature=0.8  #
         )
 
         new_content = response.get("content", "").strip()
@@ -711,66 +767,77 @@ JSON
     ) -> str:
         """TODO: Add docstring."""
 
-        # 
+        #
         content_to_show = current_content
         is_truncated = False
         if len(current_content) > 6000:
             content_to_show = current_content[:6000] + "\n\n... ()"
             is_truncated = True
 
-        prompt = f"""
+        prompt = self._load_yaml_prompt(
+            "agents/content_synthesizer/system",
+            default=""
+        )
 
-# 
+        if not prompt:
+            prompt = ""
+
+        prompt += f"""
+
+#
 {iteration_request.requirement}
 
-# 
+#
 {content_to_show}
 
-# 
+#
 - : {context.get('metadata', {}).get('query', '')}
 - : {context.get('metadata', {}).get('style', '')}
 
-# 
+#
 
-## 
+"""
 
-- ****: 
-- ****: 
-- ****: 
-- ****: 
+        if prompt.strip().endswith("#"):
+            prompt += """
+##
+- ****:
+- ****:
+- ****:
+- ****:
 
-## 
+##
 
-### 1. 
-- 
-- 
-- 
-- 
 
-### 2. 
-- 
-- 
-- 
-- 
+### 1.
+-
+-
+-
+-
 
-### 3. 
-- 
-- 
-- 
-- 
+### 2.
+-
+-
+-
+-
 
-### 4. 
-- 
-- 
-- 
-- 
+### 3.
+-
+-
+-
+-
 
-## 
-{"- " if is_truncated else ""}
-- 
-- 
-- 
+### 4.
+-
+-
+-
+-
 
+##
+{""}
+-
+-
+-
 
 """
 
@@ -901,7 +968,7 @@ JSON
             with open(metadata_file, 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
 
-            # 
+            #
             if 'iterations' not in metadata:
                 metadata['iterations'] = []
 

@@ -111,37 +111,55 @@ class SlideContentGenerator(BaseAgent):
         style: str,
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """TODO: Add docstring."""
-        system_prompt = f"""PPT{style}
-PPT"""
+        """生成总结页。"""
+
+        slide_number = slide_outline.get("slide_number", 1)
+        key_points = slide_outline.get("key_points", [])
+
+        # 尝试从 YAML 加载 prompt
+        try:
+            system_prompt = self.prompt_manager.get_prompt(
+                "agents/ppt/slide_content_generator",
+                content_task=f"生成总结页内容",
+                slide_number=slide_number,
+                slide_type="conclusion",
+                style=style
+            )
+        except (KeyError, Exception):
+            system_prompt = f"你是PPT幻灯片内容生成专家，擅长生成{style}风格的总结页"
 
         user_prompt = f"""
+## 幻灯片信息
+标题: {slide_outline.get('title', '总结')}
+关键要点数量: {len(key_points)}
 
-{slide_outline.get('title', '')}
-{len(slide_outline.get('key_points', []))}
+## 要点列表
+{chr(10).join([f"{i+1}. {p}" for i, p in enumerate(key_points)])}
 
-2-4
+## 要求
+生成3-5个精炼的总结要点。
 
-JSON
+请输出 JSON 格式：
+```json
 {{
-  "points": ["1", "2", "3"]
+  "points": ["要点1", "要点2", "要点3"]
 }}
-"""
+```"""
 
         response = await self.get_llm_response(user_prompt, system_prompt)
 
-        # 
+        # 解析响应
         import json
         import re
         try:
             json_match = re.search(r'\{[\s\S]*\}', response)
             if json_match:
                 data = json.loads(json_match.group(0))
-                points = data.get("points", [""])
+                points = data.get("points", ["总结要点"])
             else:
-                points = [""]
+                points = key_points[:3] if key_points else ["总结"]
         except:
-            points = [""]
+            points = key_points[:3] if key_points else ["总结"]
 
         return {
             "slide_number": slide_outline.get("slide_number"),
@@ -162,52 +180,68 @@ JSON
         available_content: List[Dict[str, Any]],
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """TODO: Add docstring."""
+        """生成内容页。"""
 
         title = slide_outline.get("title", "")
         key_points = slide_outline.get("key_points", [])
         content_density = slide_outline.get("content_density", "medium")
+        slide_number = slide_outline.get("slide_number", 1)
 
-        # 
+        # 内容密度指南
         density_guides = {
-            "minimal": "1-2",
-            "medium": "3-5",
-            "detailed": "3-5"
+            "minimal": "1-2个要点，适合演讲",
+            "medium": "3-5个要点，平衡展示",
+            "detailed": "6+个要点，适合阅读"
         }
 
-        system_prompt = f"""PPT{style}
-{density_guides.get(content_density, density_guides['medium'])}"""
-
-        # 
+        # 提取相关内容
         relevant_content = self._extract_relevant_content(title, available_content)
 
-        user_prompt = f"""PPT
+        # 尝试从 YAML 加载 prompt
+        try:
+            system_prompt = self.prompt_manager.get_prompt(
+                "agents/ppt/slide_content_generator",
+                content_task=f"生成内容页内容",
+                slide_number=slide_number,
+                slide_type="content",
+                style=style
+            )
+        except (KeyError, Exception):
+            system_prompt = f"你是PPT幻灯片内容生成专家，擅长生成{style}风格的{content_density}密度内容页"
 
-{title}
-{style}
-{content_density}
+        user_prompt = f"""
+## 幻灯片信息
+标题: {title}
+风格: {style}
+内容密度: {content_density} ({density_guides.get(content_density, '')})
 
+## 要点
+{chr(10).join([f"- {p}" for p in key_points]) if key_points else "无预设要点"}
 
-{relevant_content}
+## 参考内容
+{relevant_content if relevant_content else "无参考内容"}
 
+## 要求
+请根据以上信息生成适合该幻灯片的内容要点和详细说明。
 
-
-JSON
+请输出 JSON 格式：
+```json
 {{
-  "points": ["1", "2", "3"],
-  "details": {{"1": "content_densitydetailed"}},
-  "visuals": [{{"type": "chart/image", "description": ""}}]
+  "points": ["要点1", "要点2", "要点3"],
+  "details": {{"要点1": "详细说明1"}},
+  "visuals": [{{"type": "image/chart", "description": "建议使用的图片或图表"}}]
 }}
+```
 
-
-- pointscontent_densityminimal: 1-2, medium: 3-5, detailed: 3-5
-- minimaldetails
-- visuals
+注意事项：
+- 内容密度: minimal 1-2个要点, medium 3-5个要点, detailed 6+个要点
+- 每个要点需要配详细说明
+- 建议使用可视化元素
 """
 
         response = await self.get_llm_response(user_prompt, system_prompt)
 
-        # 
+        # 解析响应
         import json
         import re
         try:
@@ -217,7 +251,7 @@ JSON
             else:
                 data = {"points": key_points, "details": {}, "visuals": []}
         except Exception as e:
-            logger.warning(f": {e}, ")
+            logger.warning(f"JSON parsing failed: {e}, using key_points")
             data = {"points": key_points, "details": {}, "visuals": []}
 
         return {

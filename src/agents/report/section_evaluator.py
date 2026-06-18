@@ -1,5 +1,5 @@
 """
- - 
+-
 """
 import asyncio
 from typing import List, Dict, Any, Optional
@@ -103,7 +103,7 @@ class SectionEvaluator:
         section_requirements: Dict[str, Any],
         available_sources: Optional[List[Dict[str, Any]]]
     ) -> str:
-        """TODO: Add docstring."""
+        """构建评估 prompt，从 YAML 加载系统提示词。"""
 
         section_id = section_result.get("section_id")
         title = section_result.get("title")
@@ -118,50 +118,69 @@ class SectionEvaluator:
                 for s in available_sources[:5]
             ])
 
-        prompt = f"""# 
+        # 构建评估任务描述
+        evaluation_task = f"""评估章节是否满足以下要求：
+        要求：{requirements}
+        目标字数：{target_word_count}
+        实际字数：{len(content)}"""
 
-## 
-- : {section_id}
-- : {title}
-- : {target_word_count}
-- : {len(content)}
+        # 尝试从 YAML 加载 prompt
+        try:
+            prompt = self.prompt_manager.get_prompt(
+                "agents/report/section_evaluator",
+                evaluation_task=evaluation_task,
+                section_title=title,
+                section_content=content
+            )
+            # 追加参考资料
+            if sources_summary:
+                prompt += f"\n\n## 参考资料\n{sources_summary}"
+        except (KeyError, Exception) as e:
+            logger.warning(f"[{self.name}] YAML prompt load failed, using fallback: {e}")
+            prompt = f"""# 任务
 
-## 
+## 基本信息
+- 章节ID: {section_id}
+- 标题: {title}
+- 目标字数: {target_word_count}
+- 实际字数: {len(content)}
+
+## 评估要求
 {requirements}
 
-## 
+## 待评估内容
 {content}
 
-## 
-{sources_summary if sources_summary else ""}
+## 参考资料
+{sources_summary if sources_summary else "无参考资料"}
 
-## 
+## 评估维度
 
- 0-10 
+请从以下几个维度对内容进行评分（0-10分制）：
 
-### 1.  (Completeness)
-- 
-- 
-- 
+### 1. 完整性 (Completeness)
+- 内容是否完整
+- 是否遗漏关键信息
+- 是否覆盖所有要点
 
-### 2.  (Accuracy)
-- 
-- 
-- 
+### 2. 准确性 (Accuracy)
+- 事实是否准确
+- 数据是否可靠
+- 论述是否合理
 
-### 3.  (Relevance)
-- 
-- 
-- 
+### 3. 相关性 (Relevance)
+- 是否紧扣主题
+- 是否满足用户需求
+- 内容是否切题
 
-### 4.  (Coherence)
-- 
-- 
-- 
+### 4. 连贯性 (Coherence)
+- 逻辑是否清晰
+- 结构是否合理
+- 表达是否流畅
 
-## 
+## 输出要求
 
-JSON
+请按照以下 JSON 格式输出评估结果：
 
 ```json
 {{
@@ -172,32 +191,31 @@ JSON
     "coherence": 7.5
   }},
   "issues": [
-    "1",
-    "2"
+    "问题1",
+    "问题2"
   ],
   "strengths": [
-    "1",
-    "2"
+    "优点1",
+    "优点2"
   ],
   "missing_info": [
-    "1",
-    "2"
+    "缺失信息1",
+    "缺失信息2"
   ],
   "suggestions": [
-    "1",
-    "2"
+    "建议1",
+    "建议2"
   ]
 }}
 ```
 
-## 
+## 评分标准
 
-- **9-10**: 
-- **7-8**: 
-- **5-6**: 
-- **3-4**: 
-- **0-2**: 
-
+- **9-10分**: 优秀，无需修改
+- **7-8分**: 良好，有小问题
+- **5-6分**: 一般，需要修改
+- **3-4分**: 较差，需要较大修改
+- **0-2分**: 很差，需要重写
 
 """
 

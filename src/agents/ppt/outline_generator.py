@@ -101,8 +101,23 @@ class PPTOutlineGenerator(BaseAgent):
             }
 
     def _get_system_prompt(self, style: str) -> str:
-        """TODO: Add docstring."""
-
+        """获取 PPT 大纲生成的系统提示词，从 YAML 加载，fallback 到硬编码内容。"""
+        
+        try:
+            # 尝试从 YAML 加载
+            prompt = self.prompt_manager.get_prompt(
+                "agents/ppt/outline_generator",
+                outline_task="生成PPT大纲",
+                topic="{{ topic }}",
+                style=style,
+                slide_count="{{ slides }}"
+            )
+            return prompt
+        except KeyError:
+            # Fallback 到硬编码内容
+            pass
+        
+        # 原有的硬编码风格指南
         style_guides = {
             "red": """
 REDPPT

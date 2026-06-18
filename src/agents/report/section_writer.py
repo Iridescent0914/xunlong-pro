@@ -197,83 +197,118 @@ class SectionWriter:
         if report_type == "fiction":
             return self._build_fiction_writing_prompt(section, context, relevant_content, word_count)
 
-        # report 走原有 prompt
-        references = self._format_references(relevant_content)
-        query = context.get("query", "") if context else ""
-        previous_section = context.get("previous_section", "") if context else ""
+        # report 走 YAML prompt，失败时回退到硬编码 prompt
+        try:
+            references = self._format_references(relevant_content)
+            query = context.get("query", "") if context else ""
+            previous_section = context.get("previous_section", "") if context else ""
 
-        prompt = f"""# 
+            yaml_prompt = self.prompt_manager.get_prompt(
+                "agents/report/section_writer",
+                writing_task=requirements,
+                section_number=section_id,
+                section_title=title,
+                target_word_count=word_count
+            )
 
-## 
-- : {section_id}
-- : {title}
-- : {word_count} 
-
-## 
-{requirements}
-
-## 
+            # 追加用户上下文
+            user_context = f"""
+## 用户查询
 {query}
 
-## 
+## 报告类型
 {report_type}
 
-{"## " if previous_section else ""}
+## 前文摘要
+{"## 上一节摘要" if previous_section else ""}
 {previous_section[:200] + "..." if previous_section else ""}
 
-## 
-
-
+## 参考资料
 
 {references}
 
-## 
+## 写作指令
 
+1. **章节信息**:
+   - 章节序号: {section_id}
+   - 章节标题: {title}
+   - 目标字数: 约 {word_count} 字（允许上下浮动20%）
 
+2. **输出要求**:
+   - 使用 Markdown 格式
+   - 仅输出章节正文内容
+   - 不要在开头写任何引导语
 
-1. ****:
-   - ""
-   - 
-   - 
-   - 
+3. **质量要求**:
+   - 内容专业、准确
+   - 逻辑清晰、层次分明
+   - 与前文自然衔接
 
-2. ****:
-   - Markdown
-   - 
-   -  {word_count}  20% 
+4. **禁止事项**:
+   - 不要输出 JSON 格式
+   - 不要使用"以下是"、"根据您的要求"等开场白
+   - 不要以 Markdown 标题（如##）开头
 
-3. ****:
-   - 
-   - 
-   - 
-   - 
-
-4. ****:
-   - 
-   - 
-   - 
-
-##
-
-
-
--
--
--
--
-
-## **CRITICAL**:
-
-- **  Markdown**
-- **"", "", "", "", ""等**
-- **""**
-- **Markdown#开头**
-
-
+直接开始撰写章节内容：
 
 """
+            return yaml_prompt + user_context
 
-        return prompt
+        except (KeyError, Exception) as e:
+            logger.warning(f"[{self.name}] YAML prompt load failed, using fallback: {e}")
+            references = self._format_references(relevant_content)
+            query = context.get("query", "") if context else ""
+            previous_section = context.get("previous_section", "") if context else ""
+
+            prompt = f"""# 报告章节撰写
+
+## 章节信息
+- 章节序号: {section_id}
+- 章节标题: {title}
+- 目标字数: 约 {word_count} 字
+
+## 章节要求
+{requirements}
+
+## 用户查询
+{query}
+
+## 报告类型
+{report_type}
+
+{"## 前文摘要" if previous_section else ""}
+{previous_section[:200] + "..." if previous_section else ""}
+
+## 参考资料
+
+{references}
+
+## 写作指令
+
+1. **章节信息**:
+   - 章节序号: {section_id}
+   - 章节标题: {title}
+   - 目标字数: 约 {word_count} 字（允许上下浮动20%）
+
+2. **输出要求**:
+   - 使用 Markdown 格式
+   - 仅输出章节正文内容
+   - 不要在开头写任何引导语
+
+3. **质量要求**:
+   - 内容专业、准确
+   - 逻辑清晰、层次分明
+   - 与前文自然衔接
+
+4. **禁止事项**:
+   - 不要输出 JSON 格式
+   - 不要使用"以下是"、"根据您的要求"等开场白
+   - 不要以 Markdown 标题（如##）开头
+
+直接开始撰写章节内容：
+
+"""
+            return prompt
 
     def _build_fiction_writing_prompt(
         self,

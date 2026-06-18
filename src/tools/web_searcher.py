@@ -211,7 +211,10 @@ class WebSearcher:
             return formatted_results
 
         except Exception as e:
-            logger.error(f"[{self.name}] DuckDuckGo: {e}")
+            err_name = type(e).__name__
+            err_msg = str(e).strip()
+            err_detail = f"{err_name}: {err_msg}" if err_msg else err_name
+            logger.error(f"[{self.name}] DuckDuckGo: {err_detail}")
             return []
 
     async def _fetch_full_content_with_httpx(
