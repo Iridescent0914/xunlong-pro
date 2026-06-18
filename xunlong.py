@@ -26,9 +26,9 @@ from src.utils.document_loader import load_document, LoadedDocument, DocumentLoa
 @click.version_option(version="1.0.0", prog_name="XunLong")
 def cli():
     """
-    XunLong - 
+    XunLong - 深度搜索与多模态内容生成 CLI
 
-    PPT
+    支持 report / fiction / ppt / analyze（金融数据分析）等子命令。
     """
     pass
 
@@ -164,6 +164,123 @@ async def _execute_report(query: str, report_type: str, depth: str, max_results:
 
         # 
         _display_result(result, verbose, output_format=output_format)
+
+    except KeyboardInterrupt:
+        click.echo(click.style("\n  ", fg="yellow"))
+        sys.exit(1)
+    except Exception as e:
+        click.echo(click.style(f"\n : {e}", fg="red"))
+        if verbose:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
+
+
+# ============================================================
+# 金融数据分析
+# ============================================================
+
+@cli.command('analyze')
+@click.argument('query')
+@click.option('--depth', '-d',
+              type=click.Choice(['surface', 'medium', 'deep'], case_sensitive=False),
+              default='deep',
+              help='搜索深度：surface / medium / deep')
+@click.option('--max-results', '-m',
+              type=int,
+              default=20,
+              help='最大搜索结果数（默认 20）')
+@click.option('--output-format', '-o',
+              type=click.Choice(['html', 'md', 'markdown'], case_sensitive=False),
+              default='html',
+              help='报告格式：html / md')
+@click.option('--html-template',
+              type=str,
+              default='enhanced_professional',
+              help='HTML 模板')
+@click.option('--html-theme',
+              type=str,
+              default='light',
+              help='HTML 主题：light / dark')
+@click.option('--mock-search',
+              is_flag=True,
+              help='使用 fixtures/mock_search.json 代替真实网页搜索（联调/离线）')
+@click.option('--input-file',
+              type=click.Path(exists=True, dir_okay=False, path_type=Path),
+              help='补充参考文档 .txt/.pdf/.docx')
+@click.option('--verbose', '-v',
+              is_flag=True,
+              help='显示详细日志')
+def analyze(query, depth, max_results, output_format, html_template, html_theme,
+            mock_search, input_file, verbose):
+    """
+    金融数据分析模式：网页搜索 + RAG + 结构化分析 + 报告生成。
+
+    示例：
+
+    \b
+        xunlong analyze "分析2024年银行业营收趋势"
+        xunlong analyze "某行业毛利率变化" --depth deep -m 30 -v
+        xunlong analyze "测试分析" --mock-search -v
+    """
+    asyncio.run(_execute_analyze(
+        query, depth, max_results, output_format, html_template, html_theme,
+        mock_search, input_file, verbose,
+    ))
+
+
+async def _execute_analyze(
+    query: str,
+    depth: str,
+    max_results: int,
+    output_format: str,
+    html_template: str,
+    html_theme: str,
+    mock_search: bool,
+    input_file: Optional[Path],
+    verbose: bool,
+):
+    click.echo(click.style("\n=== XunLong 金融数据分析 ===\n", fg="yellow", bold=True))
+
+    output_format = 'md' if output_format in ['markdown', 'md'] else output_format
+
+    if verbose:
+        click.echo(f"查询: {query}")
+        click.echo(f"搜索深度: {depth}")
+        click.echo(f"最大结果数: {max_results}")
+        click.echo(f"输出格式: {output_format}")
+        click.echo(f"Mock 搜索: {'是' if mock_search else '否'}")
+        if output_format == 'html':
+            click.echo(f"HTML 模板: {html_template}")
+            click.echo(f"HTML 主题: {html_theme}")
+        click.echo()
+
+    user_document = _load_user_document(input_file, verbose)
+
+    try:
+        agent = DeepSearchAgent()
+
+        if verbose:
+            click.echo(click.style("正在执行金融数据分析工作流...", fg="green") + "\n")
+
+        with click.progressbar(length=100, label='分析中') as bar:
+            result = await agent.search(
+                query,
+                context={
+                    'output_type': 'financial_analysis',
+                    'search_depth': depth,
+                    'max_results': max_results,
+                    'output_format': output_format,
+                    'html_template': html_template,
+                    'html_theme': html_theme,
+                    'use_mock_search': mock_search,
+                    **user_document,
+                },
+            )
+            bar.update(100)
+
+        click.echo()
+        _display_result(result, verbose, output_type='financial_analysis', output_format=output_format)
 
     except KeyboardInterrupt:
         click.echo(click.style("\n  ", fg="yellow"))
@@ -754,6 +871,40 @@ def _display_result(result: dict, verbose: bool, output_type: str = 'report', ou
                     if html_path.exists():
                         click.echo(f"{click.style('', fg='green')} HTML: {click.style(str(html_path), fg='cyan')}")
                         click.echo(f"   {click.style(': HTML', fg='bright_black')}")
+
+    # 金融数据分析结果
+    if output_type == 'financial_analysis':
+        data = result.get('data_analysis_results') or {}
+        if data:
+            click.echo(f"\n{click.style('=== 金融数据分析 ===', fg='yellow', bold=True)}")
+            click.echo(f"状态: {data.get('status', 'unknown')}")
+            click.echo(f"数据来源: {data.get('source_type', '')}")
+
+            metrics = data.get('metrics') or {}
+            if metrics:
+                click.echo(f"\n{click.style('核心指标:', bold=True)}")
+                for key, val in metrics.items():
+                    click.echo(f"  · {key}: {val}")
+
+            findings = data.get('key_findings') or []
+            if findings:
+                click.echo(f"\n{click.style('关键发现:', bold=True)}")
+                for item in findings[:5]:
+                    title = item.get('title', '')
+                    value = item.get('value', '')
+                    click.echo(f"  · {title}: {value}")
+
+            charts = data.get('charts') or []
+            if charts:
+                click.echo(f"\n图表: {len(charts)} 个")
+
+            if result.get('project_dir'):
+                analysis_path = Path(result['project_dir']) / 'intermediate' / '03_data_analysis.json'
+                if analysis_path.exists():
+                    click.echo(
+                        f"\n{click.style('✓', fg='green')} "
+                        f"分析结果: {click.style(str(analysis_path), fg='cyan')}"
+                    )
 
     # 
     if result.get('search_results'):

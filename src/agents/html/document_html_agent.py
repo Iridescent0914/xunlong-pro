@@ -101,6 +101,10 @@ class DocumentHTMLAgent(BaseHTMLAgent):
         if metadata.get('enable_charts', True):
             charts = self.detect_and_visualize_data(sections)
 
+        for chart in metadata.get('data_analysis_charts', []):
+            if chart.get('id') and chart.get('option'):
+                charts.append(chart)
+
         # Extract references from metadata
         references = metadata.get('references', [])
 

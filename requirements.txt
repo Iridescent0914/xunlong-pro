@@ -51,6 +51,10 @@ pyyaml>=6.0              # YAML配置文件
 markdown>=3.4.0          # Markdown处理
 markdown2>=2.4.0         # Markdown转HTML（增强版）
 
+# ---------- 数据分析（金融模式，成员 1 实现引擎时需安装） ----------
+pandas>=2.0.0             # Excel/CSV 数据处理
+openpyxl>=3.1.0           # Excel 读取
+
 # ---------- 导出功能 ----------
 # PDF导出
 weasyprint>=60.0         # HTML转PDF（需要系统依赖：pango, gdk-pixbuf, libffi）

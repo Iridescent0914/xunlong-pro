@@ -17,14 +17,14 @@
 
 ## 📖 项目简介
 
-**XunLong (寻龙)** 是一个基于大语言模型的智能内容生成系统，能够通过自然语言指令自动生成高质量的**研究报告**、**小说**和**演示文稿（PPT）**。
+**XunLong (寻龙)** 是一个基于大语言模型的智能内容生成系统，能够通过自然语言指令自动生成高质量的**研究报告**、**小说**、**演示文稿（PPT）**和**金融数据分析报告**。
 
 系统采用多智能体协作架构，通过LangGraph编排智能体工作流，实现从需求分析、资料搜索、内容生成到格式导出的全流程自动化。
 
 ### ✨ 核心特性
 
 - 🤖 **多智能体协作**: 基于LangGraph的智能体编排，任务分解与并行执行
-- 📊 **多模态生成**: 支持报告(Report)、小说(Fiction)、PPT三种内容模式
+- 📊 **多模态生成**: 支持报告(Report)、小说(Fiction)、PPT、金融数据分析(Analyze)四种内容模式
 - 📂 **文档上下文注入**: 支持 `.txt`/`.pdf`/`.docx` 文档作为生成前提（暂不支持图片）
 - 🔍 **智能搜索**: 自动网络搜索、内容提取、知识整合
 - 🎨 **专业导出**: 支持Markdown、HTML、PDF、DOCX、PPTX多种格式
@@ -263,6 +263,9 @@ python xunlong.py fiction "星际探险史诗" --genre scifi --input-file ./docs
 
 # 根据会议纪要生成汇报PPT
 python xunlong.py ppt "董事会战略更新" --style business --input-file ./docs/meeting_notes.docx
+
+# 结合参考文档进行金融数据分析
+python xunlong.py analyze "分析2024年银行业营收趋势" --input-file ./docs/industry_brief.pdf
 ```
 
 ### 基本命令
@@ -339,7 +342,41 @@ python xunlong.py ppt "公司年度总结报告" \\
 
 **演说稿功能**: 使用\`--speech-notes\`参数可生成每页幻灯片的演讲稿
 
-### 4. 内容迭代优化
+### 4. 金融数据分析
+
+启用 **金融数据分析模式**：先网页搜索，再 RAG 检索，经 `FinancialAnalyzer` 产出结构化指标、表格与图表，最后生成报告。
+
+\`\`\`bash
+# 基础用法
+python xunlong.py analyze "分析2024年银行业营收趋势"
+
+# 指定搜索深度与结果数量
+python xunlong.py analyze "某行业毛利率变化" \\
+  --depth deep \\
+  --max-results 30 \\
+  --verbose
+
+# 离线联调（跳过真实搜索，使用 fixtures/mock_search.json）
+python xunlong.py analyze "测试分析" --mock-search -v
+
+# 指定报告输出格式
+python xunlong.py analyze "2024年新能源行业财务表现" -o html
+\`\`\`
+
+**常用选项**:
+
+| 选项 | 说明 |
+|------|------|
+| \`--depth\` / \`-d\` | 搜索深度：\`surface\` / \`medium\` / \`deep\`（默认 \`deep\`） |
+| \`--max-results\` / \`-m\` | 最大搜索结果数（默认 20） |
+| \`--output-format\` / \`-o\` | 报告格式：\`html\` / \`md\`（默认 \`html\`） |
+| \`--mock-search\` | 使用 Mock 搜索数据，适合无网络或本地开发 |
+| \`--input-file\` | 补充参考文档（.txt / .pdf / .docx） |
+| \`--verbose\` / \`-v\` | 显示详细日志 |
+
+分析结果保存在 \`storage/{项目ID}/intermediate/03_data_analysis.json\`，终端会摘要展示核心指标与关键发现。
+
+### 5. 内容迭代优化
 
 对已生成的内容进行修改：
 
@@ -356,7 +393,7 @@ python xunlong.py iterate <项目ID> "重写第三章，增加更多悬念"
 
 **项目ID**: 在\`storage/\`目录下的项目文件夹名，格式如\`20251004_220823\`
 
-### 5. 导出功能
+### 6. 导出功能
 
 \`\`\`bash
 # 导出为PDF
@@ -385,6 +422,7 @@ XunLong/
 │   │   ├── report/          # 报告生成智能体
 │   │   ├── fiction/         # 小说生成智能体
 │   │   ├── ppt/             # PPT生成智能体
+│   │   ├── data_analysis/   # 金融数据分析智能体
 │   │   └── html/            # HTML转换智能体
 │   ├── llm/                 # LLM管理
 │   │   ├── manager.py       # LLM管理器
