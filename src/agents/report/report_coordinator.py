@@ -68,7 +68,8 @@ class ReportCoordinator:
         output_format: str = "md",
         html_config: Optional[Dict[str, Any]] = None,
         project_id: Optional[str] = None,
-        refined_subtasks: Optional[List[Dict[str, Any]]] = None  # NEW parameter
+        refined_subtasks: Optional[List[Dict[str, Any]]] = None,
+        data_analysis_results: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
 
@@ -81,9 +82,16 @@ class ReportCoordinator:
             output_format:  ('md'  'html')
             html_config: HTML {'template': 'academic', 'theme': 'light'}
             refined_subtasks: NEW -
+            data_analysis_results: 金融数据分析智能体输出（骨架阶段已接入，章节生成待完善）
         """
 
         logger.info(f"[{self.name}]  (: {report_type}, : {output_format})")
+        if data_analysis_results and data_analysis_results.get("status") == "success":
+            logger.info(
+                f"[{self.name}] 含金融数据分析结果: "
+                f"{len(data_analysis_results.get('key_findings', []))} 条结论, "
+                f"{len(data_analysis_results.get('charts', []))} 个图表"
+            )
 
         # NEW: Prepare context with refined subtasks if available
         has_refined = refined_subtasks and len(refined_subtasks) > 0

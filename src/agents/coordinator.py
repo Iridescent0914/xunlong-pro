@@ -47,6 +47,7 @@ from .report import ReportCoordinator
 from .output_type_detector import OutputTypeDetector
 from .fiction import FictionElementsDesigner, FictionOutlineGenerator
 from .ppt import PPTCoordinator
+from .data_analysis import DataAnalysisAgent
 
 
 class DeepSearchState(TypedDict):
@@ -62,8 +63,13 @@ class DeepSearchState(TypedDict):
     time_context: Dict[str, Any]
 
     # 
-    output_type: str  # "report", "fiction", "ppt"
+    output_type: str  # "report", "fiction", "ppt", "financial_analysis"
     output_type_confidence: float
+
+    # 金融数据分析（与 search_analyzer 的 analysis_results 分离）
+    data_sources: Dict[str, Any]
+    data_analysis_results: Dict[str, Any]
+    data_analysis_status: str
 
     # 
     task_analysis: Dict[str, Any]
@@ -141,7 +147,8 @@ class DeepSearchCoordinator:
             "search_analyzer": SearchAnalyzerAgent(self.llm_manager, self.prompt_manager),
             "content_synthesizer": ContentSynthesizerAgent(self.llm_manager, self.prompt_manager),
             "report_generator": ReportGeneratorAgent(self.llm_manager, self.prompt_manager),
-            "content_evaluator": ContentEvaluator(self.llm_manager, self.prompt_manager)
+            "content_evaluator": ContentEvaluator(self.llm_manager, self.prompt_manager),
+            "data_analyzer": DataAnalysisAgent(self.llm_manager, self.prompt_manager),
         }
 
         #
@@ -212,7 +219,8 @@ class DeepSearchCoordinator:
                 {
                     "report": "task_decomposer",
                     "fiction": "fiction_elements_designer",
-                    "ppt": "task_decomposer"
+                    "ppt": "task_decomposer",
+                    "financial_analysis": "task_decomposer",
                 }
             )
 
@@ -312,10 +320,48 @@ class DeepSearchCoordinator:
 
         return state
     
+    @staticmethod
+    def _is_financial_analysis_mode(state: DeepSearchState) -> bool:
+        if state.get("output_type") == "financial_analysis":
+            return True
+        context = state.get("context") or {}
+        return context.get("mode") == "financial_analysis"
+
+    async def _data_analyzer_node(self, state: DeepSearchState) -> DeepSearchState:
+        """金融数据分析智能体节点。"""
+        if not self._is_financial_analysis_mode(state):
+            state["data_analysis_status"] = "skipped"
+            return state
+
+        try:
+            logger.info("[Coordinator] 执行金融数据分析...")
+            result = await self.agents["data_analyzer"].process({
+                "query": state.get("query", ""),
+                "data_sources": state.get("data_sources") or {},
+                "task_analysis": state.get("task_analysis", {}),
+            })
+            state["data_analysis_results"] = result.get("result", {})
+            state["data_analysis_status"] = result.get("status", "unknown")
+            state["messages"].append({
+                "role": "assistant",
+                "content": f"金融数据分析完成 (status={state['data_analysis_status']})",
+                "agent": "data_analyzer",
+            })
+        except Exception as e:
+            logger.error(f"金融数据分析失败: {e}")
+            state["errors"].append(f"金融数据分析失败: {e}")
+            state["data_analysis_status"] = "failed"
+
+        return state
+
     async def _deep_searcher_node(self, state: DeepSearchState) -> DeepSearchState:
         """TODO: Add docstring."""
         try:
             logger.info("...")
+
+            # 金融数据分析模式：与网页搜索并行（骨架阶段在搜索前 await，可后续改为 gather）
+            if self._is_financial_analysis_mode(state):
+                await self._data_analyzer_node(state)
             
             task_analysis = state.get("task_analysis", {})
             subtasks = task_analysis.get("subtasks", [])
@@ -469,7 +515,8 @@ class DeepSearchCoordinator:
             result = await self.agents["content_synthesizer"].process({
                 "query": state["query"],
                 "search_results": state.get("search_results", []),
-                "analysis_results": state.get("analysis_results", {})
+                "analysis_results": state.get("analysis_results", {}),
+                "data_analysis_results": state.get("data_analysis_results", {}),
             })
             
             state["synthesis_results"] = result.get("result", {})
@@ -523,7 +570,8 @@ class DeepSearchCoordinator:
                 output_format=output_format,
                 html_config=html_config,
                 project_id=project_id,  # ID
-                refined_subtasks=state.get("refined_subtasks", [])  # NEW: Pass refined subtasks
+                refined_subtasks=state.get("refined_subtasks", []),  # NEW: Pass refined subtasks
+                data_analysis_results=state.get("data_analysis_results", {}),
             )
 
             if result["status"] == "success":
@@ -582,8 +630,8 @@ class DeepSearchCoordinator:
             query = state.get("query", "")
             context = state.get("context", {})
 
-            # CLI
-            explicit_output_type = context.get("output_type")
+            # CLI / API 显式指定 output_type 或 mode
+            explicit_output_type = context.get("output_type") or context.get("mode")
 
             if explicit_output_type:
                 # 
@@ -1129,6 +1177,11 @@ class DeepSearchCoordinator:
                 "output_type": "report",
                 "output_type_confidence": 0.0,
 
+                # 金融数据分析
+                "data_sources": (context or {}).get("data_sources", {}),
+                "data_analysis_results": {},
+                "data_analysis_status": "pending",
+
                 # 
                 "task_analysis": {},
                 "decomposition_status": "pending",
@@ -1198,6 +1251,7 @@ class DeepSearchCoordinator:
                 "task_analysis": final_state["task_analysis"],
                 "search_results": final_state["search_results"],
                 "analysis_results": final_state["analysis_results"],
+                "data_analysis_results": final_state.get("data_analysis_results", {}),
                 "synthesis_results": final_state["synthesis_results"],
                 "final_report": final_state["final_report"],
 
@@ -1321,6 +1375,10 @@ class DeepSearchCoordinator:
             # 3.
             if final_state.get("analysis_results"):
                 self.storage.save_search_analysis(final_state["analysis_results"])
+
+            # 3b. 金融数据分析结果
+            if final_state.get("data_analysis_results"):
+                self.storage.save_data_analysis(final_state["data_analysis_results"])
 
             # 4. 
             if final_state.get("synthesis_results"):

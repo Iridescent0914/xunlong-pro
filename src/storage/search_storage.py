@@ -127,6 +127,15 @@ class SearchStorage:
         self._save_json(file_path, analysis)
         logger.info(f"[SearchStorage] : {file_path}")
 
+    def save_data_analysis(self, analysis: Dict[str, Any]):
+        """保存金融数据分析智能体输出（与 search_analysis 分离）。"""
+        if not self.current_project_dir:
+            return
+
+        file_path = self.current_project_dir / "intermediate" / "03_data_analysis.json"
+        self._save_json(file_path, analysis)
+        logger.info(f"[SearchStorage] 已保存金融数据分析: {file_path}")
+
     def save_content_synthesis(self, synthesis: Dict[str, Any]):
         """TODO: Add docstring."""
         if not self.current_project_dir:
