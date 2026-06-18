@@ -1,4 +1,7 @@
-"""成员 1：输入数据 + 处理（确定性计算，不含 LLM）。"""
+"""[已弃用] 原 CSV/Excel 数据引擎，主路径请使用 search_extractor.py。
+
+保留本文件仅供后续可选扩展（用户上传文件作为补充数据源）。
+"""
 
 import json
 from pathlib import Path

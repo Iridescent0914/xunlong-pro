@@ -1,4 +1,4 @@
-"""金融数据分析智能体（骨架：Mock 数据引擎 + Mock RAG + 可选 LLM 解读）。"""
+"""金融数据分析智能体：综合分析网页搜索输出 + RAG 输出。"""
 
 import json
 from typing import Any, Dict, List
@@ -8,9 +8,9 @@ from loguru import logger
 from ..base import AgentConfig, BaseAgent
 from ...llm import LLMManager, PromptManager
 from .chart_builder import build_charts
-from .data_engine import analyze
 from .rag_client import RAGClient
-from .schemas import DataAnalysisResult, DataFinding, RAGReference
+from .search_extractor import extract_from_search
+from .schemas import DataAnalysisResult, DataFinding, RAGReference, SearchReference
 
 
 class DataAnalysisAgent(BaseAgent):
@@ -22,7 +22,7 @@ class DataAnalysisAgent(BaseAgent):
     ):
         config = AgentConfig(
             name="金融数据分析智能体",
-            description="Excel/DB 金融数据分析，RAG 增强解读，输出结构化结论与图表",
+            description="综合网页搜索结果与 RAG 知识库，输出结构化金融分析结论与图表",
             llm_config_name="default",
             temperature=0.3,
             max_tokens=3000,
@@ -32,15 +32,18 @@ class DataAnalysisAgent(BaseAgent):
 
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         query = input_data.get("query", "")
-        data_sources = input_data.get("data_sources") or {}
+        search_results = input_data.get("search_results") or []
+        use_mock = input_data.get("use_mock", False)
 
         try:
-            stats = await analyze(data_sources)
+            stats = await extract_from_search(search_results, use_mock=use_mock)
             rag_refs = await self.rag_client.retrieve(query)
             charts = build_charts(stats)
             findings = await self._interpret(query, stats, rag_refs)
 
-            source_type = "mock" if data_sources.get("use_mock", True) else _detect_source_type(data_sources)
+            has_real_search = bool(search_results) and not use_mock
+            source_type = "web_rag" if has_real_search else "mock"
+
             result = DataAnalysisResult(
                 status="success",
                 source_type=source_type,
@@ -48,8 +51,9 @@ class DataAnalysisAgent(BaseAgent):
                 tables=[t.model_dump() for t in stats.tables],
                 charts=charts,
                 key_findings=findings,
-                methodology=stats.data_summary or "骨架模式：mock 数据",
+                methodology=stats.data_summary or "基于搜索结果与 RAG 口径综合分析",
                 rag_refs=rag_refs,
+                search_refs=stats.search_refs,
             )
             return {"status": "success", "agent": self.name, "result": result.model_dump()}
 
@@ -61,17 +65,24 @@ class DataAnalysisAgent(BaseAgent):
             )
             return {"status": "error", "agent": self.name, "result": result.model_dump(), "error": str(e)}
 
-    async def _interpret(self, query: str, stats, rag_refs: List[RAGReference]) -> List[DataFinding]:
-        """LLM 解读；骨架阶段失败时返回基于 metrics 的占位结论。"""
+    async def _interpret(
+        self,
+        query: str,
+        stats,
+        rag_refs: List[RAGReference],
+    ) -> List[DataFinding]:
+        """LLM 综合搜索抽取结果与 RAG 上下文生成解读。"""
         try:
             system_prompt = (
-                "你是金融数据分析助手。根据给定的统计指标和 RAG 上下文，"
-                "输出 2-3 条 key_findings。不得编造 metrics 中不存在的数字。"
+                "你是金融数据分析助手。根据网页搜索抽取的 metrics、search_refs 与 RAG 上下文，"
+                "输出 2-3 条 key_findings。不得编造 metrics 中不存在的数字；"
+                "evidence 中应注明搜索来源或 RAG 口径。"
             )
             user_prompt = json.dumps(
                 {
                     "query": query,
                     "metrics": stats.metrics,
+                    "search_refs": [r.model_dump() for r in stats.search_refs],
                     "rag_context": [r.model_dump() for r in rag_refs],
                 },
                 ensure_ascii=False,
@@ -84,25 +95,17 @@ class DataAnalysisAgent(BaseAgent):
         except Exception as e:
             logger.warning(f"[{self.name}] LLM 解读失败，使用占位结论: {e}")
 
-        return _fallback_findings(stats.metrics)
-
-
-def _detect_source_type(data_sources: Dict[str, Any]) -> str:
-    if data_sources.get("excel_path"):
-        return "excel"
-    if data_sources.get("csv_path"):
-        return "csv"
-    if data_sources.get("db_config"):
-        return "database"
-    return "mock"
+        return _fallback_findings(stats.metrics, stats.search_refs)
 
 
 def _parse_findings(response: str) -> List[DataFinding]:
     text = response.strip()
     if "```" in text:
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+        parts = text.split("```")
+        if len(parts) >= 2:
+            text = parts[1]
+            if text.startswith("json"):
+                text = text[4:]
     try:
         data = json.loads(text.strip())
         items = data if isinstance(data, list) else data.get("key_findings", [])
@@ -111,14 +114,18 @@ def _parse_findings(response: str) -> List[DataFinding]:
         return []
 
 
-def _fallback_findings(metrics: Dict[str, Any]) -> List[DataFinding]:
+def _fallback_findings(
+    metrics: Dict[str, Any],
+    search_refs: List[SearchReference],
+) -> List[DataFinding]:
+    source_hint = search_refs[0].title if search_refs else "搜索结果"
     findings = []
     for key, value in list(metrics.items())[:3]:
         findings.append(
             DataFinding(
                 title=key,
                 value=str(value),
-                evidence="来自数据引擎计算结果（骨架占位）",
+                evidence=f"来自网页搜索抽取（来源：{source_hint}）",
             )
         )
     return findings

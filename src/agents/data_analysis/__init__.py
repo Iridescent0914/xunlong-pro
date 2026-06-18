@@ -1,12 +1,13 @@
 """金融数据分析智能体模块。"""
 
 from .data_analysis_agent import DataAnalysisAgent
-from .data_engine import analyze
-from .schemas import DataAnalysisResult, ProcessedStats
+from .search_extractor import extract_from_search
+from .schemas import DataAnalysisResult, ProcessedStats, SearchReference
 
 __all__ = [
     "DataAnalysisAgent",
     "DataAnalysisResult",
     "ProcessedStats",
-    "analyze",
+    "SearchReference",
+    "extract_from_search",
 ]

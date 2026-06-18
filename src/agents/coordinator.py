@@ -328,17 +328,19 @@ class DeepSearchCoordinator:
         return context.get("mode") == "financial_analysis"
 
     async def _data_analyzer_node(self, state: DeepSearchState) -> DeepSearchState:
-        """金融数据分析智能体节点。"""
+        """金融数据分析智能体节点（输入：search_results + RAG）。"""
         if not self._is_financial_analysis_mode(state):
             state["data_analysis_status"] = "skipped"
             return state
 
         try:
-            logger.info("[Coordinator] 执行金融数据分析...")
+            logger.info("[Coordinator] 执行金融数据分析（基于搜索结果 + RAG）...")
+            context = state.get("context") or {}
             result = await self.agents["data_analyzer"].process({
                 "query": state.get("query", ""),
-                "data_sources": state.get("data_sources") or {},
+                "search_results": state.get("search_results", []),
                 "task_analysis": state.get("task_analysis", {}),
+                "use_mock": context.get("use_mock_search", False),
             })
             state["data_analysis_results"] = result.get("result", {})
             state["data_analysis_status"] = result.get("status", "unknown")
@@ -359,10 +361,6 @@ class DeepSearchCoordinator:
         try:
             logger.info("...")
 
-            # 金融数据分析模式：与网页搜索并行（骨架阶段在搜索前 await，可后续改为 gather）
-            if self._is_financial_analysis_mode(state):
-                await self._data_analyzer_node(state)
-            
             task_analysis = state.get("task_analysis", {})
             subtasks = task_analysis.get("subtasks", [])
             
@@ -462,7 +460,11 @@ class DeepSearchCoordinator:
                 "content": f":  {len(all_search_results)} ",
                 "agent": "deep_searcher"
             })
-            
+
+            # 金融数据分析：在搜索完成后，基于 search_results + RAG 执行分析
+            if self._is_financial_analysis_mode(state):
+                await self._data_analyzer_node(state)
+
             state["current_step"] = "search_analyzer"
             
         except Exception as e:
