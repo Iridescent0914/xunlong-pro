@@ -486,7 +486,6 @@ prompts/agents/data_analyzer/system.yaml
 
 | 项 | 说明 |
 |----|------|
-| `xunlong.py` CLI | 尚无 `analyze` 子命令 |
 | `content_synthesizer` | 已传 `data_analysis_results`，未消费 |
 | `report_coordinator.py` | 消费 `data_analysis_results` 写数据分析章节（待实现） |
 | `financial_analyzer.py` | LLM 分析逻辑可继续增强；规则回退为骨架占位 |
@@ -497,6 +496,15 @@ prompts/agents/data_analyzer/system.yaml
 ## 7. 协调器接入细节
 
 ### 7.1 如何启用金融数据分析模式
+
+**命令行（推荐）：**
+
+```bash
+python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
+python xunlong.py analyze "测试" --mock-search -v
+```
+
+**编程调用：**
 
 ```python
 await coordinator.process_query(
@@ -582,12 +590,31 @@ search_results + rag_refs
 
 ### 9.1 当前能否用 CLI 启动？
 
-**不能。** 需通过 `context["output_type"] = "financial_analysis"` 编程调用。
-
-### 9.2 计划中的 CLI 形态
+**可以。** 使用 `analyze` 子命令：
 
 ```bash
 python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
+python xunlong.py analyze "测试" --mock-search -v   # 离线 mock 搜索
+```
+
+等价于编程调用 `context["output_type"] = "financial_analysis"`。
+
+### 9.2 CLI 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `query` | 分析主题（必填） |
+| `--depth` / `-d` | 搜索深度：surface / medium / deep（默认 deep） |
+| `--max-results` / `-m` | 最大搜索结果数（默认 20） |
+| `--output-format` / `-o` | 报告格式 html / md（默认 html） |
+| `--mock-search` | 使用 `fixtures/mock_search.json` 代替真实搜索 |
+| `--verbose` / `-v` | 详细日志 |
+
+### 9.3 计划中的其他形态
+
+```bash
+# 已实现见上方 analyze 子命令；以下为扩展设想
+python xunlong.py analyze "..." --depth deep -o md -v
 ```
 
 不再需要 `--data-file`；数据来自搜索与 RAG。
@@ -605,7 +632,7 @@ python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
 | **数据源 v2（当前）** | **数据分析智能体分析 `search_results` + RAG 输出** |
 | 搜索 | 先搜索，再分析（分析依赖搜索产出） |
 | 代码重构 | `financial_analyzer.py` 独立承担分析；废弃 `search_extractor` / `data_engine` |
-| 落地 | coordinator 与 Agent 已按 v2 接入；下游消费与 CLI 待完善 |
+| 落地 | coordinator 与 Agent 已按 v2 接入；CLI `analyze` 可用；下游报告消费待完善 |
 
 ---
 
@@ -622,8 +649,8 @@ python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
 ### P1 — 体验完善
 
 - [x] `schemas.py` 增加 `search_refs`、`source_type: web_rag`
-- [ ] `xunlong.py` 新增 `analyze` 命令
-- [ ] `README_CN.md` 使用指南补充
+- [x] `xunlong.py` 新增 `analyze` 命令
+- [x] `README_CN.md` 使用指南补充（已含 `analyze` 子命令说明）
 - [ ] 审核：结论 ↔ 搜索来源 ↔ RAG 口径 一致性校验
 
 ### P2 — 扩展
@@ -633,7 +660,15 @@ python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
 
 ---
 
-## 12. 快速验证（目标调用方式）
+## 12. 快速验证
+
+**CLI：**
+
+```bash
+python xunlong.py analyze "分析2024年银行业营收趋势" --mock-search -v
+```
+
+**编程调用：**
 
 ```python
 import asyncio

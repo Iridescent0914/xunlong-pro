@@ -40,12 +40,14 @@ class DataAnalysisAgent(BaseAgent):
 
         try:
             rag_refs = await self.rag_client.retrieve(query)
+            use_llm = input_data.get("use_llm", False)
             analysis = await self.analyzer.analyze(
                 query=query,
                 search_results=search_results,
                 rag_refs=rag_refs,
                 use_mock=use_mock,
-                llm_callback=self.get_llm_response,
+                llm_callback=self.get_llm_response if use_llm else None,
+                use_llm=use_llm,
             )
             charts = build_charts(analysis)
 

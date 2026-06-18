@@ -151,7 +151,11 @@ class ReportCoordinator:
             # Phase 4: 
             logger.info(f"[{self.name}] Phase 4: ")
             final_report = await self._assemble_report(
-                outline, optimized_sections, query, report_type
+                outline,
+                optimized_sections,
+                query,
+                report_type,
+                data_analysis_results=data_analysis_results,
             )
 
             logger.info(f"[{self.name}] : {final_report['word_count']}")
@@ -378,7 +382,8 @@ class ReportCoordinator:
         outline: Dict[str, Any],
         sections: List[Dict[str, Any]],
         query: str,
-        report_type: str
+        report_type: str,
+        data_analysis_results: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """TODO: Add docstring."""
 
@@ -439,6 +444,30 @@ class ReportCoordinator:
                 "level": 2
             })
 
+        data_analysis_charts: List[Dict[str, Any]] = []
+        if data_analysis_results and data_analysis_results.get("status") == "success":
+            from ..data_analysis.report_section import build_data_analysis_section
+
+            da_section = build_data_analysis_section(
+                data_analysis_results,
+                section_index=len(sections_sorted),
+            )
+            if da_section:
+                logger.info(f"[{self.name}] 插入金融数据分析模块")
+                report_parts.append(f"\n## {da_section['title']}\n")
+                report_parts.append(da_section["content"])
+                section_entries.append({
+                    "id": da_section["section_id"],
+                    "title": da_section["title"],
+                    "content": da_section["content"],
+                    "content_html": da_section["content_html"],
+                    "confidence": da_section["confidence"],
+                    "visualizations": [],
+                    "level": 2,
+                    "is_data_analysis": True,
+                })
+                data_analysis_charts = da_section.get("charts", [])
+
         # 
         report_parts.append("\n\n---\n")
         report_parts.append("\n##  \n")
@@ -470,10 +499,11 @@ class ReportCoordinator:
         full_content = "".join(report_parts)
 
         report = {
-            "title": title,
+            "title": outline.get("title", query),
             "content": full_content,
             "type": report_type,
             "sections": section_entries,
+            "data_analysis_charts": data_analysis_charts,
             "metadata": {
                 "query": query,
                 "report_type": report_type,
@@ -481,7 +511,10 @@ class ReportCoordinator:
                 "total_words": total_words,
                 "section_count": len(sections),
                 "average_confidence": round(avg_confidence, 2),
-                "sources_count": len(all_sources)
+                "sources_count": len(all_sources),
+                "has_data_analysis": bool(data_analysis_charts or (
+                    data_analysis_results and data_analysis_results.get("status") == "success"
+                )),
             }
         }
 
@@ -516,6 +549,7 @@ class ReportCoordinator:
                 'date': report.get('metadata', {}).get('generation_time', ''),
                 'keywords': [],  # 
                 'sections': report.get('sections', []),  # sectionsvisualizations
+                'data_analysis_charts': report.get('data_analysis_charts', []),
                 'stats': {
                     'words': report.get('word_count', 0),
                     'paragraphs': report.get('metadata', {}).get('section_count', 0)

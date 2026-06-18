@@ -2,9 +2,13 @@
 
 输入：网页搜索输出（search_results）+ RAG 检索输出（rag_refs）
 输出：AnalysisOutput（metrics / tables / key_findings / methodology）
+
+默认走算法路径：结构化抽取 → 指标计算 → 建表；
+LLM 仅作为可选补充（use_llm=True 时启用）。
 """
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional
@@ -12,7 +16,9 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 from loguru import logger
 
 from .analysis_output import AnalysisOutput
+from .metrics_engine import compute_analysis
 from .schemas import DataFinding, DataTable, RAGReference, SearchReference
+from .search_extractor import extract_from_search_results
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MOCK_SEARCH_PATH = PROJECT_ROOT / "fixtures" / "mock_search.json"
@@ -22,7 +28,7 @@ LLMCallback = Callable[[str, str], Awaitable[str]]
 
 
 class FinancialAnalyzer:
-    """金融数据分析：综合 search_results 与 rag_refs 产出结构化分析结果。"""
+    """金融数据分析：search_results + rag_refs → 算法计算 → 结构化结果。"""
 
     async def analyze(
         self,
@@ -31,16 +37,21 @@ class FinancialAnalyzer:
         rag_refs: List[RAGReference],
         use_mock: bool = False,
         llm_callback: Optional[LLMCallback] = None,
+        use_llm: Optional[bool] = None,
     ) -> AnalysisOutput:
         results = _resolve_search_results(search_results, use_mock)
         search_refs = _build_search_refs(results)
-        search_text = _combine_search_text(results)
+
+        if use_llm is None:
+            use_llm = os.getenv("FINANCIAL_ANALYSIS_USE_LLM", "false").lower() == "true"
 
         logger.info(
             f"[FinancialAnalyzer] 开始分析：{len(results)} 条搜索 + {len(rag_refs)} 条 RAG"
+            f"（模式={'LLM' if use_llm else '算法'}）"
         )
 
-        if llm_callback:
+        if use_llm and llm_callback:
+            search_text = _combine_search_text(results)
             llm_output = await _analyze_with_llm(
                 query, search_text, search_refs, rag_refs, llm_callback
             )
@@ -48,8 +59,38 @@ class FinancialAnalyzer:
                 llm_output.rag_refs = rag_refs
                 llm_output.search_refs = search_refs
                 return llm_output
+            logger.warning("[FinancialAnalyzer] LLM 分析失败，回退算法路径")
 
-        return _analyze_with_rules(results, search_refs, rag_refs, search_text)
+        return _analyze_with_algorithm(results, search_refs, rag_refs)
+
+
+def _analyze_with_algorithm(
+    search_results: List[Dict[str, Any]],
+    search_refs: List[SearchReference],
+    rag_refs: List[RAGReference],
+) -> AnalysisOutput:
+    """算法主路径：抽取 → 计算 → 建表 → 结论。"""
+    points = extract_from_search_results(search_results)
+    metrics, tables, findings, methodology = compute_analysis(
+        points, rag_refs, search_count=len(search_results)
+    )
+
+    if not metrics and not tables:
+        logger.info("[FinancialAnalyzer] 算法未抽取到有效数据，使用 mock_stats 回退")
+        return _analyze_with_mock_fallback(search_results, search_refs, rag_refs, methodology)
+
+    logger.info(
+        f"[FinancialAnalyzer] 算法分析完成：{len(points)} 个数据点，"
+        f"{len(metrics)} 个指标，{len(tables)} 张表"
+    )
+    return AnalysisOutput(
+        metrics=metrics,
+        tables=tables,
+        key_findings=findings,
+        methodology=methodology,
+        search_refs=search_refs,
+        rag_refs=rag_refs,
+    )
 
 
 def _resolve_search_results(
@@ -72,6 +113,35 @@ def _load_mock_stats_raw() -> Dict[str, Any]:
     if not MOCK_STATS_PATH.exists():
         return {"metrics": {}, "tables": [], "data_summary": "mock fallback"}
     return json.loads(MOCK_STATS_PATH.read_text(encoding="utf-8"))
+
+
+def _analyze_with_mock_fallback(
+    search_results: List[Dict[str, Any]],
+    search_refs: List[SearchReference],
+    rag_refs: List[RAGReference],
+    base_methodology: str,
+) -> AnalysisOutput:
+    mock_raw = _load_mock_stats_raw()
+    metrics = mock_raw.get("metrics", {})
+    tables = [DataTable(**t) for t in mock_raw.get("tables", [])]
+    source_hint = search_refs[0].title if search_refs else "mock_stats.json"
+    findings = [
+        DataFinding(
+            title=k,
+            value=str(v),
+            evidence=f"mock 回退数据，参考来源：{source_hint}",
+        )
+        for k, v in list(metrics.items())[:3]
+    ]
+    methodology = base_methodology + "（未抽取到有效数值，回退 mock_stats）"
+    return AnalysisOutput(
+        metrics=metrics,
+        tables=tables,
+        key_findings=findings,
+        methodology=methodology,
+        search_refs=search_refs,
+        rag_refs=rag_refs,
+    )
 
 
 def _build_search_refs(search_results: List[Dict[str, Any]]) -> List[SearchReference]:
@@ -143,59 +213,8 @@ async def _analyze_with_llm(
             logger.info("[FinancialAnalyzer] LLM 分析完成")
             return parsed
     except Exception as e:
-        logger.warning(f"[FinancialAnalyzer] LLM 分析失败，回退规则分析: {e}")
+        logger.warning(f"[FinancialAnalyzer] LLM 分析失败: {e}")
     return None
-
-
-def _analyze_with_rules(
-    search_results: List[Dict[str, Any]],
-    search_refs: List[SearchReference],
-    rag_refs: List[RAGReference],
-    search_text: str,
-) -> AnalysisOutput:
-    metrics = _extract_metrics_from_text(search_text)
-    mock_raw = _load_mock_stats_raw()
-    tables = [DataTable(**t) for t in mock_raw.get("tables", [])]
-
-    if not metrics:
-        metrics = mock_raw.get("metrics", {})
-
-    source_hint = search_refs[0].title if search_refs else "搜索结果"
-    findings = [
-        DataFinding(
-            title=k,
-            value=str(v),
-            evidence=f"从搜索正文抽取，来源：{source_hint}",
-        )
-        for k, v in list(metrics.items())[:3]
-    ]
-
-    methodology = (
-        f"基于 {len(search_results)} 条搜索结果与 {len(rag_refs)} 条 RAG 片段分析"
-        f"（规则回退模式）"
-    )
-    return AnalysisOutput(
-        metrics=metrics,
-        tables=tables,
-        key_findings=findings,
-        methodology=methodology,
-        search_refs=search_refs,
-        rag_refs=rag_refs,
-    )
-
-
-def _extract_metrics_from_text(text: str) -> Dict[str, Any]:
-    metrics: Dict[str, Any] = {}
-    patterns = [
-        (r"同比增长\s*(\d+(?:\.\d+)?)\s*%", "revenue_yoy", 100),
-        (r"毛利率\s*(\d+(?:\.\d+)?)\s*%", "gross_margin", 100),
-        (r"资产负债率\s*(\d+(?:\.\d+)?)\s*%", "debt_ratio", 100),
-    ]
-    for pattern, key, divisor in patterns:
-        match = re.search(pattern, text)
-        if match:
-            metrics[key] = float(match.group(1)) / divisor
-    return metrics
 
 
 def _parse_analysis_response(response: str) -> Optional[AnalysisOutput]:

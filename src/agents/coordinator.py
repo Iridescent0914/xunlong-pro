@@ -1,10 +1,15 @@
 """ - """
 
 import asyncio
+import json
+from pathlib import Path
 from typing import Dict, Any, List, Optional, TypedDict
 from dataclasses import dataclass
 from datetime import datetime
 from loguru import logger
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+MOCK_SEARCH_PATH = PROJECT_ROOT / "fixtures" / "mock_search.json"
 
 try:
     from langgraph.graph import StateGraph, END
@@ -327,6 +332,18 @@ class DeepSearchCoordinator:
         context = state.get("context") or {}
         return context.get("mode") == "financial_analysis"
 
+    @staticmethod
+    def _load_mock_search_results() -> List[Dict[str, Any]]:
+        if not MOCK_SEARCH_PATH.exists():
+            logger.warning(f"Mock 搜索文件不存在: {MOCK_SEARCH_PATH}")
+            return []
+        return json.loads(MOCK_SEARCH_PATH.read_text(encoding="utf-8"))
+
+    async def _run_financial_data_analysis(self, state: DeepSearchState) -> None:
+        """搜索完成后执行金融数据分析（search_results + RAG）。"""
+        if self._is_financial_analysis_mode(state):
+            await self._data_analyzer_node(state)
+
     async def _data_analyzer_node(self, state: DeepSearchState) -> DeepSearchState:
         """金融数据分析智能体节点（输入：search_results + RAG）。"""
         if not self._is_financial_analysis_mode(state):
@@ -360,6 +377,21 @@ class DeepSearchCoordinator:
         """TODO: Add docstring."""
         try:
             logger.info("...")
+
+            context = state.get("context") or {}
+            if self._is_financial_analysis_mode(state) and context.get("use_mock_search"):
+                mock_results = self._load_mock_search_results()
+                state["search_results"] = mock_results
+                state["search_status"] = "success" if mock_results else "failed"
+                state["total_results"] = len(mock_results)
+                state["messages"].append({
+                    "role": "assistant",
+                    "content": f"使用 Mock 搜索数据: {len(mock_results)} 条",
+                    "agent": "deep_searcher",
+                })
+                await self._data_analyzer_node(state)
+                state["current_step"] = "search_analyzer"
+                return state
 
             task_analysis = state.get("task_analysis", {})
             subtasks = task_analysis.get("subtasks", [])
