@@ -85,14 +85,16 @@ RAG 知识库 → rag_refs（指标口径/术语/规则）
 
 ### 3.3 数据结构
 
-**成员 1 产出（`ExtractedStats` / 原 `ProcessedStats`）— 从搜索内容中抽取：**
+**`FinancialAnalyzer` 内部分析产出（`AnalysisOutput`）— 从 search_results + rag_refs 综合得出：**
 
 ```json
 {
   "metrics": {"revenue_yoy": 0.23, "gross_margin": 0.41},
   "tables": [{"title": "分季度营收", "columns": [...], "rows": [...]}],
-  "data_summary": "基于 5 条搜索结果与 RAG 口径归纳",
-  "source_urls": ["https://...", "https://..."]
+  "key_findings": [{"title": "...", "value": "...", "evidence": "..."}],
+  "methodology": "基于 5 条搜索结果与 RAG 口径归纳",
+  "search_refs": [{"title": "...", "url": "...", "snippet": "..."}],
+  "rag_refs": [{"content": "...", "source": "...", "score": 0.95}]
 }
 ```
 
@@ -112,7 +114,7 @@ RAG 知识库 → rag_refs（指标口径/术语/规则）
 }
 ```
 
-定义文件：`src/agents/data_analysis/schemas.py`（**待增 `search_refs` 字段**）
+定义文件：`src/agents/data_analysis/schemas.py`（`DataAnalysisResult` 已含 `search_refs`、`source_type: web_rag`）
 
 ---
 
@@ -273,14 +275,12 @@ state["synthesis_results"] = result.get("result", {})
 
 ```
 search_results ──┐
-                 ├──→ extract_from_search()（成员 1）→ metrics, tables
-rag_refs ────────┘
+                 ├──→ FinancialAnalyzer.analyze()（成员 1）
+rag_refs ────────┘         → metrics, tables, key_findings, search_refs
                  ↓
          build_charts()（成员 2）→ charts[]
                  ↓
-         LLM _interpret()（成员 2，结合 metrics + rag_refs + search_refs）
-                 ↓
-         DataAnalysisResult
+         DataAnalysisResult（成员 2 组装）
 ```
 
 ### 4.5 协调器 → 搜索智能体 → `search_results`
@@ -417,13 +417,13 @@ flowchart TB
 
 ### 5.2 数据分析组两人分工（推荐）
 
-| | 成员 1：搜索内容抽取 | 成员 2：综合分析 + 输出 |
+| | 成员 1：金融分析核心 | 成员 2：编排 + 输出 |
 |--|---------------------|------------------------|
-| **负责** | 从 `search_results` 抽取 metrics、tables、来源引用 | RAG 对接、LLM 综合解读、图表 spec、Agent 主流程 |
-| **主要文件** | `search_extractor.py`（新建，替代原 `data_engine` 主职责） | `data_analysis_agent.py`、`rag_client.py`、`chart_builder.py` |
-| **输入** | `search_results[]` | `search_results` + `rag_refs` + 成员 1 抽取结果 |
-| **不做** | LLM 长文撰写、RAG 建库 | 网页爬虫（搜索智能体做） |
-| **Day 1 交付** | script：`mock_search.json` → metrics JSON | script：mock → 完整 `data_analysis_results.json` |
+| **负责** | 从 `search_results` + `rag_refs` 抽取 metrics、tables、key_findings | RAG 对接、图表 spec、Agent 编排与结果组装 |
+| **主要文件** | `financial_analyzer.py`、`analysis_output.py` | `data_analysis_agent.py`、`rag_client.py`、`chart_builder.py` |
+| **输入** | `search_results[]` + `rag_refs[]` | 调用 `FinancialAnalyzer`，再生成 charts |
+| **不做** | 报告长文撰写、RAG 建库 | 网页爬虫（搜索智能体做） |
+| **Day 1 交付** | script：`mock_search.json` → `AnalysisOutput` JSON | script：mock → 完整 `data_analysis_results.json` |
 
 **共建**：`schemas.py` + `fixtures/mock_search.json` + `fixtures/mock_rag.json`
 
@@ -455,38 +455,41 @@ Day 2：Mock 替换为真实搜索产出 + 真实 RAG API。
 ```
 src/agents/data_analysis/
 ├── __init__.py
-├── schemas.py              # 输出契约；待增 search_refs
-├── search_extractor.py     # 成员 1：从 search_results 抽取结构化数据
+├── schemas.py              # 输出契约（DataAnalysisResult、SearchReference 等）
+├── analysis_output.py      # 内部分析结果模型（AnalysisOutput）
+├── financial_analyzer.py   # 成员 1：search_results + rag_refs → AnalysisOutput
 ├── rag_client.py           # RAG 客户端
 ├── chart_builder.py        # 成员 2：ECharts spec
-└── data_analysis_agent.py  # 主智能体：输入 search_results + RAG
+└── data_analysis_agent.py  # 成员 2：编排 RAG → 分析 → 图表 → 输出
 
 fixtures/
-├── mock_search.json        # 模拟 search_results（新）
+├── mock_search.json        # 模拟 search_results
 ├── mock_rag.json           # RAG 返回样例
-└── mock_stats.json         # 过渡期可保留，后续废弃
+└── mock_stats.json         # 规则回退时的 metrics/tables 样例
 
 prompts/agents/data_analyzer/system.yaml
 ```
 
-### 6.2 需调整的代码（相对当前骨架）
+> 已废弃并删除：`search_extractor.py`、`data_engine.py`（职责合并至 `financial_analyzer.py`）。
 
-| 文件 | 调整方向 |
-|------|----------|
-| `coordinator.py` | 数据分析节点改到 **搜索完成之后**；向 `data_analyzer` 传入 `search_results` |
-| `data_analysis_agent.py` | `process()` 增加 `search_results` 参数；主路径不再依赖 `data_sources` |
-| `data_engine.py` | 重构为 `search_extractor.py`，或改为包装搜索抽取逻辑 |
-| `schemas.py` | `source_type` 增加 `web_rag`；增加 `search_refs` 字段 |
-| `report_coordinator.py` | 消费 `data_analysis_results` 写数据分析章节（待实现） |
+### 6.2 已完成改动
+
+| 文件 | 状态 |
+|------|------|
+| `financial_analyzer.py` | ✅ 新建，承担 search + RAG 综合分析 |
+| `data_analysis_agent.py` | ✅ 瘦身为编排层，调用 `FinancialAnalyzer.analyze()` |
+| `coordinator.py` | ✅ 搜索完成后调用 `_data_analyzer_node`，传入 `search_results` |
+| `schemas.py` | ✅ 含 `search_refs`、`source_type: web_rag` |
+| `search_extractor.py` / `data_engine.py` | ✅ 已删除 |
 
 ### 6.3 尚未改动（待办）
 
 | 项 | 说明 |
 |----|------|
-| 协调器触发顺序 | 当前骨架在搜索 **前** 调分析，需改为搜索 **后** |
-| `data_analysis_agent` 输入 | 当前传 `data_sources`，需改为传 `search_results` |
 | `xunlong.py` CLI | 尚无 `analyze` 子命令 |
 | `content_synthesizer` | 已传 `data_analysis_results`，未消费 |
+| `report_coordinator.py` | 消费 `data_analysis_results` 写数据分析章节（待实现） |
+| `financial_analyzer.py` | LLM 分析逻辑可继续增强；规则回退为骨架占位 |
 | CSV/Excel 路径 | 降为 P2 可选扩展，非主方案 |
 
 ---
@@ -543,11 +546,12 @@ storage/{project_id}/intermediate/
 
 ## 8. 各模块职责（目标方案）
 
-### 8.1 `search_extractor.py`（成员 1）
+### 8.1 `financial_analyzer.py`（成员 1）
 
-- 输入：`search_results[]`
-- 输出：`metrics`、`tables`、`search_refs`（来源 URL/标题）
-- 手段：规则 + LLM 辅助抽取（数字必须标注来源片段）
+- 输入：`query`、`search_results[]`、`rag_refs[]`、可选 `llm_callback`
+- 输出：`AnalysisOutput`（`metrics`、`tables`、`key_findings`、`methodology`、`search_refs`、`rag_refs`）
+- 手段：优先 LLM 综合分析；失败时规则回退（正则抽 metrics + `mock_stats.json` 补 tables）
+- 内部分析模型见 `analysis_output.py`
 
 ### 8.2 `rag_client.py`（RAG 组 / 成员 2）
 
@@ -557,15 +561,14 @@ storage/{project_id}/intermediate/
 
 ### 8.3 `data_analysis_agent.py`（成员 2）
 
-目标流程：
+当前流程：
 
 ```
-search_results
-    → search_extractor()     # 成员 1
-rag_client.retrieve(query)   # RAG 组
-    → build_charts()
-    → LLM _interpret(search + rag)
-    → DataAnalysisResult
+rag_client.retrieve(query)              # RAG 组
+search_results + rag_refs
+    → FinancialAnalyzer.analyze()       # 成员 1
+    → build_charts(analysis)            # 成员 2
+    → DataAnalysisResult.model_dump()   # 写入 state
 ```
 
 ### 8.4 `chart_builder.py`
@@ -601,7 +604,8 @@ python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
 | 数据源 v1 | Excel/CSV + RAG（成员 1 读文件） |
 | **数据源 v2（当前）** | **数据分析智能体分析 `search_results` + RAG 输出** |
 | 搜索 | 先搜索，再分析（分析依赖搜索产出） |
-| 落地 | 骨架已建，需按 v2 调整 coordinator 与 Agent 输入 |
+| 代码重构 | `financial_analyzer.py` 独立承担分析；废弃 `search_extractor` / `data_engine` |
+| 落地 | coordinator 与 Agent 已按 v2 接入；下游消费与 CLI 待完善 |
 
 ---
 
@@ -609,15 +613,15 @@ python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
 
 ### P0 — 能 demo
 
-- [ ] 协调器：数据分析节点移到搜索 **之后**，传入 `search_results`
-- [ ] 成员 1：实现 `search_extractor.py` + `fixtures/mock_search.json`
-- [ ] RAG 组：`retrieve()` API 与 `mock_rag.json` 同结构
-- [ ] 成员 2：`data_analysis_agent` 改为消费 search + RAG
+- [x] 协调器：数据分析节点移到搜索 **之后**，传入 `search_results`
+- [x] 成员 1：实现 `financial_analyzer.py` + `fixtures/mock_search.json`
+- [ ] RAG 组：`retrieve()` API 与 `mock_rag.json` 同结构（骨架 mock 已有）
+- [x] 成员 2：`data_analysis_agent` 编排 search + RAG → 分析 → 图表
 - [ ] `ReportCoordinator` 消费 `data_analysis_results` 写章节
 
 ### P1 — 体验完善
 
-- [ ] `schemas.py` 增加 `search_refs`、`source_type: web_rag`
+- [x] `schemas.py` 增加 `search_refs`、`source_type: web_rag`
 - [ ] `xunlong.py` 新增 `analyze` 命令
 - [ ] `README_CN.md` 使用指南补充
 - [ ] 审核：结论 ↔ 搜索来源 ↔ RAG 口径 一致性校验
@@ -653,4 +657,4 @@ asyncio.run(main())
 
 ---
 
-*文档版本：v2 — 数据分析智能体输入改为网页搜索输出 + RAG 输出。*
+*文档版本：v3 — 分析逻辑独立为 `financial_analyzer.py`；`data_analysis_agent` 负责编排。*

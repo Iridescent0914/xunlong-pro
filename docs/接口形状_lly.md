@@ -9,15 +9,16 @@
 
 ## 概览
 
-`data_analysis_results` 是金融数据分析智能体写入协调器 state 的完整输出。核心由五块组成：
+`data_analysis_results` 是金融数据分析智能体写入协调器 state 的完整输出。核心由六块组成：
 
 | 字段 | 一句话 |
 |------|--------|
-| `metrics` | 算出来的 KPI 数字 |
-| `tables` | 算出来的明细表 |
+| `metrics` | 从搜索内容抽取 / 综合得出的 KPI 数字 |
+| `tables` | 结构化明细表 |
 | `charts` | 由数字生成的图（ECharts 配置） |
-| `key_findings` | 用自然语言说清的结论（数字必须来自 metrics） |
-| `rag_refs` | 解释这些数字时参考的知识库片段 |
+| `key_findings` | 用自然语言说清的结论（数字须可追溯至搜索或 metrics） |
+| `search_refs` | 分析所依据的网页搜索来源 |
+| `rag_refs` | 解释数字时参考的知识库片段 |
 
 ---
 
@@ -26,13 +27,14 @@
 ```json
 {
   "status": "success",
-  "source_type": "mock",
+  "source_type": "web_rag",
   "methodology": "...",
   "message": null,
   "metrics": { },
   "tables": [ ],
   "charts": [ ],
   "key_findings": [ ],
+  "search_refs": [ ],
   "rag_refs": [ ]
 }
 ```
@@ -40,8 +42,8 @@
 | 区块 | 字段 | 说明 |
 |------|------|------|
 | 元信息 | `status` | `success` \| `error` \| `skipped` |
-| 元信息 | `source_type` | `mock` \| `excel` \| `csv` \| `database` |
-| 元信息 | `methodology` | 分析口径 / 数据说明 |
+| 元信息 | `source_type` | `web_rag`（真实搜索）\| `mock` \| `excel` \| `csv` \| `database` |
+| 元信息 | `methodology` | 分析口径 / 数据来源说明 |
 | 元信息 | `message` | 仅 `error` 时有错误信息 |
 | 核心数据 | `metrics` ~ `rag_refs` | 见下文各节 |
 
@@ -51,11 +53,11 @@
 
 ### 是什么
 
-从 Excel / CSV / DB **算出来的标量指标**，结构为「指标名 → 数值」的字典。
+从 **网页搜索正文** 抽取或 LLM 综合得出的标量指标，结构为「指标名 → 数值」的字典。
 
 ### 谁产生
 
-成员 1 的 `data_engine.analyze()`（代码计算，**不让 LLM 编数字**）。
+`FinancialAnalyzer.analyze()`（`financial_analyzer.py`）。优先 LLM 路径；失败时规则回退（正则 + `mock_stats.json`），**不让 LLM 凭空编数字**。
 
 ### 示例
 
@@ -95,7 +97,7 @@
 
 ### 谁产生
 
-成员 1 的 `data_engine`（pandas 聚合后输出）。
+`FinancialAnalyzer.analyze()`（LLM 输出或规则回退时读 `fixtures/mock_stats.json`）。
 
 ### 示例
 
@@ -144,7 +146,7 @@
 
 ### 谁产生
 
-成员 2 的 `chart_builder.build_charts()`，基于 `metrics` / `tables` 生成。
+成员 2 的 `chart_builder.build_charts()`，基于 `FinancialAnalyzer` 产出的 `metrics` / `tables` 生成。
 
 ### 示例
 
@@ -180,7 +182,7 @@
 
 | | 本字段 `charts` | 项目内 `DataVisualizer` |
 |--|----------------|------------------------|
-| 数据来源 | 真实 Excel/DB 统计 | 已写好的报告文字 |
+| 数据来源 | search_results + RAG 综合分析 | 已写好的报告文字 |
 | 生成方向 | 数据 → 图 | 文字 → 反推图 |
 
 ---
@@ -193,7 +195,7 @@
 
 ### 谁产生
 
-成员 2 的 LLM + RAG（`_interpret()`）；LLM 失败时用 `metrics` 生成占位条目。
+`FinancialAnalyzer.analyze()` 内 LLM 路径；LLM 失败时由规则回退根据 `metrics` 生成占位条目。
 
 ### 示例
 
@@ -202,12 +204,12 @@
   {
     "title": "营收同比增长",
     "value": "23%",
-    "evidence": "基于 metrics.revenue_yoy=0.23，且高于行业平均..."
+    "evidence": "据搜索结果「2024年银行业财报解读」与 RAG 毛利率口径综合判断"
   },
   {
     "title": "gross_margin",
     "value": "0.41",
-    "evidence": "来自数据引擎计算结果（骨架占位）"
+    "evidence": "从搜索正文抽取，来源：2024年银行业财报解读"
   }
 ]
 ```
@@ -218,15 +220,15 @@
 |--------|------|------|
 | `title` | 结论主题 | 如「营收同比增长」「毛利率」 |
 | `value` | 结论值（字符串） | 如 `"23%"`、`"41%"`；须能对应 `metrics` |
-| `evidence` | 依据说明 | 引用 metrics、表格或 RAG 口径 |
+| `evidence` | 依据说明 | 引用 `search_refs` 标题、`metrics` 或 RAG 口径 |
 
 ### 与 `analysis_results.key_insights` 的区别
 
 | | `data_analysis_results.key_findings` | `analysis_results.key_insights` |
 |--|--------------------------------------|--------------------------------|
-| 来源 | Excel/DB 真实计算 | 网页文章摘要 |
+| 来源 | search_results + RAG 综合分析 | 网页文章摘要（轻量） |
 | 结构 | `{title, value, evidence}` | 通常是字符串列表 |
-| 数字要求 | **必须**有 metrics 支撑 | 无硬性数值约束 |
+| 数字要求 | **必须**能追溯到搜索或 metrics | 无硬性数值约束 |
 
 ### 设计意图
 
@@ -279,39 +281,81 @@ RAG 组的 `retrieve(query)`，经 `rag_client` 调用；骨架阶段读 `fixtur
 
 ---
 
-## 6. 其他顶层字段
+## 6. `search_refs` — 网页搜索来源引用
+
+### 是什么
+
+分析所依据的 **Top 搜索结果** 摘要，用于追溯数字与结论的网页出处。
+
+### 谁产生
+
+`FinancialAnalyzer.analyze()` 内 `_build_search_refs()`，从传入的 `search_results` 取前 5 条。
+
+### 示例
+
+```json
+[
+  {
+    "title": "2024年银行业财报解读",
+    "url": "https://example.com/report",
+    "snippet": "2024年银行业营收同比增长23%..."
+  }
+]
+```
+
+### 子字段
+
+| 子字段 | 含义 |
+|--------|------|
+| `title` | 搜索结果标题 |
+| `url` | 来源链接 |
+| `snippet` | 摘要或正文片段（截断至约 300 字） |
+
+### 用途
+
+1. **分析阶段**：注入 LLM prompt，约束数字须来自这些来源
+2. **报告阶段**（待实现）：生成智能体可引用 URL / 标题作脚注
+3. **审计 / 答辩**：说明结论有网页依据，不是凭空生成
+
+> **注意**：`search_refs` 是来源记录；结构化结论在 `key_findings`，口径依据在 `rag_refs`。
+
+---
+
+## 7. 其他顶层字段
 
 | 字段 | 含义 | 示例 |
 |------|------|------|
 | `status` | 本次分析是否成功 | `"success"` / `"error"` / `"skipped"` |
-| `source_type` | 数据来源类型 | `"mock"`、`"excel"`、`"csv"`、`"database"` |
-| `methodology` | 分析口径、样本说明 | `"共 4 个季度，按季度聚合，剔除空值"` |
+| `source_type` | 数据来源类型 | `"web_rag"`（有真实搜索）、`"mock"`（无搜索或用 mock） |
+| `methodology` | 分析口径、样本说明 | `"基于 5 条搜索结果与 3 条 RAG 片段分析"` |
 | `message` | 错误信息 | 仅 `status=error` 时有值 |
 
 ---
 
-## 7. 内部组装流程
+## 8. 内部组装流程
 
 ```
-Excel / CSV / DB
-    ↓  data_engine（成员 1）
-metrics + tables
-    ↓  rag_client.retrieve（RAG 组）
-rag_refs
-    ↓  chart_builder（成员 2）
-charts
-    ↓  LLM _interpret（成员 2，结合 metrics + rag_refs）
-key_findings
-    ↓  组装 DataAnalysisResult
-data_analysis_results
-    →  state
-    →  03_data_analysis.json
-    →  synthesizer / report（待消费）
+search_results[]                    rag_client.retrieve(query)
+        ↓                                      ↓
+        └──────────→ FinancialAnalyzer.analyze() ←──────────┘
+                         → AnalysisOutput
+                              metrics + tables + key_findings
+                              search_refs + rag_refs
+                         ↓
+                    build_charts()（chart_builder）
+                         → charts
+                         ↓
+                    DataAnalysisAgent 组装 DataAnalysisResult
+                         ↓
+                    data_analysis_results
+                         →  state
+                         →  03_data_analysis.json
+                         →  synthesizer / report（待消费）
 ```
 
 ---
 
-## 8. 完整 Mock 示例
+## 9. 完整 Mock 示例
 
 ```json
 {
@@ -346,10 +390,17 @@ data_analysis_results
     {
       "title": "revenue_yoy",
       "value": "0.23",
-      "evidence": "来自数据引擎计算结果（骨架占位）"
+      "evidence": "从搜索正文抽取，来源：2024年银行业财报解读"
     }
   ],
-  "methodology": "共 4 个季度，2024 年营收逐季增长，mock 样例数据",
+  "methodology": "基于 5 条搜索结果与 3 条 RAG 片段分析（规则回退模式）",
+  "search_refs": [
+    {
+      "title": "2024年银行业财报解读",
+      "url": "https://example.com/report",
+      "snippet": "2024年银行业营收同比增长23%..."
+    }
+  ],
   "rag_refs": [
     {
       "content": "毛利率 = (营业收入 - 营业成本) / 营业收入...",
@@ -365,6 +416,7 @@ data_analysis_results
 
 ## 相关文档
 
-- [`docs/FINANCIAL_DATA_ANALYSIS.md`](docs/FINANCIAL_DATA_ANALYSIS.md) — 完整设计与接口说明
-- [`src/agents/data_analysis/schemas.py`](src/agents/data_analysis/schemas.py) — Pydantic 模型定义
-- [`fixtures/mock_stats.json`](fixtures/mock_stats.json) / [`fixtures/mock_rag.json`](fixtures/mock_rag.json) — Mock 样例
+- [`docs/金融数据分析流程_lly.md`](金融数据分析流程_lly.md) — 设计、分工与协调器接入
+- [`src/agents/data_analysis/schemas.py`](../src/agents/data_analysis/schemas.py) — Pydantic 模型定义
+- [`src/agents/data_analysis/financial_analyzer.py`](../src/agents/data_analysis/financial_analyzer.py) — 分析核心逻辑
+- [`fixtures/mock_search.json`](../fixtures/mock_search.json) / [`fixtures/mock_rag.json`](../fixtures/mock_rag.json) / [`fixtures/mock_stats.json`](../fixtures/mock_stats.json) — Mock 样例
