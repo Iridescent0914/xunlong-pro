@@ -4,7 +4,7 @@ import pandas as pd
 import pathlib
 import asyncio
 
-csv_path = r"D:\MyData\BD-大三下\chinese information processing\000001.SZ.csv"
+csv_path = r"./000001.SZ.csv"
 # pandas 读取并转换为 JSON 字符串，避免 int64 问题
 df = pd.read_csv(csv_path, encoding='gbk')
 df = df.convert_dtypes().infer_objects()
