@@ -19,35 +19,62 @@ class ExtractedPoint:
     raw_text: str
 
 
+# 支持千分位逗号（如 8,621亿）；标签与数字之间的间隔不得含数字/逗号，避免把「8,621」拆成 621
+_NUM_CAPTURE = r"(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
+_LABEL_GAP = r"[^。\n\d,]{0,15}?"
+
+
+def _parse_numeric_value(raw: str) -> float:
+    return float(raw.replace(",", ""))
+
+
 _SCALAR_PATTERNS: List[Tuple[str, str, str, str, int, float]] = [
-    (r"销售收入[^。\n]{0,20}?(\d+(?:\.\d+)?)\s*亿", "revenue", "销售收入", "亿元", 1, 1),
-    (r"营业收入[^。\n]{0,20}?(\d+(?:\.\d+)?)\s*亿", "revenue", "营业收入", "亿元", 1, 1),
-    (r"营收[^。\n]{0,20}?(\d+(?:\.\d+)?)\s*亿", "revenue", "营收", "亿元", 1, 1),
-    (r"营收.*?同比(?:增长|增幅)?\s*(\d+(?:\.\d+)?)\s*%", "revenue_yoy", "营收同比增长", "%", 1, 100),
-    (r"收入.*?同比(?:增长|增幅)?\s*(\d+(?:\.\d+)?)\s*%", "revenue_yoy", "营收同比增长", "%", 1, 100),
-    (r"净利润.*?同比(?:增长|增幅)?\s*(\d+(?:\.\d+)?)\s*%", "net_profit_yoy", "净利润同比增长", "%", 1, 100),
-    (r"归母净利润.*?同比(?:增长|增幅)?\s*(\d+(?:\.\d+)?)\s*%", "net_profit_yoy", "净利润同比增长", "%", 1, 100),
-    (r"毛利率\s*(\d+(?:\.\d+)?)\s*%", "gross_margin", "毛利率", "%", 1, 100),
-    (r"资产负债率\s*(\d+(?:\.\d+)?)\s*%", "debt_ratio", "资产负债率", "%", 1, 100),
-    (r"贷款总额增幅\s*(?:达)?\s*(\d+(?:\.\d+)?)\s*%", "loan_growth", "贷款总额增幅", "%", 1, 100),
-    (r"总资产.*?增长\s*(\d+(?:\.\d+)?)\s*%", "asset_growth", "总资产增幅", "%", 1, 100),
+    (rf"销售收入{_LABEL_GAP}{_NUM_CAPTURE}\s*亿", "revenue", "销售收入", "亿元", 1, 1),
+    (rf"营业收入{_LABEL_GAP}{_NUM_CAPTURE}\s*亿", "revenue", "营业收入", "亿元", 1, 1),
+    (rf"营收{_LABEL_GAP}{_NUM_CAPTURE}\s*亿", "revenue", "营收", "亿元", 1, 1),
+    (rf"营收.*?同比(?:增长|增幅)?\s*{_NUM_CAPTURE}\s*%", "revenue_yoy", "营收同比增长", "%", 1, 100),
+    (rf"收入.*?同比(?:增长|增幅)?\s*{_NUM_CAPTURE}\s*%", "revenue_yoy", "营收同比增长", "%", 1, 100),
+    (rf"净利润.*?同比(?:增长|增幅)?\s*{_NUM_CAPTURE}\s*%", "net_profit_yoy", "净利润同比增长", "%", 1, 100),
+    (rf"归母净利润.*?同比(?:增长|增幅)?\s*{_NUM_CAPTURE}\s*%", "net_profit_yoy", "净利润同比增长", "%", 1, 100),
+    (rf"毛利率\s*{_NUM_CAPTURE}\s*%", "gross_margin", "毛利率", "%", 1, 100),
+    (rf"资产负债率\s*{_NUM_CAPTURE}\s*%", "debt_ratio", "资产负债率", "%", 1, 100),
+    (rf"贷款总额增幅\s*(?:达)?\s*{_NUM_CAPTURE}\s*%", "loan_growth", "贷款总额增幅", "%", 1, 100),
+    (rf"总资产.*?增长\s*{_NUM_CAPTURE}\s*%", "asset_growth", "总资产增幅", "%", 1, 100),
 ]
 
 _GENERIC_YOY_PATTERN = re.compile(
-    r"同比(?:增长|增幅)(?:达)?\s*(\d+(?:\.\d+)?)\s*%"
+    rf"同比(?:增长|增幅)(?:达)?\s*{_NUM_CAPTURE}\s*%"
 )
 
 _ABSOLUTE_PATTERNS: List[Tuple[str, str, str, str, int]] = [
     (
-        r"(?:营收|销售收入|营业收入)(?:为|达|突破|约)?[^。\n]{0,15}?(\d+(?:\.\d+)?)\s*亿",
+        rf"(?:营收|销售收入|营业收入)(?:为|达|突破|约)?{_LABEL_GAP}{_NUM_CAPTURE}\s*亿",
         "revenue",
         "营收",
         "亿元",
         1,
     ),
-    (r"净利润\s*(?:为|达)?\s*(\d+(?:\.\d+)?)\s*亿(?:欧元|美元|元)?", "net_profit", "净利润", "亿元", 1),
-    (r"总资产(?:规模)?[^。\n]{0,20}?(\d+(?:\.\d+)?)\s*万亿", "total_assets", "总资产", "万亿元", 1),
-    (r"营收\s*(?:为|达)?\s*(\d+(?:\.\d+)?)\s*万(?:元)?", "revenue", "营收", "万元", 1),
+    (
+        rf"净利润\s*(?:为|达)?\s*{_NUM_CAPTURE}\s*亿(?:欧元|美元|元)?",
+        "net_profit",
+        "净利润",
+        "亿元",
+        1,
+    ),
+    (
+        rf"总资产(?:规模)?{_LABEL_GAP}{_NUM_CAPTURE}\s*万亿",
+        "total_assets",
+        "总资产",
+        "万亿元",
+        1,
+    ),
+    (
+        rf"营收\s*(?:为|达)?\s*{_NUM_CAPTURE}\s*万(?:元)?",
+        "revenue",
+        "营收",
+        "万元",
+        1,
+    ),
 ]
 
 _PERIOD_PATTERN = re.compile(
@@ -102,6 +129,8 @@ def _competing_subject_in_context(context: str, entity_terms: List[str]) -> bool
         name = match.group(1)
         if len(name) < 2:
             continue
+        if any(e in name for e in entity_terms):
+            continue
         if _entity_matches_name(name, entity_terms):
             continue
         tail = context[match.end() : match.end() + 35]
@@ -149,7 +178,7 @@ def _extract_from_text(
             if not _metric_bound_to_entity(text, match.start(), match.end(), entities):
                 continue
             raw = match.group(0)
-            value = float(match.group(group)) / divisor
+            value = _parse_numeric_value(match.group(group)) / divisor
             period = _find_nearby_period(text, match.start())
             key = (metric_id, value, period, source_index)
             if key in seen:
@@ -172,7 +201,7 @@ def _extract_from_text(
         if not _metric_bound_to_entity(text, match.start(), match.end(), entities):
             continue
         raw = match.group(0)
-        value = float(match.group(1)) / 100
+        value = _parse_numeric_value(match.group(1)) / 100
         period = _find_nearby_period(text, match.start())
         key = ("revenue_yoy", value, period, source_index)
         if key in seen:
@@ -196,7 +225,7 @@ def _extract_from_text(
             if not _metric_bound_to_entity(text, match.start(), match.end(), entities):
                 continue
             raw = match.group(0)
-            value = float(match.group(group))
+            value = _parse_numeric_value(match.group(group))
             period = _find_nearby_period(text, match.start())
             key = (metric_id, value, period, source_index)
             if key in seen:
@@ -233,8 +262,8 @@ def _extract_quarterly_rows(
 ) -> List[ExtractedPoint]:
     points: List[ExtractedPoint] = []
     pattern = re.compile(
-        r"(20\d{2}Q[1-4])[^\d]{0,30}?"
-        r"(?:营收|收入)\s*(?:为|达)?\s*(\d+(?:\.\d+)?)\s*万"
+        rf"(20\d{{2}}Q[1-4])[^\d]{{0,30}}?"
+        rf"(?:营收|收入)\s*(?:为|达)?\s*{_NUM_CAPTURE}\s*万"
     )
     entities = list(entity_terms or [])
     for match in pattern.finditer(text):
@@ -245,7 +274,7 @@ def _extract_quarterly_rows(
             ExtractedPoint(
                 metric_id="revenue",
                 metric_label="营收",
-                value=float(value_str),
+                value=_parse_numeric_value(value_str),
                 unit="万元",
                 period=period,
                 source_index=source_index,

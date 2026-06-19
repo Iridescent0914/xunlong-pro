@@ -209,9 +209,15 @@ class BaseHTMLAgent(ABC):
                 return value.strftime(format)
             return value
 
-        # JSON
+        # JSON（供 ECharts 内联脚本使用；Markup 避免 autoescape 破坏 JSON）
         def jsonify_filter(value):
-            return json.dumps(value, ensure_ascii=False, indent=2)
+            from markupsafe import Markup
+            if isinstance(value, str):
+                try:
+                    value = json.loads(value)
+                except (TypeError, json.JSONDecodeError):
+                    return Markup(value)
+            return Markup(json.dumps(value, ensure_ascii=False))
 
         # 
         self.jinja_env.filters['markdown'] = markdown_filter

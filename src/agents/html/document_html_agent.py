@@ -7,6 +7,7 @@ HTML
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 import re
+import json
 import logging
 from .base_html_agent import BaseHTMLAgent
 from .echarts_generator import EChartsGenerator
@@ -99,11 +100,14 @@ class DocumentHTMLAgent(BaseHTMLAgent):
         # Auto-detect and generate charts from data
         charts = []
         if metadata.get('enable_charts', True):
-            charts = self.detect_and_visualize_data(sections)
+            charts = [
+                self._normalize_chart_option(c)
+                for c in self.detect_and_visualize_data(sections)
+            ]
 
         for chart in metadata.get('data_analysis_charts', []):
-            if chart.get('id') and chart.get('option'):
-                charts.append(chart)
+            if chart.get('id') and chart.get('option') is not None:
+                charts.append(self._normalize_chart_option(chart))
 
         # Extract references from metadata
         references = metadata.get('references', [])
@@ -300,8 +304,8 @@ class DocumentHTMLAgent(BaseHTMLAgent):
 
             content_parts.append(section_content)
 
-            # Add chart placeholders for this section
-            if idx in chart_map:
+            # 数据分析模块已在正文内嵌 chart-wrapper 时不再重复追加
+            if idx in chart_map and 'chart-wrapper' not in section_content:
                 for chart in chart_map[idx]:
                     chart_id = chart.get('id', '')
                     chart_title = chart.get('title', '')
@@ -365,6 +369,19 @@ class DocumentHTMLAgent(BaseHTMLAgent):
                 self._create_chart_from_table(chart_id, section['title'], table_data)
 
         return self.chart_generator.get_all_charts()
+
+    def _normalize_chart_option(self, chart: Dict[str, Any]) -> Dict[str, Any]:
+        """将 chart.option 统一为 dict，供模板 jsonify 输出合法 JS。"""
+        normalized = dict(chart)
+        option = normalized.get("option")
+        if isinstance(option, str):
+            try:
+                normalized["option"] = json.loads(option)
+            except json.JSONDecodeError:
+                normalized["option"] = {}
+        elif option is None:
+            normalized["option"] = {}
+        return normalized
 
     def _extract_tables(self, content: str) -> List[Dict[str, Any]]:
         """

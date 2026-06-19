@@ -60,7 +60,8 @@ class SearchSelectionMeta:
             ent = "、".join(self.entity_terms) or "查询主题"
             return (
                 f"已从 {self.total_count} 条搜索结果中筛选，"
-                f"未找到以「{ent}」为核心主体且与 prompt 相关的条目，故未进行数值分析。"
+                f"未找到以「{ent}」为核心主体且与用户 prompt 主题一致的条目；"
+                f"分析流程已执行，但未抽取到可匹配的数值。"
             )
         ent_part = ""
         if self.entity_terms:
@@ -131,6 +132,8 @@ def _entity_matches_name(name: str, entities: List[str]) -> bool:
         if name == e:
             return True
         if name == f"{e}公司":
+            return True
+        if name.startswith(e) or e.startswith(name):
             return True
         if name.endswith("公司") and name[:-2] == e:
             return True
@@ -271,14 +274,13 @@ def _passes_selection_filters(
             if not is_entity_core_subject(item, terms.entities, terms.topics):
                 return False
         else:
-            has_bind = _entity_finance_in_text(text, primaries) or (
-                _NUMERIC_FINANCIAL_RE.search(text)
-                and any(e in text for e in primaries)
-            )
-            if not has_bind:
+            if not _entity_finance_in_text(text, primaries):
                 return False
 
     if require_financial and not _has_financial_signal(text, terms.topics):
+        return False
+
+    if terms.years and terms.entities and not _year_in_text(text, terms.years):
         return False
 
     return True
@@ -433,78 +435,27 @@ def select_relevant_search_results(
     return selected, meta
 
 
-def expand_candidates_for_extraction(
-    query: str,
-    search_results: List[Dict[str, Any]],
-    *,
-    max_items: int = 8,
-) -> Tuple[List[Dict[str, Any]], SearchSelectionMeta]:
-    """从全部搜索中挑选「主体 + prompt 财务主题 + 可抽取数值语义」的候选。"""
-    terms = parse_query_terms(query)
-    primaries = primary_entities(terms.entities) or terms.entities
-    total = len(search_results)
-    scored: List[Tuple[float, Dict[str, Any]]] = []
-
-    for item in search_results:
-        text = _item_full_text(item)
-        title = item.get("title") or ""
-        if terms.entities:
-            if not any(e in text for e in primaries):
-                continue
-            if _is_passing_mention(title, primaries):
-                continue
-        if not _has_financial_signal(text, terms.topics):
-            continue
-        if terms.entities and not (
-            _entity_finance_in_text(text, primaries)
-            or (_NUMERIC_FINANCIAL_RE.search(text) and any(e in text for e in primaries))
-        ):
-            continue
-        s = score_search_result(item, terms, apply_core_filter=False)
-        if s > 0:
-            scored.append((s, item))
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-    selected = [item for _, item in scored[:max_items]]
-    meta = SearchSelectionMeta(
-        total_count=total,
-        selected_count=len(selected),
-        query=query,
-        entity_terms=primaries,
-        top_titles=[(i.get("title") or "")[:60] for i in selected[:5]],
-    )
-    if selected:
-        logger.info(
-            f"[SearchRelevance] 抽取扩展筛选 {len(selected)}/{total} 条"
-            f"（主体={primaries}）"
-        )
-    return selected, meta
-
-
 def select_relevant_search_results_with_fallback(
     query: str,
     search_results: List[Dict[str, Any]],
     **kwargs: Any,
 ) -> Tuple[List[Dict[str, Any]], SearchSelectionMeta]:
-    """先严格筛选；无结果时逐级放宽。"""
+    """analyze 模式入口：先严格筛选，再放宽主体绑定；不降低 prompt 主题匹配要求。"""
     selected, meta = select_relevant_search_results(
         query, search_results, strict_core=True, max_items=8, **kwargs
     )
     if selected:
         return selected, meta
 
-    logger.info("[SearchRelevance] 严格筛选无结果，尝试放宽（主体+财务语义）")
-    selected, meta = select_relevant_search_results(
+    logger.info(
+        "[SearchRelevance] 严格筛选无结果，尝试放宽主体绑定（仍要求 prompt 主题一致）"
+    )
+    return select_relevant_search_results(
         query,
         search_results,
         strict_core=False,
-        require_financial=True,
+        require_financial=None,
         min_score=5.0,
         max_items=8,
         **kwargs,
     )
-    if selected:
-        return selected, meta
-
-    logger.info("[SearchRelevance] 放宽仍无结果，尝试抽取导向候选")
-    return expand_candidates_for_extraction(query, search_results, max_items=8)
