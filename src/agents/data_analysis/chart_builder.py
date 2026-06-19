@@ -1,6 +1,6 @@
 """根据 AnalysisOutput 生成图表 spec（数据分析智能体输出流程的一部分）。"""
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 import json
 
 from loguru import logger
@@ -18,7 +18,7 @@ def build_charts(analysis: Union[AnalysisOutput, ProcessedStats]) -> List[Dict[s
     charts: List[Dict[str, Any]] = []
     generator = EChartsGenerator()
 
-    # 优先按常见表格关键词生成趋势图
+    # 优先：任一来历的分季度营收表
     revenue_table = _find_table(analysis, "分季度")
     if revenue_table and len(revenue_table.rows) >= 2:
         categories = [str(row[0]) for row in revenue_table.rows]
@@ -115,15 +115,43 @@ def build_charts(analysis: Union[AnalysisOutput, ProcessedStats]) -> List[Dict[s
                 charts.append({"type": "stacked", "title": table.title, "spec": spec})
                 return charts
 
-    # fallback: metrics overview
-    if analysis.metrics:
+    # 分来源指标对比（metrics.by_source）
+    by_source = _extract_by_source_metrics(analysis.metrics)
+    if by_source and len(by_source) >= 1:
+        compare = _build_source_comparison(by_source, generator)
+        if compare:
+            charts.append(compare)
+            logger.info(f"[ChartBuilder] 生成 {len(charts)} 个图表 spec")
+            return charts
+
+    # 分来源指标明细表
+    detail_tables = [t for t in analysis.tables if "指标明细" in t.title]
+    if detail_tables:
+        for i, table in enumerate(detail_tables[:3]):
+            categories = [str(row[0]) for row in table.rows[:8]]
+            values = [_parse_metric_value(row[1]) for row in table.rows[:8]]
+            if categories and any(v != 0 for v in values):
+                spec = generator.add_bar_chart(
+                    chart_id=f"chart_source_detail_{i}",
+                    title=table.title,
+                    categories=categories,
+                    data=values,
+                )
+                charts.append({"type": "bar", "title": table.title, "spec": spec})
+        if charts:
+            logger.info(f"[ChartBuilder] 生成 {len(charts)} 个图表 spec")
+            return charts
+
+    # fallback: flat metrics overview
+    flat_metrics = _flatten_metrics(analysis.metrics)
+    if flat_metrics:
         rate_keys = [
-            k for k in analysis.metrics
+            k for k in flat_metrics
             if k.endswith("_yoy") or k.endswith("_growth") or k.endswith("_rate")
             or k in ("gross_margin", "debt_ratio", "loan_growth", "asset_growth", "avg_growth_rate")
         ]
-        keys = rate_keys[:5] if rate_keys else list(analysis.metrics.keys())[:5]
-        values = [_to_float(analysis.metrics[k]) for k in keys]
+        keys = rate_keys[:5] if rate_keys else list(flat_metrics.keys())[:5]
+        values = [_to_float(flat_metrics[k]) for k in keys]
         spec = generator.add_bar_chart(
             chart_id="chart_metrics",
             title="核心指标概览",
@@ -135,6 +163,73 @@ def build_charts(analysis: Union[AnalysisOutput, ProcessedStats]) -> List[Dict[s
 
     logger.info(f"[ChartBuilder] 生成 {len(charts)} 个图表 spec")
     return charts
+
+
+def _extract_by_source_metrics(metrics: Any) -> Dict[str, Dict[str, Any]]:
+    if not isinstance(metrics, dict):
+        return {}
+    by_source = metrics.get("by_source")
+    if not isinstance(by_source, dict):
+        return {}
+    return by_source
+
+
+def _flatten_metrics(metrics: Any) -> Dict[str, Any]:
+    if not isinstance(metrics, dict):
+        return {}
+    by_source = metrics.get("by_source")
+    if isinstance(by_source, dict):
+        flat: Dict[str, Any] = {}
+        for src_key, block in by_source.items():
+            if not isinstance(block, dict):
+                continue
+            for k, v in (block.get("metrics") or {}).items():
+                flat[f"src{src_key}_{k}"] = v
+        return flat
+    return metrics
+
+
+def _build_source_comparison(
+    by_source: Dict[str, Dict[str, Any]],
+    generator: EChartsGenerator,
+) -> Optional[Dict[str, Any]]:
+    """对各来源的同一类增长率指标做对比柱状图。"""
+    compare_keys = ["revenue_yoy", "net_profit_yoy", "loan_growth", "asset_growth", "gross_margin"]
+    for metric_key in compare_keys:
+        categories: List[str] = []
+        values: List[float] = []
+        for src_key in sorted(by_source.keys(), key=lambda x: int(x) if str(x).isdigit() else 0):
+            block = by_source[src_key]
+            src_metrics = block.get("metrics") or {}
+            if metric_key not in src_metrics:
+                continue
+            idx = block.get("source_index", src_key)
+            title = (block.get("source_title") or "")[:16]
+            categories.append(f"[{idx}] {title}")
+            values.append(_to_float(src_metrics[metric_key]))
+        if len(values) >= 2:
+            label = metric_key.replace("_", " ")
+            spec = generator.add_bar_chart(
+                chart_id=f"chart_compare_{metric_key}",
+                title=f"分来源对比 · {_metric_label(metric_key)}",
+                categories=categories,
+                data=values,
+                y_axis_name="比率",
+            )
+            return {"type": "bar", "title": f"分来源对比 · {_metric_label(metric_key)}", "spec": spec}
+    return None
+
+
+def _metric_label(key: str) -> str:
+    labels = {
+        "revenue_yoy": "营收同比增长",
+        "net_profit_yoy": "净利润同比增长",
+        "gross_margin": "毛利率",
+        "debt_ratio": "资产负债率",
+        "loan_growth": "贷款总额增幅",
+        "asset_growth": "总资产增幅",
+    }
+    return labels.get(key, key)
 
 
 def _find_table(analysis, keyword: str):

@@ -58,10 +58,31 @@ class DataAnalysisAgent(BaseAgent):
             )
             charts = build_charts(analysis)
 
+            has_output = bool(
+                analysis.metrics or analysis.tables or analysis.key_findings
+            )
             has_real_search = bool(search_results) and not use_mock
+            if not has_real_search and not use_mock:
+                result_status = "skipped"
+                source_type = "web_rag"
+                message = "无网页搜索结果，已跳过基于搜索的数据分析"
+            elif has_real_search and not has_output:
+                result_status = "skipped"
+                source_type = "web_rag"
+                message = analysis.methodology or "未找到与用户查询密切相关的搜索结果"
+            elif use_mock:
+                result_status = "success"
+                source_type = "mock"
+                message = None
+            else:
+                result_status = "success"
+                source_type = "web_rag"
+                message = None
+
             result = DataAnalysisResult(
-                status="success",
-                source_type="web_rag" if has_real_search else "mock",
+                status=result_status,
+                source_type=source_type,
+                message=message,
                 metrics=analysis.metrics,
                 tables=[t.model_dump() for t in analysis.tables],
                 charts=charts,

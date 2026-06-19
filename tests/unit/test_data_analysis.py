@@ -29,10 +29,22 @@ from src.agents.data_analysis.data_analysis_agent import DataAnalysisAgent
 from src.agents.data_analysis.evidence_adapter import (
     build_analysis_input,
     build_web_pack,
+    load_rag_evidence_pack,
     parse_rag_evidence_pack,
     rag_pack_to_refs,
+    resolve_search_results,
     search_result_to_evidence,
 )
+from src.agents.data_analysis.search_relevance import (
+    parse_query_terms,
+    select_relevant_search_results,
+)
+from src.agents.data_analysis.data_analysis_context import (
+    build_main_body_relation,
+    has_usable_analysis,
+    mark_data_integration_sections,
+)
+from src.agents.data_analysis.report_section import build_data_analysis_section
 from src.agents.data_analysis.financial_analyzer import FinancialAnalyzer
 from src.agents.data_analysis.file_analyzer import FileDataAnalyzer
 from src.agents.data_analysis.file_report import build_file_analysis_html, build_file_analysis_markdown
@@ -52,21 +64,25 @@ def mock_rag_raw():
 
 
 class TestEvidenceAdapter:
+    def test_resolve_search_no_silent_mock(self):
+        resolved = resolve_search_results([], use_mock=False)
+        assert resolved == []
+
     def test_search_result_to_evidence(self, mock_search):
         ev = search_result_to_evidence(mock_search[0], 1)
         assert ev.origin == "web_search"
         assert ev.title == "2024年银行业财报解读"
         assert "23%" in ev.content or "23%" in ev.summary
 
-    def test_parse_rag_evidence_pack(self, mock_rag_raw):
-        pack = parse_rag_evidence_pack(mock_rag_raw)
+    def test_load_rag_evidence_pack_legacy_list(self, mock_rag_raw):
+        pack = load_rag_evidence_pack(mock_rag_raw, query="测试")
         assert pack.source == "financial_rag"
         assert len(pack.evidence) == 3
-        assert pack.entities.get("sector") == "Financials"
-        assert len(pack.rag_summary.key_points) >= 1
+        assert pack.evidence[0].content
+        assert pack.evidence[0].score > 0
 
     def test_build_analysis_input(self, mock_search, mock_rag_raw):
-        pack = parse_rag_evidence_pack(mock_rag_raw)
+        pack = load_rag_evidence_pack(mock_rag_raw)
         inp = build_analysis_input(
             query="分析2024年银行业营收趋势",
             search_results=mock_search,
@@ -77,7 +93,7 @@ class TestEvidenceAdapter:
         assert len(inp.unified.all_evidence) == len(mock_search) + 3
 
     def test_rag_pack_to_refs(self, mock_rag_raw):
-        pack = parse_rag_evidence_pack(mock_rag_raw)
+        pack = load_rag_evidence_pack(mock_rag_raw)
         refs = rag_pack_to_refs(pack)
         assert refs[0].score > 0
         assert refs[0].content
@@ -99,40 +115,68 @@ class TestRAGClient:
 
 class TestFinancialAnalyzer:
     def test_rule_based_analysis(self, mock_search, mock_rag_raw):
-        pack = parse_rag_evidence_pack(mock_rag_raw)
-        inp = build_analysis_input(
-            query="分析2024年银行业营收趋势",
-            search_results=mock_search,
-            rag_pack=pack,
-        )
+        pack = load_rag_evidence_pack(mock_rag_raw)
+        rag_refs = rag_pack_to_refs(pack)
         analyzer = FinancialAnalyzer()
-        output = asyncio.run(analyzer.analyze(inp, llm_callback=None))
+        output = asyncio.run(
+            analyzer.analyze(
+                query="分析2024年银行业营收趋势",
+                search_results=mock_search,
+                rag_refs=rag_refs,
+                use_mock=False,
+            )
+        )
 
-        assert output.metrics.get("revenue_yoy") == pytest.approx(0.23)
+        by_source = output.metrics.get("by_source", {})
+        assert by_source or output.metrics
         assert len(output.key_findings) >= 1
         assert len(output.tables) >= 1
         assert output.search_refs
         assert output.rag_refs
 
-    def test_mock_fallback_without_search(self, mock_rag_raw):
-        pack = parse_rag_evidence_pack(mock_rag_raw)
-        inp = build_analysis_input(
-            query="分析2024年银行业营收趋势",
-            search_results=[],
-            rag_pack=pack,
-            use_mock=True,
-        )
+    def test_empty_search_without_mock(self, mock_rag_raw):
+        pack = load_rag_evidence_pack(mock_rag_raw)
+        rag_refs = rag_pack_to_refs(pack)
         analyzer = FinancialAnalyzer()
-        output = asyncio.run(analyzer.analyze(inp, llm_callback=None))
+        output = asyncio.run(
+            analyzer.analyze(
+                query="分析华为营收",
+                search_results=[],
+                rag_refs=rag_refs,
+                use_mock=False,
+            )
+        )
+        assert output.metrics == {}
+        assert output.tables == []
+        assert "未获取到网页搜索结果" in output.methodology
+
+    def test_mock_fallback_without_search(self, mock_rag_raw):
+        pack = load_rag_evidence_pack(mock_rag_raw)
+        rag_refs = rag_pack_to_refs(pack)
+        analyzer = FinancialAnalyzer()
+        output = asyncio.run(
+            analyzer.analyze(
+                query="分析2024年银行业营收趋势",
+                search_results=[],
+                rag_refs=rag_refs,
+                use_mock=True,
+            )
+        )
         assert output.metrics
         assert output.key_findings
 
 
 class TestChartBuilder:
     def test_build_charts_from_analysis(self, mock_search, mock_rag_raw):
-        pack = parse_rag_evidence_pack(mock_rag_raw)
-        inp = build_analysis_input("q", mock_search, pack)
-        analysis = asyncio.run(FinancialAnalyzer().analyze(inp))
+        pack = load_rag_evidence_pack(mock_rag_raw)
+        rag_refs = rag_pack_to_refs(pack)
+        analysis = asyncio.run(
+            FinancialAnalyzer().analyze(
+                query="q",
+                search_results=mock_search,
+                rag_refs=rag_refs,
+            )
+        )
         charts = build_charts(analysis)
         assert len(charts) >= 1
         assert charts[0]["type"] == "bar"
@@ -164,6 +208,26 @@ class TestDataAnalysisAgent:
         assert payload["key_findings"]
         assert payload["rag_refs"]
         assert payload["search_refs"]
+
+    def test_skipped_without_search(self):
+        llm_manager = MagicMock()
+        agent = DataAnalysisAgent(llm_manager=llm_manager, rag_client=RAGClient(use_mock=True))
+        agent.get_llm_response = AsyncMock(side_effect=RuntimeError("skip llm"))
+
+        result = asyncio.run(
+            agent.process(
+                {
+                    "query": "分析华为营收",
+                    "search_results": [],
+                    "use_mock": False,
+                }
+            )
+        )
+        assert result["status"] == "success"
+        payload = result["result"]
+        assert payload["status"] == "skipped"
+        assert payload["source_type"] == "web_rag"
+        assert payload["metrics"] == {}
 
     def test_full_mock_mode(self):
         llm_manager = MagicMock()

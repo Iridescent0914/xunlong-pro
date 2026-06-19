@@ -18,8 +18,7 @@ OUTDIR.mkdir(exist_ok=True)
 
 sys.path.insert(0,str(Path(__file__).parent.parent))
 
-from src.agents.data_analysis.rag_client import RAGClient
-from src.agents.data_analysis.evidence_adapter import build_analysis_input, parse_rag_evidence_pack
+from src.agents.data_analysis.evidence_adapter import load_rag_evidence_pack, rag_pack_to_refs
 from src.agents.data_analysis.financial_analyzer import FinancialAnalyzer
 from src.agents.data_analysis.chart_builder import build_charts
 from src.agents.data_analysis.report_section import build_data_analysis_section
@@ -31,9 +30,7 @@ async def main():
     mock_search = json.loads((FIXTURES / 'mock_search.json').read_text(encoding='utf-8'))
     mock_rag = json.loads((FIXTURES / 'mock_rag.json').read_text(encoding='utf-8'))
 
-    # parse rag pack
-    rag_pack = parse_rag_evidence_pack(mock_rag)
-    from src.agents.data_analysis.evidence_adapter import rag_pack_to_refs
+    rag_pack = load_rag_evidence_pack(mock_rag, query=query)
     rag_refs = rag_pack_to_refs(rag_pack)
 
     analyzer = FinancialAnalyzer()

@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from .schemas import RAGReference
-from .evidence_adapter import parse_rag_evidence_pack, rag_pack_to_refs
+from .evidence_adapter import load_rag_evidence_pack, rag_pack_to_refs
+from .schemas import RAGEvidencePack, RAGReference
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MOCK_RAG_PATH = PROJECT_ROOT / "fixtures" / "mock_rag.json"
@@ -41,17 +41,23 @@ class RAGClient:
             ]
 
         raw = json.loads(MOCK_RAG_PATH.read_text(encoding="utf-8"))
-        # raw may be a list of reference dicts or a RAG evidence pack dict
-        if isinstance(raw, list):
-            refs = []
-            for item in raw:
-                if isinstance(item, dict):
-                    refs.append(RAGReference(**{k: v for k, v in item.items() if k in RAGReference.__fields__}))
-            return refs
+        pack = load_rag_evidence_pack(raw)
+        return rag_pack_to_refs(pack)
 
-        if isinstance(raw, dict):
-            # parse as evidence pack
-            pack = parse_rag_evidence_pack(raw)
-            return rag_pack_to_refs(pack)
+    def _load_mock_pack(self, query: str, top_k: int = 5) -> RAGEvidencePack:
+        if not MOCK_RAG_PATH.exists():
+            return RAGEvidencePack(query=query)
+        raw = json.loads(MOCK_RAG_PATH.read_text(encoding="utf-8"))
+        pack = load_rag_evidence_pack(raw, query=query)
+        if top_k and len(pack.evidence) > top_k:
+            pack.evidence = pack.evidence[:top_k]
+        return pack
 
-        return []
+    async def retrieve_pack(self, query: str, top_k: int = 5) -> RAGEvidencePack:
+        """返回完整 RAG evidence pack（mock 或未来 HTTP API）。"""
+        if self.use_mock or not self.api_url:
+            logger.info("[RAGClient] 使用 mock_rag.json（pack 模式）")
+            return self._load_mock_pack(query, top_k)
+
+        logger.warning("[RAGClient] 真实 API 未实现，回退 mock pack")
+        return self._load_mock_pack(query, top_k)

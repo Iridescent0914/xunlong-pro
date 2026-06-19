@@ -25,7 +25,8 @@ class OutlineGenerator:
         search_results: List[Dict[str, Any]],
         synthesis_results: Optional[Dict[str, Any]] = None,
         report_type: str = "comprehensive",
-        refined_subtasks: Optional[List[Dict[str, Any]]] = None  # NEW
+        refined_subtasks: Optional[List[Dict[str, Any]]] = None,  # NEW
+        data_analysis_results: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """生成研究报告大纲"""
 
@@ -38,7 +39,8 @@ class OutlineGenerator:
         try:
             # 构建 prompt
             outline_prompt = self._build_outline_prompt(
-                query, search_results, synthesis_results, report_type
+                query, search_results, synthesis_results, report_type,
+                data_analysis_results=data_analysis_results,
             )
 
             # 调用 LLM
@@ -52,7 +54,9 @@ class OutlineGenerator:
             outline = self._parse_outline_response(response)
 
             # 验证和优化
-            outline = self._validate_and_optimize_outline(outline, report_type)
+            outline = self._validate_and_optimize_outline(
+                outline, report_type, data_analysis_results=data_analysis_results
+            )
 
             logger.info(f"[{self.name}] 大纲生成完成，共 {len(outline['sections'])} 个章节")
 
@@ -76,9 +80,15 @@ class OutlineGenerator:
         query: str,
         search_results: List[Dict[str, Any]],
         synthesis_results: Optional[Dict[str, Any]],
-        report_type: str
+        report_type: str,
+        data_analysis_results: Optional[Dict[str, Any]] = None,
     ) -> str:
         """构建设计 prompt，优先从 YAML 加载，fallback 到硬编码内容。"""
+
+        from ..data_analysis.data_analysis_context import (
+            format_outline_hint,
+            has_usable_analysis,
+        )
 
         # 构建搜索结果摘要
         results_summary = self._summarize_search_results(search_results[:10])
@@ -90,6 +100,19 @@ class OutlineGenerator:
                 synthesis_summary = synthesis_results.get("report_content", "")[:500]
             elif isinstance(synthesis_results, str):
                 synthesis_summary = synthesis_results[:500]
+
+        data_analysis_block = ""
+        data_analysis_constraints = ""
+        if has_usable_analysis(data_analysis_results):
+            data_analysis_block = format_outline_hint(data_analysis_results)
+            data_analysis_constraints = """
+## 数据分析与正文结构要求
+
+- 报告将包含**正文章节** + 独立附录模块「金融数据分析」（详表与图表）
+- 正文章节负责叙述、判断与建议；「金融数据分析」模块负责可溯源的指标与表格
+- 至少 **2 个章节** 的 requirements 须写明：引用上方结构化分析中的 metrics/key_findings，数值不可改写，并注明「详见金融数据分析模块」
+- 章节标题与 requirements 须与已有分析结论在逻辑上衔接（例如现状、财务、趋势类章节应对应相关指标）
+"""
 
         # 尝试从 YAML 加载 prompt
         try:
@@ -113,6 +136,8 @@ class OutlineGenerator:
 
 ## 综合研究摘要
 {synthesis_summary}
+{data_analysis_block}
+{data_analysis_constraints}
 
 ## 输出要求
 
@@ -166,6 +191,8 @@ class OutlineGenerator:
 
 ### 综合研究摘要
 {synthesis_summary}
+{data_analysis_block}
+{data_analysis_constraints}
 
 ## 大纲设计要求
 
@@ -272,9 +299,12 @@ class OutlineGenerator:
     def _validate_and_optimize_outline(
         self,
         outline: Dict[str, Any],
-        report_type: str
+        report_type: str,
+        data_analysis_results: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """验证和优化大纲"""
+
+        from ..data_analysis.data_analysis_context import mark_data_integration_sections
 
         sections = outline.get("sections", [])
 
@@ -313,7 +343,9 @@ class OutlineGenerator:
             if "suggested_sources" not in section:
                 section["suggested_sources"] = []
 
-        outline["sections"] = sections
+        outline["sections"] = mark_data_integration_sections(
+            sections, data_analysis_results
+        )
 
         return outline
 
