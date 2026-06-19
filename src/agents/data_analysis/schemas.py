@@ -63,6 +63,15 @@ class DataAnalysisResult(BaseModel):
     tables: List[Dict[str, Any]] = Field(default_factory=list)
     charts: List[Dict[str, Any]] = Field(default_factory=list)
     key_findings: List[DataFinding] = Field(default_factory=list)
+    source_blocks: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="按来源组织的分析块：表格（LLM+算法）+ 图表 + 结论",
+    )
+    analysis_table: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="LLM 从搜索结果抽取的主数值表",
+    )
+    analysis_conclusion: str = Field(default="", description="基于数值表的分析结论")
     methodology: str = ""
     rag_refs: List[RAGReference] = Field(default_factory=list)
     search_refs: List[SearchReference] = Field(default_factory=list)

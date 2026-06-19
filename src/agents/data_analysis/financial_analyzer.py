@@ -22,7 +22,6 @@ from .search_extractor import extract_from_search_results
 from .search_relevance import (
     SearchSelectionMeta,
     entity_terms_from_query,
-    expand_candidates_for_extraction,
     select_relevant_search_results_with_fallback,
 )
 
@@ -53,16 +52,9 @@ class FinancialAnalyzer:
             )
             if selection_meta.selected_count == 0:
                 logger.warning(
-                    f"[FinancialAnalyzer] 无与 prompt 相关的搜索结果，跳过分析"
+                    "[FinancialAnalyzer] 无与 prompt 匹配的搜索结果，继续执行分析流程"
                 )
-                return AnalysisOutput(
-                    metrics={},
-                    tables=[],
-                    key_findings=[],
-                    methodology=selection_meta.methodology_note(),
-                    search_refs=[],
-                    rag_refs=rag_refs,
-                )
+                results = []
 
         search_refs = _build_search_refs(results)
 
@@ -72,7 +64,7 @@ class FinancialAnalyzer:
         search_source = "mock_search.json" if use_mock else "网页搜索"
         logger.info(
             f"[FinancialAnalyzer] 开始分析：{len(results)} 条搜索（来源={search_source}）"
-            f" + {len(rag_refs)} 条 RAG（模式={'LLM' if use_llm else '算法'}）"
+            f"（模式={'LLM' if use_llm else '算法'}）"
         )
 
         if use_llm and llm_callback:
@@ -94,7 +86,6 @@ class FinancialAnalyzer:
             use_mock=use_mock,
             selection_meta=selection_meta,
             total_search_count=len(search_results) if not use_mock else len(results),
-            raw_search_results=search_results if not use_mock else None,
         )
 
 
@@ -106,11 +97,23 @@ def _analyze_with_algorithm(
     use_mock: bool = False,
     selection_meta: Optional[SearchSelectionMeta] = None,
     total_search_count: Optional[int] = None,
-    raw_search_results: Optional[List[Dict[str, Any]]] = None,
 ) -> AnalysisOutput:
     """算法主路径：抽取 → 计算 → 建表 → 结论。"""
     if not search_results and not use_mock:
-        logger.warning("[FinancialAnalyzer] 搜索结果为空，跳过分析（未启用 mock）")
+        if selection_meta and selection_meta.total_count > 0:
+            methodology = selection_meta.methodology_note()
+            logger.warning(
+                "[FinancialAnalyzer] 搜索已执行但未筛出与 prompt 匹配的条目，返回空分析结果"
+            )
+            return AnalysisOutput(
+                metrics={},
+                tables=[],
+                key_findings=[],
+                methodology=methodology,
+                search_refs=[],
+                rag_refs=rag_refs,
+            )
+        logger.warning("[FinancialAnalyzer] 搜索结果为空，无法基于搜索正文进行数据分析")
         return AnalysisOutput(
             metrics={},
             tables=[],
@@ -130,27 +133,6 @@ def _analyze_with_algorithm(
         search_results,
         entity_terms=entity_terms or None,
     )
-
-    if (
-        not points
-        and not use_mock
-        and query
-        and raw_search_results
-    ):
-        logger.info(
-            "[FinancialAnalyzer] 当前候选无可抽取数值，从全部搜索中扩展抽取导向候选"
-        )
-        expanded, expanded_meta = expand_candidates_for_extraction(
-            query, raw_search_results, max_items=8
-        )
-        if expanded:
-            search_results = expanded
-            selection_meta = expanded_meta
-            search_refs = _build_search_refs(search_results)
-            points = extract_from_search_results(
-                search_results,
-                entity_terms=entity_terms or None,
-            )
 
     search_count = total_search_count if total_search_count is not None else len(search_results)
     metrics, tables, findings, methodology = compute_analysis(
@@ -286,19 +268,17 @@ async def _analyze_with_llm(
 ) -> Optional[AnalysisOutput]:
     try:
         system_prompt = (
-            "你是金融数据分析专家。请综合「网页搜索内容」与「RAG 知识库片段」完成分析。\n"
+            "你是金融数据分析专家。请综合「网页搜索内容」完成分析。\n"
             "要求：\n"
             "1. metrics 中的数字必须来自搜索正文，不得编造\n"
-            "2. 使用 RAG 片段校验指标口径与解读是否合理\n"
-            "3. key_findings 的 evidence 须引用搜索来源标题或 RAG 来源\n"
-            "4. 严格输出 JSON，字段：metrics, tables, key_findings, methodology"
+            "2. key_findings 的 evidence 须引用搜索来源标题\n"
+            "3. 严格输出 JSON，字段：metrics, tables, key_findings, methodology"
         )
         user_prompt = json.dumps(
             {
                 "query": query,
                 "search_content": search_text,
                 "search_refs": [r.model_dump() for r in search_refs],
-                "rag_context": [r.model_dump() for r in rag_refs],
                 "output_schema": {
                     "metrics": {"revenue_yoy": 0.23},
                     "tables": [

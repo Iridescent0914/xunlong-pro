@@ -821,7 +821,6 @@ def _display_result(result: dict, verbose: bool, output_type: str = 'report', ou
 
             # 
             if result.get('project_dir'):
-                from pathlib import Path
                 project_dir = Path(result['project_dir'])
 
                 html_path = project_dir / 'reports' / 'FINAL_REPORT.html'
@@ -858,7 +857,6 @@ def _display_result(result: dict, verbose: bool, output_type: str = 'report', ou
 
             # 
             if result.get('project_dir'):
-                from pathlib import Path
                 project_dir = Path(result['project_dir'])
 
                 # Markdown
