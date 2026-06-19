@@ -173,7 +173,8 @@ class PPTCoordinator:
         topic: str,
         search_results: List[Dict[str, Any]],
         ppt_config: Dict[str, Any],
-        output_dir: Path
+        output_dir: Path,
+        data_analysis_results: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         生成多页HTML PPT (新架构 V3)
@@ -246,6 +247,13 @@ class PPTCoordinator:
             logger.info(f"[{self.name}] Phase 3: 构建幻灯片数据")
             print(f"\n🔧 正在构建幻灯片数据结构...")
             slides_data = self._convert_pages_to_slides_data(outline, page_results)
+            slides_data = self._inject_data_analysis_slides(
+                slides_data, outline, data_analysis_results
+            )
+            if data_analysis_results and slides_data:
+                da_count = sum(1 for s in slides_data if s.get("is_data_analysis"))
+                if da_count:
+                    print(f"📊 已插入金融数据分析模块 {da_count} 页")
             print(f"✅ 数据结构构建完成！")
 
             # Phase 4: 使用MultiSlidePPTGenerator生成多页HTML PPT文件
@@ -441,6 +449,34 @@ class PPTCoordinator:
             slides_data.append(slide_data)
 
         return slides_data
+
+    def _inject_data_analysis_slides(
+        self,
+        slides_data: List[Dict[str, Any]],
+        outline: Dict[str, Any],
+        data_analysis_results: Optional[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """在结论页之前插入金融数据分析幻灯片并重新编号。"""
+        from ..data_analysis.ppt_section import build_data_analysis_slides
+
+        da_slides = build_data_analysis_slides(
+            data_analysis_results,
+            section_index=len(slides_data),
+            colors=outline.get("colors") or {},
+        )
+        if not da_slides:
+            return slides_data
+
+        insert_at = len(slides_data)
+        for i, page in enumerate(outline.get("pages") or []):
+            if page.get("page_type") == "conclusion":
+                insert_at = i
+                break
+
+        merged = slides_data[:insert_at] + da_slides + slides_data[insert_at:]
+        for i, slide in enumerate(merged):
+            slide["slide_number"] = i + 1
+        return merged
 
     def _get_template_for_type(self, slide_type: str) -> str:
         """根据幻灯片类型返回模板名称"""

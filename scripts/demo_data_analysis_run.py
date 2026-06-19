@@ -1,4 +1,4 @@
-"""Demo: 使用 fixtures/mock_search.json + fixtures/mock_rag.json 运行数据分析并生成 Markdown/HTML 报告
+"""Demo: 使用 fixtures/mock_search.json 运行 LLM 数据分析并生成 Markdown/HTML 报告
 
 用法:
     python scripts/demo_data_analysis_run.py
@@ -7,6 +7,7 @@
     output/demo_report.md
     output/demo_report.html
 """
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -16,48 +17,26 @@ FIXTURES = ROOT / 'fixtures'
 OUTDIR = ROOT / 'output'
 OUTDIR.mkdir(exist_ok=True)
 
-sys.path.insert(0,str(Path(__file__).parent.parent))
+sys.path.insert(0, str(ROOT))
 
-from src.agents.data_analysis.evidence_adapter import load_rag_evidence_pack, rag_pack_to_refs
-from src.agents.data_analysis.financial_analyzer import FinancialAnalyzer
-from src.agents.data_analysis.chart_builder import build_charts
+from src.agents.data_analysis.data_analysis_agent import DataAnalysisAgent
 from src.agents.data_analysis.report_section import build_data_analysis_section
+from src.llm.manager import LLMManager
 
 
 async def main():
     query = '分析2024年银行业营收趋势'
-
     mock_search = json.loads((FIXTURES / 'mock_search.json').read_text(encoding='utf-8'))
-    mock_rag = json.loads((FIXTURES / 'mock_rag.json').read_text(encoding='utf-8'))
 
-    rag_pack = load_rag_evidence_pack(mock_rag, query=query)
-    rag_refs = rag_pack_to_refs(rag_pack)
+    agent = DataAnalysisAgent(LLMManager())
+    out = await agent.process({
+        'query': query,
+        'search_results': mock_search,
+        'use_mock': True,
+    })
+    result = out.get('result') or {}
+    charts = result.get('charts') or []
 
-    analyzer = FinancialAnalyzer()
-    analysis_output = await analyzer.analyze(
-        query=query,
-        search_results=mock_search,
-        rag_refs=rag_refs,
-        use_mock=True,
-        llm_callback=None,
-        use_llm=False,
-    )
-
-    charts = build_charts(analysis_output)
-
-    # assemble result
-    result = {
-        'status': 'success',
-        'metrics': analysis_output.metrics,
-        'tables': [t.model_dump() for t in analysis_output.tables],
-        'charts': charts,
-        'key_findings': [f.model_dump() for f in analysis_output.key_findings],
-        'methodology': analysis_output.methodology,
-        'rag_refs': [r.model_dump() for r in analysis_output.rag_refs],
-        'search_refs': [r.model_dump() for r in analysis_output.search_refs],
-    }
-
-    # build markdown section
     section = build_data_analysis_section(result, section_index=1)
     md = '# Demo Report - 数据分析\n\n'
     md += section['content'] if section else '未生成数据分析章节'
@@ -66,7 +45,6 @@ async def main():
     md_path.write_text(md, encoding='utf-8')
     print('Written', md_path)
 
-    # simple HTML page that embeds echarts
     html_lines = [
         '<!doctype html>',
         '<html><head><meta charset="utf-8"><title>Demo Report</title>',
@@ -79,7 +57,13 @@ async def main():
         '<script>'
     ]
     html_lines.append('const charts = ' + json.dumps(charts, ensure_ascii=False) + ';')
-    html_lines.append('charts.forEach((c,i)=>{const d=document.createElement("div");d.className="chart";d.id="chart_"+i;document.getElementById("charts").appendChild(d);const chart=echarts.init(d);const opt = c.spec? (typeof c.spec.option==="string"?JSON.parse(c.spec.option):c.spec.option) : c.option;chart.setOption(opt);});')
+    html_lines.append(
+        'charts.forEach((c,i)=>{const d=document.createElement("div");d.className="chart";'
+        'd.id="chart_"+i;document.getElementById("charts").appendChild(d);'
+        'const chart=echarts.init(d);const opt = c.spec? '
+        '(typeof c.spec.option==="string"?JSON.parse(c.spec.option):c.spec.option) : c.option;'
+        'chart.setOption(opt);});'
+    )
     html_lines.append('</script></body></html>')
 
     html_path = OUTDIR / 'demo_report.html'
@@ -88,5 +72,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    import asyncio
     asyncio.run(main())
