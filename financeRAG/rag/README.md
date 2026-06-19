@@ -238,6 +238,7 @@ YAHOO_FINANCE_RAG_ENABLED=true
 YAHOO_FINANCE_RAG_PERSIST_DIR=financeRAG/rag/chroma_db
 YAHOO_FINANCE_RAG_COLLECTION=finance_rag
 YAHOO_FINANCE_RAG_ENV_FILE=financeRAG/rag/.env
+FINANCIAL_RAG_SYMBOL_ALIASES_FILE=financeRAG/rag/company_aliases.json
 ```
 
 接入点在：
@@ -247,4 +248,25 @@ src/agents/data_analysis/rag_client.py
 ```
 
 `DataAnalysisAgent` 会调用 `RAGClient.retrieve()`，该客户端会分别查询年报 PDF RAG 和 Yahoo Finance RAG，再合并为统一的 `RAGReference` 证据列表传给金融数据分析模块。
+
+### 公司名到 ticker 的解析
+
+Yahoo Finance 数据集的 Chroma metadata 主要以 `symbol` 标识公司。为了避免自然语言问题召回到相近但错误的 ticker，主流程会先根据：
+
+```text
+financeRAG/rag/company_aliases.json
+```
+
+把公司别名解析为 ticker，再用 Chroma `where={"symbol": "..."}` 过滤。新增公司时，只需要在该 JSON 中添加别名，例如：
+
+```json
+{
+  "aliases": {
+    "A": ["Agilent", "Agilent Technologies"],
+    "MSFT": ["Microsoft", "Microsoft Corporation"]
+  }
+}
+```
+
+显式 ticker 也支持，例如 `$A`、`ticker=A`、`NASDAQ:MSFT`。
 

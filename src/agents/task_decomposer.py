@@ -126,7 +126,8 @@ class TaskDecomposer:
             )
 
         if not enriched.get("extracted_dates"):
-            if report_type == "daily" or "" in query_lower:
+            daily_tokens = ("今天", "今日", "当天", "实时", "最新", "today")
+            if report_type == "daily" or any(token in query_lower for token in daily_tokens):
                 ensure_daily_focus()
 
         # 

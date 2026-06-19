@@ -6,6 +6,7 @@
 
 from typing import Dict, Any, List, Optional
 from loguru import logger
+import ast
 import json
 import re
 
@@ -188,18 +189,54 @@ JSONvisualizations"""
         return prompt
 
     def _parse_visualization_response(self, response: str) -> Dict[str, Any]:
-        """LLM"""
-        try:
-            # JSON
-            json_match = re.search(r'\{[\s\S]*\}', response)
-            if json_match:
-                result = json.loads(json_match.group(0))
-                return result
-            else:
-                return {"visualizations": []}
-        except Exception as e:
-            logger.error(f": {e}")
-            return {"visualizations": []}
+        """Parse LLM visualization JSON with light repair for common formatting drift."""
+        last_error = None
+        for candidate in self._visualization_json_candidates(response):
+            cleaned = self._clean_visualization_json(candidate)
+            for parser in (json.loads, ast.literal_eval):
+                try:
+                    result = parser(cleaned)
+                    if isinstance(result, dict):
+                        visualizations = result.get("visualizations", [])
+                        if isinstance(visualizations, list):
+                            return {"visualizations": visualizations}
+                    if isinstance(result, list):
+                        return {"visualizations": result}
+                except Exception as exc:
+                    last_error = exc
+        if last_error:
+            logger.warning(f"[{self.name}] 可视化 JSON 解析失败，跳过图表生成: {last_error}")
+        return {"visualizations": []}
+
+    def _visualization_json_candidates(self, response: str) -> List[str]:
+        if not response:
+            return []
+        candidates: List[str] = []
+        for match in re.finditer(r"```(?:json)?\s*([\s\S]*?)```", response, re.IGNORECASE):
+            candidates.append(match.group(1).strip())
+        start = response.find("{")
+        end = response.rfind("}")
+        if start >= 0 and end > start:
+            candidates.append(response[start : end + 1])
+        stripped = response.strip()
+        if stripped:
+            candidates.append(stripped)
+        unique: List[str] = []
+        seen = set()
+        for item in candidates:
+            if item and item not in seen:
+                seen.add(item)
+                unique.append(item)
+        return unique
+
+    def _clean_visualization_json(self, text: str) -> str:
+        cleaned = text.strip()
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = re.sub(r"//.*", "", cleaned)
+        cleaned = re.sub(r"/\*[\s\S]*?\*/", "", cleaned)
+        cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
+        return cleaned.strip()
 
     async def _generate_visualization(
         self,

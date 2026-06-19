@@ -12,16 +12,23 @@ _STOPWORDS = {
     "进行", "综合", "深度", "简要", "详细", "测试", "查询", "数据", "金融",
     "趋势", "变化", "概况", "概述", "中国", "全球", "产业", "新闻", "资讯",
     "报道", "记者", "来源", "新浪", "腾讯", "搜狐",
+
+    "年报", "网页", "资料", "给出", "结合", "并结合", "中", "中的", "报中",
+    "因素", "口径", "指标", "风险因素", "annual", "report", "form",
+    "financial", "analysis", "revenue", "gross", "margin", "risk", "factors",
+    "data", "web", "source", "sources", "net", "sales", "stock", "inc",
 }
 
 _TOPIC_KEYWORDS = (
     "营收", "收入", "营业收入", "利润", "净利润", "毛利", "毛利率",
     "资产", "负债", "增长", "趋势", "同比", "环比", "财务", "业绩",
-    "财报", "估值", "市占率", "现金流",
+    "财报", "估值", "市占率", "现金流", "风险", "风险因素",
+    "revenue", "net sales", "gross margin", "risk", "risk factors",
 )
 
 _FINANCIAL_SIGNAL_RE = re.compile(
-    r"(?:营业收入|销售收入|营收|净利润|归母净利润|业绩|毛利率|同比(?:增长|增幅)?|环比增长)"
+    r"(?:营业收入|销售收入|营收|净利润|归母净利润|业绩|毛利率|同比(?:增长|增幅)?|环比增长|revenue|net sales|gross margin|profit|income|earnings|risk factors|financials)",
+    re.IGNORECASE,
 )
 _NUMERIC_FINANCIAL_RE = re.compile(
     r"(?:营收|收入|净利润|利润)[^。\n]{0,25}\d+(?:\.\d+)?(?:%|亿|万)"
@@ -30,14 +37,22 @@ _NUMERIC_FINANCIAL_RE = re.compile(
 )
 _WEAK_TOPIC_WORDS = frozenset({"趋势", "增长", "同比", "环比"})
 _FINANCIAL_TOPIC_WORDS = frozenset({
-    "营收", "收入", "营业收入", "利润", "净利润", "财报", "业绩", "财务", "毛利率", "现金流",
+    "营收", "收入", "营业收入", "利润", "净利润", "财报", "业绩",
+    "财务", "毛利率", "现金流", "风险", "风险因素", "revenue",
+    "net sales", "gross margin", "risk", "risk factors",
 })
 
 _COMPANY_PATTERN = re.compile(r"([\u4e00-\u9fffA-Za-z]{2,10})\s*公司")
 _TITLE_SUBJECT_PATTERN = re.compile(
     r"^[\s【\[\(\"']*([\u4e00-\u9fffA-Za-z·]{2,10})(?:公司|\s*[-－—:|：|｜])"
 )
-
+_ENTITY_ALIASES = {
+    "AAPL": ["Apple", "Apple Inc"],
+    "MSFT": ["Microsoft", "Microsoft Corporation"],
+    "NVDA": ["NVIDIA", "Nvidia", "NVIDIA Corporation"],
+    "600519": ["贵州茅台", "Kweichow Moutai"],
+    "002594": ["比亚迪", "BYD"],
+}
 
 @dataclass
 class QueryTerms:
@@ -77,6 +92,16 @@ class SearchSelectionMeta:
 
 def _strip_query_noise(text: str, years: List[str]) -> str:
     work = text
+    noise_phrases = (
+        "并结合网页资料给出",
+        "结合网页资料",
+        "网页资料",
+        "年报中的",
+        "报告中的",
+        "风险因素",
+    )
+    for phrase in noise_phrases:
+        work = work.replace(phrase, " ")
     for y in years:
         work = work.replace(f"{y}年", " ").replace(y, " ")
     for kw in _STOPWORDS:
@@ -84,9 +109,43 @@ def _strip_query_noise(text: str, years: List[str]) -> str:
     return re.sub(r"\s+", " ", work).strip()
 
 
+_ENTITY_NOISE_SUBSTRINGS = frozenset({
+    "分析", "报告", "年报", "网页", "资料", "给出", "结合", "收入",
+    "营收", "毛利", "风险", "因素", "财务", "金融", "数据", "趋势",
+    "变化", "市场", "行业", "口径", "指标",
+})
+
+
+def _is_entity_candidate(token: str) -> bool:
+    token = (token or "").strip(" -_：:，,。、；;（）()[]【】\"'“”‘’")
+    if len(token) < 2 or re.search(r"\d", token):
+        return False
+    lower = token.lower()
+    if token in _STOPWORDS or lower in _STOPWORDS:
+        return False
+    if token in _TOPIC_KEYWORDS or lower in _TOPIC_KEYWORDS:
+        return False
+    if any(topic in token for topic in _TOPIC_KEYWORDS if len(topic) >= 2):
+        return False
+    if any(noise in token for noise in _ENTITY_NOISE_SUBSTRINGS):
+        return False
+    if re.fullmatch(r"[a-z]+", token) and lower in _STOPWORDS:
+        return False
+    return True
+
+
 def primary_entities(entities: List[str]) -> List[str]:
     short = [e for e in entities if not e.endswith("公司")]
-    return short or list(entities)
+    base = short or list(entities)
+    expanded: List[str] = []
+    seen = set()
+    for entity in base:
+        variants = [entity] + _ENTITY_ALIASES.get(entity.upper(), [])
+        for variant in variants:
+            if variant and variant not in seen:
+                seen.add(variant)
+                expanded.append(variant)
+    return expanded
 
 
 def parse_query_terms(query: str) -> QueryTerms:
@@ -99,9 +158,7 @@ def parse_query_terms(query: str) -> QueryTerms:
     q_for_company = re.sub(r"20\d{2}年?", " ", q)
     for match in _COMPANY_PATTERN.finditer(q_for_company):
         name = match.group(1).strip().lstrip("年第")
-        if re.search(r"\d", name) or len(name) < 2 or name in _STOPWORDS:
-            continue
-        if name.startswith("年"):
+        if not _is_entity_candidate(name) or name.startswith("年"):
             continue
         for token in (name, f"{name}公司"):
             if token not in seen_ent:
@@ -111,7 +168,7 @@ def parse_query_terms(query: str) -> QueryTerms:
     work = _strip_query_noise(q, years)
     if not entities:
         for token in re.findall(r"[\u4e00-\u9fffA-Za-z]{2,10}", work):
-            if token in _STOPWORDS or token in _TOPIC_KEYWORDS or re.search(r"\d", token):
+            if not _is_entity_candidate(token):
                 continue
             if token not in seen_ent:
                 seen_ent.add(token)
@@ -177,8 +234,9 @@ def _query_financial_topics(topics: List[str]) -> List[str]:
 def _has_financial_signal(text: str, topics: List[str]) -> bool:
     """与 prompt 主题一致：问营收则正文须出现营收/收入/可抽取数值，不接受「财务报表」等泛词。"""
     query_topics = _query_financial_topics(topics)
+    lower_text = text.lower()
     if query_topics:
-        if any(t in text for t in query_topics):
+        if any(t in text or t.lower() in lower_text for t in query_topics):
             return True
         if "营收" in query_topics and ("销售收入" in text or "营业收入" in text):
             return True
@@ -200,16 +258,18 @@ def _is_passing_mention(title: str, primaries: List[str]) -> bool:
 
 
 def _entity_finance_in_text(text: str, primaries: List[str]) -> bool:
-    finance_words = r"(?:营收|收入|销售收入|营业收入|净利润|归母净利润|业绩)"
+    finance_words = r"(?:营收|收入|销售收入|营业收入|净利润|归母净利润|业绩|revenue|net sales|gross margin|profit|income|earnings|risk factors|financials)"
     for e in primaries:
         if re.search(
-            rf"{re.escape(e)}(?:公司)?[^。\n]{{0,40}}{finance_words}",
+            rf"{re.escape(e)}(?:公司)?[^。\n]{{0,80}}{finance_words}",
             text,
+            re.IGNORECASE,
         ):
             return True
         if re.search(
-            rf"{finance_words}[^。\n]{{0,40}}{re.escape(e)}(?:公司)?",
+            rf"{finance_words}[^。\n]{{0,80}}{re.escape(e)}(?:公司)?",
             text,
+            re.IGNORECASE,
         ):
             return True
     return False

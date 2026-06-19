@@ -1,7 +1,11 @@
-"""RAG 检索客户端（骨架默认 Mock，Day 2 替换为 RAG 组真实 API）。"""
+"""RAG 检索客户端。
+
+默认只查询显式启用的真实 RAG 源；mock 仅用于测试和 demo。
+"""
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -15,12 +19,14 @@ from .schemas import RAGEvidencePack, RAGReference
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MOCK_RAG_PATH = PROJECT_ROOT / "fixtures" / "mock_rag.json"
 LOCAL_RAG_SRC = PROJECT_ROOT / "RAG" / "src"
+ANNUAL_TARGETS_PATH = PROJECT_ROOT / "RAG" / "config" / "targets.json"
+DEFAULT_SYMBOL_ALIASES_PATH = PROJECT_ROOT / "financeRAG" / "rag" / "company_aliases.json"
 
 
 class RAGClient:
     def __init__(self, use_mock: Optional[bool] = None, api_url: Optional[str] = None):
         if use_mock is None:
-            use_mock = os.getenv("DATA_ANALYSIS_RAG_MOCK", "true").lower() != "false"
+            use_mock = os.getenv("DATA_ANALYSIS_RAG_MOCK", "false").lower() == "true"
         self.use_mock = use_mock
         self.api_url = api_url or os.getenv("FINANCIAL_RAG_API_URL", "")
         self.local_enabled = os.getenv("ANNUAL_REPORT_RAG_ENABLED", "false").lower() == "true"
@@ -49,19 +55,26 @@ class RAGClient:
             "YAHOO_FINANCE_RAG_ENV_FILE",
             str(PROJECT_ROOT / "financeRAG" / "rag" / ".env"),
         )
+        self.symbol_aliases_file = os.getenv(
+            "FINANCIAL_RAG_SYMBOL_ALIASES_FILE",
+            str(DEFAULT_SYMBOL_ALIASES_PATH),
+        )
 
     async def retrieve(self, query: str, top_k: int = 5) -> List[RAGReference]:
         if self.local_enabled or self.yahoo_enabled:
             pack = await self.retrieve_pack(query, top_k=top_k)
             return rag_pack_to_refs(pack)
 
-        if self.use_mock or not self.api_url:
-            logger.info("[RAGClient] 使用 mock_rag.json（骨架模式）")
+        if self.use_mock:
+            logger.info("[RAGClient] 使用 mock_rag.json（显式 mock 模式）")
             return self._load_mock()
 
         # TODO: RAG 组接入真实 HTTP API
-        logger.warning("[RAGClient] 真实 API 未实现，回退 mock")
-        return self._load_mock()
+        if self.api_url:
+            logger.warning("[RAGClient] 真实 HTTP RAG API 未实现，跳过 RAG")
+        else:
+            logger.info("[RAGClient] 未启用 RAG 源，跳过 RAG 检索")
+        return []
 
     def _load_mock(self) -> List[RAGReference]:
         if not MOCK_RAG_PATH.exists():
@@ -87,7 +100,7 @@ class RAGClient:
         return pack
 
     async def retrieve_pack(self, query: str, top_k: int = 5) -> RAGEvidencePack:
-        """返回完整 RAG evidence pack（mock 或未来 HTTP API）。"""
+        """返回完整 RAG evidence pack。"""
         if self.local_enabled or self.yahoo_enabled:
             packs: List[RAGEvidencePack] = []
             if self.local_enabled:
@@ -98,19 +111,30 @@ class RAGClient:
             merged = self._merge_packs(query, packs, top_k=None)
             if merged.evidence:
                 return merged
-            logger.warning("[RAGClient] 已启用 RAG 源，但未召回证据，回退 mock pack")
+            logger.warning("[RAGClient] 已启用 RAG 源，但未召回证据，返回空 RAG pack")
+            return merged
+
+        if self.use_mock:
+            logger.info("[RAGClient] 使用 mock_rag.json（显式 mock pack 模式）")
             return self._load_mock_pack(query, top_k)
 
-        if self.use_mock or not self.api_url:
-            logger.info("[RAGClient] 使用 mock_rag.json（pack 模式）")
-            return self._load_mock_pack(query, top_k)
-
-        logger.warning("[RAGClient] 真实 API 未实现，回退 mock pack")
-        return self._load_mock_pack(query, top_k)
+        if self.api_url:
+            logger.warning("[RAGClient] 真实 HTTP RAG API 未实现，返回空 RAG pack")
+        else:
+            logger.info("[RAGClient] 未启用 RAG 源，返回空 RAG pack")
+        return RAGEvidencePack(source="disabled", query=query)
 
     def _query_local_annual_report_pack(self, query: str, top_k: int) -> RAGEvidencePack:
         """Query local RAG/data/chroma_db and parse docs/rag输出格式.md evidence pack."""
         try:
+            symbol_hint = _infer_query_symbol(query, self.symbol_aliases_file)
+            annual_symbols = _annual_target_symbols()
+            if symbol_hint and annual_symbols and symbol_hint not in annual_symbols:
+                logger.info(
+                    f"[RAGClient] 年报 RAG 未覆盖 {symbol_hint}，跳过年报库检索"
+                )
+                return RAGEvidencePack(source="annual_report_rag", query=query)
+
             if str(LOCAL_RAG_SRC) not in sys.path:
                 sys.path.insert(0, str(LOCAL_RAG_SRC))
             from rag_reports.indexer import query_evidence_pack
@@ -122,6 +146,12 @@ class RAGClient:
                 env_file=self.local_env_file,
                 top_k=top_k,
             )
+            if symbol_hint:
+                raw_pack["evidence"] = [
+                    item
+                    for item in raw_pack.get("evidence", [])
+                    if _evidence_matches_symbol(item, symbol_hint)
+                ]
             return load_rag_evidence_pack(raw_pack, query=query)
         except Exception as exc:
             logger.error(f"[RAGClient] 本地年报 RAG 查询失败: {exc}")
@@ -144,9 +174,11 @@ class RAGClient:
 
             chroma_client = chromadb.PersistentClient(path=self.yahoo_persist_dir)
             collection = chroma_client.get_collection(name=self.yahoo_collection)
+            where = _build_yahoo_where(_infer_query_symbol(query, self.symbol_aliases_file))
             result = collection.query(
                 query_embeddings=[query_embedding],
                 n_results=top_k,
+                where=where,
                 include=["documents", "metadatas", "distances"],
             )
 
@@ -308,6 +340,102 @@ def _summarize_text(content: str, query: str = "", max_chars: int = 260) -> str:
             start = max(0, pos - 40)
             return text[start : start + max_chars]
     return text[:max_chars]
+
+
+def _infer_query_symbol(query: str, aliases_file: Optional[str] = None) -> Optional[str]:
+    text = (query or "").strip()
+    lower = text.lower()
+
+    explicit_patterns = [
+        r"\bticker\s*[:=]?\s*([A-Z0-9.-]{1,10})\b",
+        r"\bsymbol\s*[:=]?\s*([A-Z0-9.-]{1,10})\b",
+        r"\b(?:NYSE|NASDAQ|AMEX|SSE|SZSE|HKEX)\s*[:：]\s*([A-Z0-9.-]{1,10})\b",
+        r"\$([A-Z]{1,5}(?:-[A-Z]{1,2})?)\b",
+    ]
+    for pattern in explicit_patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1).upper()
+
+    for alias, symbol in _load_symbol_aliases(aliases_file).items():
+        if _alias_matches_query(alias, text, lower):
+            return symbol
+    return None
+
+
+def _load_symbol_aliases(aliases_file: Optional[str]) -> Dict[str, str]:
+    path = Path(aliases_file) if aliases_file else DEFAULT_SYMBOL_ALIASES_PATH
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning(f"[RAGClient] 股票别名配置读取失败: {path} ({exc})")
+        return {}
+
+    aliases: Dict[str, str] = {}
+    items = raw.get("aliases") if isinstance(raw, dict) else None
+    if isinstance(items, dict):
+        for symbol, names in items.items():
+            symbol_text = str(symbol).upper().strip()
+            if isinstance(names, str):
+                names = [names]
+            if not symbol_text or not isinstance(names, list):
+                continue
+            for name in names:
+                alias = str(name).strip()
+                if len(alias) >= 2:
+                    aliases[alias] = symbol_text
+
+    # Longer aliases first, so "Agilent Technologies" wins before "Agilent".
+    return dict(
+        sorted(aliases.items(), key=lambda item: len(item[0]), reverse=True)
+    )
+
+
+def _alias_matches_query(alias: str, text: str, lower_text: str) -> bool:
+    if not alias:
+        return False
+    if any("\u4e00" <= char <= "\u9fff" for char in alias):
+        return alias in text
+
+    escaped = re.escape(alias.lower())
+    return re.search(rf"(?<![A-Za-z0-9]){escaped}(?![A-Za-z0-9])", lower_text) is not None
+
+
+def _build_yahoo_where(symbol: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not symbol:
+        return None
+    return {"symbol": symbol}
+
+
+def _annual_target_symbols() -> set:
+    if not ANNUAL_TARGETS_PATH.exists():
+        return set()
+    try:
+        raw = json.loads(ANNUAL_TARGETS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    return {
+        str(item.get("symbol", "")).upper()
+        for item in raw.get("companies", [])
+        if item.get("symbol")
+    }
+
+
+def _evidence_matches_symbol(item: Dict[str, Any], symbol: str) -> bool:
+    symbol = symbol.upper()
+    metadata = item.get("metadata") or {}
+    values = [
+        item.get("ticker"),
+        item.get("doc_id"),
+        item.get("title"),
+        item.get("company_name"),
+        metadata.get("symbol"),
+        metadata.get("ticker"),
+        metadata.get("company"),
+    ]
+    return any(symbol in str(value).upper() for value in values if value)
 
 
 def _yahoo_title(

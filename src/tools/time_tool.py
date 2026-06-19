@@ -85,28 +85,28 @@ class TimeTool:
         # 
         if not result["extracted_dates"]:
             lowered = query.lower()
-            if any(token in lowered for token in ["", "", "", "", "today"]):
+            if any(token in lowered for token in ["今天", "今日", "当天", "today"]):
                 entry = self._create_date_entry(now)
                 result["extracted_dates"].append(entry)
                 result["query_contains_date"] = True
                 result["relative_reference"] = "today"
-            elif any(token in lowered for token in ["", "", "", "yesterday"]):
+            elif any(token in lowered for token in ["昨天", "昨日", "yesterday"]):
                 entry = self._create_date_entry(now - timedelta(days=1))
                 result["extracted_dates"].append(entry)
                 result["query_contains_date"] = True
                 result["relative_reference"] = "yesterday"
-            elif any(token in lowered for token in ["", "day before yesterday"]):
+            elif any(token in lowered for token in ["前天", "day before yesterday"]):
                 entry = self._create_date_entry(now - timedelta(days=2))
                 result["extracted_dates"].append(entry)
                 result["query_contains_date"] = True
                 result["relative_reference"] = "day_before_yesterday"
-            elif any(token in lowered for token in ["", "", "", "this week"]):
+            elif any(token in lowered for token in ["本周", "这周", "本星期", "this week"]):
                 result["time_filter"] = "week"
                 result["relative_reference"] = "this_week"
-            elif any(token in lowered for token in ["", "last week"]):
+            elif any(token in lowered for token in ["上周", "上星期", "last week"]):
                 result["time_filter"] = "week"
                 result["relative_reference"] = "last_week"
-            elif any(token in lowered for token in ["", "", "this month"]):
+            elif any(token in lowered for token in ["本月", "这个月", "this month"]):
                 result["time_filter"] = "month"
                 result["relative_reference"] = "this_month"
 
@@ -173,7 +173,7 @@ class TimeTool:
             return ""
 
         date = date_info["extracted_dates"][0]
-        return f"{date['year']}{date['month']}{date['day']}"
+        return date.get("formatted") or f"{date['year']}-{date['month']:02d}-{date['day']:02d}"
 
 
 # 

@@ -181,6 +181,7 @@ data/
 !tests/data/
 !docs/package.json
 !docs/package-lock.json
+!financeRAG/rag/company_aliases.json
 !RAG/config/targets.json
 !RAG/data/
 RAG/data/*

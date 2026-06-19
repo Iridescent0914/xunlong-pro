@@ -1,0 +1,32 @@
+{
+  "aliases": {
+    "A": [
+      "Agilent",
+      "Agilent Technologies",
+      "Agilent Technologies Inc"
+    ],
+    "AAPL": [
+      "Apple",
+      "Apple Inc"
+    ],
+    "MSFT": [
+      "Microsoft",
+      "Microsoft Corporation"
+    ],
+    "NVDA": [
+      "NVIDIA",
+      "Nvidia Corporation"
+    ],
+    "600519": [
+      "贵州茅台",
+      "Kweichow Moutai",
+      "Kweichow Moutai Co Ltd"
+    ],
+    "002594": [
+      "比亚迪",
+      "BYD",
+      "BYD Company",
+      "BYD Company Limited"
+    ]
+  }
+}
