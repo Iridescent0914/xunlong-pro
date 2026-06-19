@@ -181,6 +181,10 @@ data/
 !tests/data/
 !docs/package.json
 !docs/package-lock.json
+!RAG/config/targets.json
+!RAG/data/
+RAG/data/*
+!RAG/data/.gitignore
 
 financeRAG/processed_data_optimized/
 *.jsonl

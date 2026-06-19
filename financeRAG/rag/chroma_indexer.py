@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
@@ -32,9 +33,13 @@ def build_chroma_index(
     collection_name: str,
     embedding_client: OpenAICompatibleEmbeddingClient,
     pattern: str = "*_batch_*.jsonl",
-    batch_size: int = 64,
+    batch_size: int = 10,
     source_filter: Optional[str] = None,
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
     limit: Optional[int] = None,
+    random_sample: Optional[int] = None,
+    random_seed: int = 42,
     reset: bool = False,
 ) -> IndexStats:
     """Embed processed JSONL documents and write vectors into Chroma."""
@@ -56,8 +61,12 @@ def build_chroma_index(
         input_path=input_path,
         pattern=pattern,
         source_filter=source_filter,
+        year_from=year_from,
+        year_to=year_to,
     )
 
+    if random_sample is not None:
+        documents = _reservoir_sample(documents, random_sample, random_seed)
     if limit is not None:
         documents = _limited(documents, limit)
 
@@ -94,3 +103,24 @@ def _limited(items: Iterable[ProcessedDocument], limit: int):
             break
         yield item
         count += 1
+
+
+def _reservoir_sample(
+    items: Iterable[ProcessedDocument],
+    sample_size: int,
+    seed: int,
+) -> Iterable[ProcessedDocument]:
+    rng = random.Random(seed)
+    reservoir: List[ProcessedDocument] = []
+
+    for index, item in enumerate(tqdm(items, desc="Sampling docs", unit="doc"), 1):
+        if len(reservoir) < sample_size:
+            reservoir.append(item)
+            continue
+
+        replacement_index = rng.randrange(index)
+        if replacement_index < sample_size:
+            reservoir[replacement_index] = item
+
+    rng.shuffle(reservoir)
+    return iter(reservoir)

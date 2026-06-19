@@ -41,6 +41,8 @@ def iter_processed_documents(
     input_path: str,
     pattern: str = "*.jsonl",
     source_filter: Optional[str] = None,
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
     strict: bool = False,
 ) -> Iterator[ProcessedDocument]:
     """Stream processed FinanceRAG JSONL documents from disk."""
@@ -67,6 +69,8 @@ def iter_processed_documents(
                     continue
                 if source_filter and metadata.get("source") != source_filter:
                     continue
+                if not _year_in_range(metadata.get("report_date"), year_from, year_to):
+                    continue
 
                 metadata = {
                     **metadata,
@@ -82,3 +86,25 @@ def iter_processed_documents(
                     content=str(content),
                     metadata=sanitize_metadata(metadata),
                 )
+
+
+def _year_in_range(
+    report_date: Optional[Any],
+    year_from: Optional[int],
+    year_to: Optional[int],
+) -> bool:
+    if year_from is None and year_to is None:
+        return True
+    if not report_date:
+        return False
+
+    year_text = str(report_date).strip()[:4]
+    if not year_text.isdigit():
+        return False
+
+    year = int(year_text)
+    if year_from is not None and year < year_from:
+        return False
+    if year_to is not None and year > year_to:
+        return False
+    return True

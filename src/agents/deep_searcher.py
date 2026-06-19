@@ -9,7 +9,6 @@ from loguru import logger
 from ..llm.manager import LLMManager
 from ..llm.prompts import PromptManager
 from ..tools.web_searcher import WebSearcher
-from ..tools.content_extractor import ContentExtractor
 from ..tools.time_tool import time_tool
 
 class DeepSearcher:
@@ -19,7 +18,7 @@ class DeepSearcher:
         self.llm_manager = llm_manager
         self.prompt_manager = prompt_manager
         self.web_searcher = WebSearcher()
-        self.content_extractor = ContentExtractor()
+        self.content_extractor = None
         self.name = ""
 
         # Import analyzer and synthesizer for subtask-level processing
@@ -27,6 +26,13 @@ class DeepSearcher:
         from .content_synthesizer import ContentSynthesizerAgent
         self.analyzer = SearchAnalyzerAgent(llm_manager, prompt_manager)
         self.synthesizer = ContentSynthesizerAgent(llm_manager, prompt_manager)
+
+    def _get_content_extractor(self):
+        if self.content_extractor is None:
+            from ..tools.content_extractor import ContentExtractor
+
+            self.content_extractor = ContentExtractor()
+        return self.content_extractor
     
     async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """TODO: Add docstring."""
@@ -162,7 +168,7 @@ class DeepSearcher:
             subtask_time_context = subtask.get("time_context") or time_context or {}
             time_filter = subtask.get("time_filter") or subtask_time_context.get("time_filter")
 
-            search_queries = subtask.get("search_queries", [])
+            search_queries = self._resolve_search_queries(subtask)
             expected_results = subtask.get("expected_results", 5)
 
             all_task_content = []
@@ -202,6 +208,44 @@ class DeepSearcher:
                 "content": [],
                 "error": str(e)
             }
+
+    def _resolve_search_queries(self, subtask: Dict[str, Any]) -> List[str]:
+        """Use LLM-provided search queries, or build conservative fallbacks."""
+
+        queries = [
+            str(query).strip()
+            for query in (subtask.get("search_queries") or [])
+            if str(query).strip()
+        ]
+        if queries:
+            return queries
+
+        title = str(subtask.get("title") or "").strip()
+        keywords = [
+            str(keyword).strip()
+            for keyword in (subtask.get("keywords") or [])
+            if str(keyword).strip()
+        ]
+        if not title and not keywords:
+            return []
+
+        joined_keywords = " ".join(keywords[:4])
+        fallback_queries = []
+        if title and joined_keywords:
+            fallback_queries.append(f"{title} {joined_keywords}")
+        if title:
+            fallback_queries.append(title)
+        if joined_keywords:
+            fallback_queries.append(joined_keywords)
+
+        seen = set()
+        unique_queries = []
+        for query in fallback_queries:
+            if query not in seen:
+                seen.add(query)
+                unique_queries.append(query)
+        logger.info(f"[{self.name}] 使用兜底搜索查询: {unique_queries}")
+        return unique_queries
 
     async def _execute_single_query(
         self,
@@ -279,7 +323,7 @@ class DeepSearcher:
                 for record, result in fallback_requests:
                     url = result.get("url")
                     if url:
-                        extraction_tasks.append(self.content_extractor.extract_content(url))
+                        extraction_tasks.append(self._get_content_extractor().extract_content(url))
                         valid_requests.append((record, result))
 
                 if extraction_tasks:
