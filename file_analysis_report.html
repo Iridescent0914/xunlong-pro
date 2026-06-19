@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>CSV 数据分析测试</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.7; margin: 0; color: #222; background: #eef2f7; }
+* { box-sizing: border-box; }
+.page-container { width: min(1200px, 100%); margin: 0 auto; padding: 24px; }
+.report-header { background: linear-gradient(135deg, #5A6B5C 20%, #0ea5e9 80%); color: #fff; padding: 28px 32px; border-radius: 24px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12); margin-bottom: 24px; }
+.report-header h1 { margin: 0 0 12px; font-size: 2.2rem; letter-spacing: 0.01em; }
+.report-header p { margin: 0; color: #dbeafe; font-size: 1rem; max-width: 860px; }
+.section-card { background: #fff; border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+.section-card h2, .section-card h3 { color: #111827; margin-top: 0; }
+.section-card p { color: #475569; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 24px; box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16); }
+th, td { border: none; padding: 14px 12px; text-align: left; }
+th { background: #f8fafc; color: #0f172a; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
+tr:nth-child(even) td { background: #f8fafc; }
+tr:hover td { background: #eef2ff; }
+.chart-container { width: 100%; min-height: 420px; margin: 24px 0; border-radius: 20px; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08); }
+.chart-box { padding: 18px 20px 0; }
+.chart-box > div { width: 100%; height: 360px; }
+.report-table { overflow-x: auto; max-width: 100%; }
+.section-card table { table-layout: fixed; width: 100%; }
+.section-card th, .section-card td { word-break: break-word; white-space: normal; }
+.section-card td { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.chart-title { margin: 0 0 10px; font-size: 1.05rem; color: #1e293b; }
+.chart-container canvas, .chart-container svg { width: 100% !important; height: 100% !important; }
+/* table controls */
+.table-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.table-controls .btn { background: #5A6B5C; color: #fff; border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+.table-controls .panel { display: none; background: rgba(255,255,255,0.98); border-radius: 8px; padding: 8px; box-shadow: 0 8px 24px rgba(2,6,23,0.08); }
+.table-controls .panel.show { display: block; position: absolute; z-index: 40; }
+.report-table { position: relative; margin-bottom: 18px; }
+/* nicer headings and key points */
+.section-card h2 { display: flex; align-items: center; gap: 12px; font-size: 1.35rem; border-left: 4px solid #0ea5e9; padding-left: 12px; margin-top: 6px; }
+.section-card h3 { color: #064e3b; margin-bottom: 6px; }
+.key-badge { display: inline-block; background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 999px; font-weight: 700; margin-right: 8px; font-size: 0.85rem; }
+.section-card ul { padding-left: 1.1rem; }
+@media (max-width: 900px) { .page-container { padding: 16px; } .report-header h1 { font-size: 1.8rem; } }
+</style>
+</head>
+<body>
+<div class="page-container">
+<div class="report-header">
+<h1>CSV 数据分析测试</h1>
+<p>自动生成数据分析报告，包含关键指标、样本摘要、图表与结构化结论。可直接用于展示或导出。</p>
+</div>
+<div class="section-card">
+<p>本节内容由<strong>金融数据分析智能体</strong>基于网页搜索结果与 RAG 指标口径，经算法抽取与计算生成。</p>
+<p><strong>分析口径</strong>：自动读取 CSV 数据，提取数值与类别列，统计缺失、分布、相关性，并生成可视化推荐。</p>
+<h2>结构化分析</h2>
+<h3>总体结论</h3>
+<ul>
+<li>数据规模：约 242 行、14 列，其中 13 个数值列。</li>
+<li>缺失情况：缺失值很少或无缺失。</li>
+<li>[数据规模] 共 242 行，14 列，其中 13 个数值列、1 个非数值列</li>
+<li>[缺失情况] 数据集中共有 0 个缺失值，缺失率约 0.0%</li>
+<li>[数值列波动] 波动最大的列为 amount，其标准差约为 834079.296</li>
+</ul>
+<h3>风险点</h3>
+<ul>
+<li>缺失情况 需重点关注：数据集中共有 0 个缺失值，缺失率约 0.0%</li>
+<li>数值列波动 需重点关注：波动最大的列为 amount，其标准差约为 834079.296</li>
+</ul>
+<h3>建议</h3>
+<ul>
+<li>当前数据质量较好，可继续基于现有数据进行分析和建模。 </li>
+</ul>
+<h3>核心指标</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>数值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>row_count</td>
+<td>242</td>
+</tr>
+<tr>
+<td>column_count</td>
+<td>14</td>
+</tr>
+<tr>
+<td>numeric_columns</td>
+<td>13</td>
+</tr>
+<tr>
+<td>categorical_columns</td>
+<td>1</td>
+</tr>
+<tr>
+<td>missing_ratio</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+<h3>CSV 数据列摘要</h3>
+<table>
+<thead>
+<tr>
+<th>列名</th>
+<th>类型</th>
+<th>记录数</th>
+<th>缺失值</th>
+<th>缺失率</th>
+<th>均值</th>
+<th>中位数</th>
+<th>标准差</th>
+<th>最小值</th>
+<th>最大值</th>
+<th>唯一值</th>
+<th>首要值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ts_code</td>
+<td>object</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>1</td>
+<td>000001.SZ</td>
+</tr>
+<tr>
+<td>trade_date</td>
+<td>int64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>20180668.459</td>
+<td>20180703.5</td>
+<td>342.538</td>
+<td>20180102</td>
+<td>20181227</td>
+<td>242</td>
+<td></td>
+</tr>
+<tr>
+<td>open</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>10.801</td>
+<td>10.57</td>
+<td>1.438</td>
+<td>8.6</td>
+<td>14.8</td>
+<td>185</td>
+<td></td>
+</tr>
+<tr>
+<td>high</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>10.953</td>
+<td>10.67</td>
+<td>1.482</td>
+<td>8.7</td>
+<td>15.13</td>
+<td>186</td>
+<td></td>
+</tr>
+<tr>
+<td>low</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>10.651</td>
+<td>10.46</td>
+<td>1.407</td>
+<td>8.45</td>
+<td>14.68</td>
+<td>174</td>
+<td></td>
+</tr>
+<tr>
+<td>close</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>10.795</td>
+<td>10.565</td>
+<td>1.439</td>
+<td>8.6</td>
+<td>14.8</td>
+<td>179</td>
+<td></td>
+</tr>
+<tr>
+<td>pre_close</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>10.811</td>
+<td>10.57</td>
+<td>1.446</td>
+<td>8.6</td>
+<td>14.8</td>
+<td>179</td>
+<td></td>
+</tr>
+<tr>
+<td>change</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>-0.016</td>
+<td>-0.015</td>
+<td>0.238</td>
+<td>-1.08</td>
+<td>0.67</td>
+<td>88</td>
+<td></td>
+</tr>
+<tr>
+<td>pct_chg</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>-0.119</td>
+<td>-0.13</td>
+<td>2.133</td>
+<td>-7.71</td>
+<td>7.158</td>
+<td>223</td>
+<td></td>
+</tr>
+<tr>
+<td>vol</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>1140739.518</td>
+<td>995058.905</td>
+<td>598214.0</td>
+<td>299089.62</td>
+<td>3345716.97</td>
+<td>242</td>
+<td></td>
+</tr>
+<tr>
+<td>amount</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>1283952.392</td>
+<td>1044097.362</td>
+<td>834079.296</td>
+<td>305389.21</td>
+<td>4521586.59</td>
+<td>242</td>
+<td></td>
+</tr>
+<tr>
+<td>index</td>
+<td>int64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>1.0</td>
+<td>1.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>next_close</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>10.777</td>
+<td>10.56</td>
+<td>1.43</td>
+<td>8.6</td>
+<td>14.8</td>
+<td>178</td>
+<td></td>
+</tr>
+<tr>
+<td>logreturn</td>
+<td>float64</td>
+<td>242</td>
+<td>0</td>
+<td>0.0%</td>
+<td>-0.002</td>
+<td>-0.001</td>
+<td>0.021</td>
+<td>-0.08</td>
+<td>0.069</td>
+<td>237</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>CSV 前 5 行样本</h3>
+<table>
+<thead>
+<tr>
+<th>ts_code</th>
+<th>trade_date</th>
+<th>open</th>
+<th>high</th>
+<th>low</th>
+<th>close</th>
+<th>pre_close</th>
+<th>change</th>
+<th>pct_chg</th>
+<th>vol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>000001.SZ</td>
+<td>20181227</td>
+<td>9.45</td>
+<td>9.49</td>
+<td>9.28</td>
+<td>9.28</td>
+<td>9.3</td>
+<td>-0.02</td>
+<td>-0.2151</td>
+<td>624593.27</td>
+</tr>
+<tr>
+<td>000001.SZ</td>
+<td>20181226</td>
+<td>9.35</td>
+<td>9.42</td>
+<td>9.27</td>
+<td>9.3</td>
+<td>9.34</td>
+<td>-0.04</td>
+<td>-0.4283</td>
+<td>421140.6</td>
+</tr>
+<tr>
+<td>000001.SZ</td>
+<td>20181225</td>
+<td>9.29</td>
+<td>9.43</td>
+<td>9.21</td>
+<td>9.34</td>
+<td>9.42</td>
+<td>-0.08</td>
+<td>-0.8493</td>
+<td>586615.45</td>
+</tr>
+<tr>
+<td>000001.SZ</td>
+<td>20181224</td>
+<td>9.4</td>
+<td>9.45</td>
+<td>9.31</td>
+<td>9.42</td>
+<td>9.45</td>
+<td>-0.03</td>
+<td>-0.3175</td>
+<td>509117.67</td>
+</tr>
+<tr>
+<td>000001.SZ</td>
+<td>20181221</td>
+<td>9.68</td>
+<td>9.7</td>
+<td>9.33</td>
+<td>9.45</td>
+<td>9.71</td>
+<td>-0.26</td>
+<td>-2.6777</td>
+<td>1000616.76</td>
+</tr>
+</tbody>
+</table>
+<h3>分析结论</h3>
+<ol>
+<li><strong>LLM 分析</strong>：总体结论：<br />
+该数据集包含242行和14列，其中13列为数值型，1列为非数值型。数据集中没有缺失值，数据质量较高。大部分数值列的波动性适中，其中“amount”列的标准差最大，表明其波动性较大。存在高度相关的特征组合，如“open”与“high”、“low”、“close”之间的相关性非常高。</li>
+</ol>
+<p>风险点：<br />
+1. 数据波动性：尽管大部分数值列的波动性适中，但“amount”列的波动性较大，可能存在异常值或极端情况，需要进一步分析。<br />
+2. 高度相关性：数据集中存在高度相关的特征组合，这可能导致模型训练过程中出现多重共线性问题，影响模型的稳定性和预测能力。</p>
+<p>建议：<br />
+1. 对“amount”列进行异常值检测和处理，以减少其对分析结果的影响。<br />
+2. 考虑对高度相关的特征进行降维处理，如使用主成分分析（PCA）等方法，以减少多重共线性问题。<br />
+3. 在模型训练过程中，对相关特征进行适当的组合或筛选，以提高模型的预测性能。<br />
+4. 对数据进行更深入的分析，如时间序列分析、相关性分析等，以挖掘数据背后的潜在规律和趋势。<br />
+5. 考虑数据集的代表性，确保分析结果对实际业务具有指导意义。<br />
+   - 依据：LLM<br />
+2. <strong>自动分析摘要</strong>：数据规模：约 242 行、14 列，其中 13 个数值列。<br />
+缺失情况：缺失值很少或无缺失。<br />
+[数据规模] 共 242 行，14 列，其中 13 个数值列、1 个非数值列<br />
+   - 依据：rule-based<br />
+3. <strong>数据规模</strong>：共 242 行，14 列，其中 13 个数值列、1 个非数值列<br />
+   - 依据：自动统计<br />
+4. <strong>缺失情况</strong>：数据集中共有 0 个缺失值，缺失率约 0.0%<br />
+   - 依据：自动统计<br />
+5. <strong>数值列波动</strong>：波动最大的列为 amount，其标准差约为 834079.296<br />
+   - 依据：自动统计<br />
+6. <strong>高度相关特征</strong>：检测到强相关列组合：open/high=0.994, open/low=0.994, open/close=0.988<br />
+   - 依据：自动相关性分析</p>
+<h3>分析图表</h3>
+<ul>
+<li>数值列均值与波动（chart）</li>
+<li>数值列相关性（chart）</li>
+</ul>
+</div>
+<div class="chart-container"><div class="chart-box"><h3 class="chart-title">数值列均值与波动</h3><div id="chart_1_0"></div></div></div>
+<div class="chart-container"><div class="chart-box"><h3 class="chart-title">数值列相关性</h3><div id="chart_1_1"></div></div></div>
+<script>
+var __generated_charts = [];
+
+var chart_inst_0 = echarts.init(document.getElementById('chart_1_0')); chart_inst_0.setOption({"title": {"text": "数值列均值与波动", "subtext": "", "left": "center", "textStyle": {"fontSize": 18, "fontWeight": "bold"}}, "legend": {"data": ["均值", "标准差"], "top": "bottom"}, "grid": {"left": "3%", "right": "4%", "bottom": "10%", "containLabel": true}, "xAxis": {"type": "category", "data": ["trade_date", "open", "high", "low", "close", "pre_close", "change", "pct_chg", "vol", "amount"], "axisPointer": {"type": "shadow"}, "axisLabel": {"interval": 0, "rotate": 30}}, "yAxis": [{"type": "value", "name": "平均值", "min": 0, "axisLabel": {"formatter": "{value}"}}, {"type": "value", "name": "标准差", "min": 0, "axisLabel": {"formatter": "{value}"}}], "series": [{"name": "均值", "type": "bar", "data": [20180668.459, 10.801, 10.953, 10.651, 10.795, 10.811, -0.016, -0.119, 1140739.518, 1283952.392], "label": {"show": true, "position": "top"}}, {"name": "标准差", "type": "line", "yAxisIndex": 1, "data": [342.538, 1.438, 1.482, 1.407, 1.439, 1.446, 0.238, 2.133, 598214.0, 834079.296], "label": {"show": true}}], "animation": false}); __generated_charts.push(chart_inst_0);
+var chart_inst_1 = echarts.init(document.getElementById('chart_1_1')); chart_inst_1.setOption({"title": {"text": "数值列相关性", "subtext": "", "left": "center", "textStyle": {"fontSize": 18, "fontWeight": "bold"}}, "grid": {"height": "60%", "top": "15%"}, "xAxis": {"type": "category", "data": ["trade_date", "open", "high", "low", "close", "pre_close", "change", "pct_chg", "vol", "amount", "index", "next_close", "logreturn"], "splitArea": {"show": true}, "axisLabel": {"interval": 0, "rotate": 30}}, "yAxis": {"type": "category", "data": ["trade_date", "open", "high", "low", "close", "pre_close", "change", "pct_chg", "vol", "amount", "index", "next_close", "logreturn"], "splitArea": {"show": true}}, "visualMap": {"min": 0, "max": 1, "calculable": false, "orient": "horizontal", "left": "center", "bottom": "5%", "show": true}, "series": [{"name": "数值列相关性", "type": "heatmap", "data": [[0, 0, 1.0], [1, 0, -0.676], [2, 0, -0.674], [3, 0, -0.673], [4, 0, -0.673], [5, 0, -0.674], [6, 0, 0.028], [7, 0, 0.021], [8, 0, -0.421], [9, 0, -0.517], [10, 0, 0.0], [11, 0, -0.669], [12, 0, 0.041], [0, 1, -0.676], [1, 1, 1.0], [2, 1, 0.994], [3, 1, 0.994], [4, 1, 0.988], [5, 1, 0.998], [6, 1, -0.084], [7, 1, -0.077], [8, 1, 0.588], [9, 1, 0.734], [10, 1, 0.0], [11, 1, 0.973], [12, 1, -0.124], [0, 2, -0.674], [1, 2, 0.994], [2, 2, 1.0], [3, 2, 0.994], [4, 2, 0.996], [5, 2, 0.992], [6, 2, -0.005], [7, 2, 0.003], [8, 2, 0.632], [9, 2, 0.77], [10, 2, 0.0], [11, 2, 0.981], [12, 2, -0.116], [0, 3, -0.673], [1, 3, 0.994], [2, 3, 0.994], [3, 3, 1.0], [4, 3, 0.995], [5, 3, 0.992], [6, 3, -0.008], [7, 3, -0.005], [8, 3, 0.561], [9, 3, 0.712], [10, 3, 0.0], [11, 3, 0.981], [12, 3, -0.114], [0, 4, -0.673], [1, 4, 0.988], [2, 4, 0.996], [3, 4, 0.995], [4, 4, 1.0], [5, 4, 0.986], [6, 4, 0.055], [7, 4, 0.061], [8, 4, 0.602], [9, 4, 0.744], [10, 4, 0.0], [11, 4, 0.986], [12, 4, -0.113], [0, 5, -0.674], [1, 5, 0.998], [2, 5, 0.992], [3, 5, 0.992], [4, 5, 0.986], [5, 5, 1.0], [6, 5, -0.109], [7, 5, -0.102], [8, 5, 0.594], [9, 5, 0.738], [10, 5, 0.0], [11, 5, 0.971], [12, 5, -0.124], [0, 6, 0.028], [1, 6, -0.084], [2, 6, -0.005], [3, 6, -0.008], [4, 6, 0.055], [5, 6, -0.109], [6, 6, 1.0], [7, 6, 0.989], [8, 6, 0.036], [9, 6, 0.017], [10, 6, 0.0], [11, 6, 0.069], [12, 6, 0.067], [0, 7, 0.021], [1, 7, -0.077], [2, 7, 0.003], [3, 7, -0.005], [4, 7, 0.061], [5, 7, -0.102], [6, 7, 0.989], [7, 7, 1.0], [8, 7, 0.075], [9, 7, 0.049], [10, 7, 0.0], [11, 7, 0.072], [12, 7, 0.057], [0, 8, -0.421], [1, 8, 0.588], [2, 8, 0.632], [3, 8, 0.561], [4, 8, 0.602], [5, 8, 0.594], [6, 8, 0.036], [7, 8, 0.075], [8, 8, 1.0], [9, 8, 0.972], [10, 8, 0.0], [11, 8, 0.584], [12, 8, -0.108], [0, 9, -0.517], [1, 9, 0.734], [2, 9, 0.77], [3, 9, 0.712], [4, 9, 0.744], [5, 9, 0.738], [6, 9, 0.017], [7, 9, 0.049], [8, 9, 0.972], [9, 9, 1.0], [10, 9, 0.0], [11, 9, 0.723], [12, 9, -0.129], [0, 10, 0.0], [1, 10, 0.0], [2, 10, 0.0], [3, 10, 0.0], [4, 10, 0.0], [5, 10, 0.0], [6, 10, 0.0], [7, 10, 0.0], [8, 10, 0.0], [9, 10, 0.0], [10, 10, 0.0], [11, 10, 0.0], [12, 10, 0.0], [0, 11, -0.669], [1, 11, 0.973], [2, 11, 0.981], [3, 11, 0.981], [4, 11, 0.986], [5, 11, 0.971], [6, 11, 0.069], [7, 11, 0.072], [8, 11, 0.584], [9, 11, 0.723], [10, 11, 0.0], [11, 11, 1.0], [12, 11, 0.05], [0, 12, 0.041], [1, 12, -0.124], [2, 12, -0.116], [3, 12, -0.114], [4, 12, -0.113], [5, 12, -0.124], [6, 12, 0.067], [7, 12, 0.057], [8, 12, -0.108], [9, 12, -0.129], [10, 12, 0.0], [11, 12, 0.05], [12, 12, 1.0]], "label": {"show": true, "fontSize": 14, "fontWeight": "bold"}, "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0, 0, 0, 0.5)"}}}], "animation": false}); __generated_charts.push(chart_inst_1);
+window.addEventListener('resize', function(){ __generated_charts.forEach(function(c){ try{ c.resize(); }catch(e){} }); });
+
+(function(){
+  function processTables(){
+    var tables = document.querySelectorAll('.section-card table');
+    tables.forEach(function(table, tIdx){
+      // wrap if not wrapped
+      var wrap = table.closest('.report-table');
+      if(!wrap){
+        var container = document.createElement('div'); container.className = 'report-table';
+        table.parentNode.insertBefore(container, table);
+        container.appendChild(table);
+      }
+      // compute headers
+      var headers = table.querySelectorAll('thead th');
+      var colCount = headers.length || (table.rows[0] ? table.rows[0].cells.length : 0);
+      // add colgroup widths if missing
+      if(!table.querySelector('colgroup')){
+        var colgroup = document.createElement('colgroup');
+        var widths = [];
+        if(colCount <= 4){
+          for(var i=0;i<colCount;i++) widths.push((100/colCount).toFixed(2)+'%');
+        } else {
+          widths.push('18%');
+          var remain = 82;
+          var mid = colCount-2;
+          for(var i=0;i<mid;i++) widths.push((remain/mid).toFixed(2)+'%');
+          widths.push('12%');
+        }
+        for(var i=0;i<colCount;i++){ var c = document.createElement('col'); c.style.width = widths[i] || 'auto'; colgroup.appendChild(c); }
+        table.insertBefore(colgroup, table.firstChild);
+      }
+      // add title tooltips for long cells
+      Array.from(table.querySelectorAll('td')).forEach(function(td){ var txt = td.textContent || ''; if(txt.length>35) td.setAttribute('title', txt.trim()); });
+      // add column controls panel
+      var controls = document.createElement('div'); controls.className = 'table-controls';
+      var btn = document.createElement('button'); btn.className = 'btn'; btn.innerText = '列显示';
+      var panel = document.createElement('div'); panel.className = 'panel';
+      panel.style.display = 'none';
+      headers.forEach(function(h, idx){ var label = h.textContent || ('列'+(idx+1)); var cb = document.createElement('label'); cb.style.display='block'; cb.style.margin='4px 8px'; var input = document.createElement('input'); input.type='checkbox'; input.checked = true; input.dataset.col = idx; input.style.marginRight='6px'; input.addEventListener('change', function(e){ toggleColumn(table, parseInt(this.dataset.col,10), this.checked); }); cb.appendChild(input); cb.appendChild(document.createTextNode(label)); panel.appendChild(cb); });
+      btn.addEventListener('click', function(e){ panel.style.display = panel.style.display === 'block' ? 'none' : 'block'; });
+      controls.appendChild(btn); controls.appendChild(panel);
+      table.parentNode.insertBefore(controls, table);
+    });
+  }
+  function toggleColumn(table, colIndex, show){
+    var rows = table.rows;
+    for(var r=0;r<rows.length;r++){ var cell = rows[r].cells[colIndex]; if(cell) cell.style.display = show ? '' : 'none'; }
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', processTables); else processTables();
+})();
+</script>
+</body>
+</html>

@@ -34,6 +34,8 @@ from src.agents.data_analysis.evidence_adapter import (
     search_result_to_evidence,
 )
 from src.agents.data_analysis.financial_analyzer import FinancialAnalyzer
+from src.agents.data_analysis.file_analyzer import FileDataAnalyzer
+from src.agents.data_analysis.file_report import build_file_analysis_html, build_file_analysis_markdown
 from src.agents.data_analysis.rag_client import RAGClient
 
 FIXTURES = PROJECT_ROOT / "fixtures"
@@ -179,6 +181,53 @@ class TestDataAnalysisAgent:
         )
         assert result["status"] == "success"
         assert result["result"]["source_type"] == "mock"
+
+
+class TestFileDataAnalyzer:
+    def test_csv_analysis_generates_summary_and_charts(self):
+        csv_content = (
+            "date,revenue,profit\n"
+            "2024-01,100,10\n"
+            "2024-02,120,12\n"
+            "2024-03,140,14\n"
+        )
+        analyzer = FileDataAnalyzer()
+        result = analyzer.analyze_file(
+            query="测试CSV",
+            file_name="sample.csv",
+            file_type="csv",
+            file_content=csv_content,
+        )
+
+        assert result["status"] == "success"
+        assert result["source_type"] == "csv"
+        assert result["metrics"]["row_count"] == 3
+        assert result["metrics"]["column_count"] == 3
+        assert result["tables"]
+        assert result["charts"]
+        section = build_file_analysis_markdown({
+            "title": "测试报告",
+            "content": "测试内容",
+            "content_html": "<p>测试内容</p>",
+            "charts": result["charts"],
+        })
+        assert "# 测试报告" in section
+
+    def test_text_analysis_generates_keywords(self):
+        text_content = "这是一个测试文本。文本中出现关键词：财务、盈利、增长。财务分析结果需要重点关注。"
+        analyzer = FileDataAnalyzer()
+        result = analyzer.analyze_file(
+            query="测试文本",
+            file_name="sample.txt",
+            file_type="text",
+            file_content=text_content,
+        )
+
+        assert result["status"] == "success"
+        assert result["source_type"] == "text"
+        assert result["metrics"]["word_count"] > 0
+        assert result["tables"]
+        assert result["charts"]
 
 
 class TestFixtures:

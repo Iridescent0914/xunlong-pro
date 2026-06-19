@@ -48,6 +48,11 @@ def _build_markdown(data: Dict[str, Any]) -> str:
         parts.append("本节内容由**金融数据分析智能体**基于网页搜索结果与 RAG 指标口径，经算法抽取与计算生成。")
         parts.append(f"\n**分析口径**：{methodology}\n")
 
+    analysis_summary = data.get("analysis_summary")
+    if analysis_summary:
+        parts.append(analysis_summary)
+        parts.append("")
+
     metrics = data.get("metrics", {})
     if metrics:
         parts.append("### 核心指标\n")
@@ -59,6 +64,8 @@ def _build_markdown(data: Dict[str, Any]) -> str:
         parts.append("")
 
     for table in data.get("tables", []):
+        if table.get("title") == "数值列相关性矩阵":
+            continue
         parts.append(f"### {table.get('title', '数据表')}\n")
         columns = table.get("columns", [])
         rows = table.get("rows", [])
@@ -118,16 +125,29 @@ def _build_markdown(data: Dict[str, Any]) -> str:
 def _normalize_charts(charts: List[Dict[str, Any]], section_index: int) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     for j, chart in enumerate(charts):
-        spec = chart.get("spec", {})
-        chart_id = spec.get("id") or f"chart_da_{j}"
+        # support two shapes: {"spec": {"id":..., "option":...}, ...} or {"id":..., "option":..., ...}
+        spec = chart.get("spec") or {}
+        chart_id = None
+        option = None
+
+        if spec:
+            chart_id = spec.get("id")
+            option = spec.get("option")
+        else:
+            chart_id = chart.get("id")
+            option = chart.get("option")
+
+        chart_id = chart_id or f"chart_da_{j}"
         chart_id = f"chart_{section_index}_{j}"
 
-        option = spec.get("option", {})
         if isinstance(option, str):
             try:
                 option = json.loads(option)
             except json.JSONDecodeError:
                 option = {}
+
+        if option is None:
+            option = {}
 
         normalized.append({
             "id": chart_id,
