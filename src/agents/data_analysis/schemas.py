@@ -30,11 +30,20 @@ class DataChart(BaseModel):
 
 
 class RAGReference(BaseModel):
-    """RAG 检索引用片段。"""
+    """RAG 检索引用片段，保留报告溯源所需的元数据。"""
 
-    content: str
-    source: str
+    content: str = ""
+    source: str = ""
     score: float = 0.0
+    title: str = ""
+    url: str = ""
+    date: Optional[str] = None
+    doc_type: str = ""
+    ticker: str = ""
+    evidence_id: str = ""
+    page_start: Optional[str] = None
+    page_end: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class SearchReference(BaseModel):
@@ -80,11 +89,15 @@ class DataAnalysisResult(BaseModel):
 
 class EvidenceItem(BaseModel):
     evidence_id: str = Field(default="", description="证据唯一ID")
+    doc_id: str = Field(default="")
     doc_type: str = Field(default="", description="文档类型，如 news/sec_filing")
     title: str = Field(default="")
     date: Optional[str] = Field(default=None)
     source: str = Field(default="")
     url: Optional[str] = Field(default=None)
+    ticker: str = Field(default="")
+    company_name: str = Field(default="")
+    chunk_id: Optional[Any] = Field(default=None)
     content: Optional[str] = Field(default=None)
     summary: Optional[str] = Field(default=None)
     score: float = Field(default=0.0)

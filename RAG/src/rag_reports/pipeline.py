@@ -35,6 +35,7 @@ def run_pdf_rag_pipeline(
             companies=companies,
             years=years,
             limit_reports=limit_reports,
+            append=append,
         )
 
     download_stats = download_reports_only(
@@ -65,6 +66,7 @@ def discover_reports_only(
     companies: Optional[Iterable[str]] = None,
     years: Optional[Iterable[int]] = None,
     limit_reports: Optional[int] = None,
+    append: bool = False,
 ) -> Dict[str, int]:
     """Discover report URLs and write a manifest without touching JSONL."""
 

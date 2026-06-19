@@ -11,7 +11,7 @@ except ImportError:  # pragma: no cover
 
 from .schemas import DataFinding, DataTable
 
-_SOURCE_INDEX_RE = re.compile(r"\[(\d+)\]")
+_SOURCE_REF_RE = re.compile(r"\[([WRwr]?)(\d+)\]")
 
 
 def build_data_analysis_section(
@@ -155,70 +155,132 @@ def _render_analysis_sources_section(data: Dict[str, Any]) -> List[str]:
 
 
 def _cited_search_refs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """仅返回分析结果表格「来源」列中出现过的搜索结果。"""
+    """Return web/RAG refs cited by the analysis table; supports [W3] and [R1]."""
     search_refs = data.get("search_refs") or []
-    if not search_refs:
-        return []
-
-    indices = _cited_source_indices(data)
-    if not indices:
-        return []
+    rag_refs = data.get("rag_refs") or []
+    cited_keys = _cited_source_indices(data)
 
     cited: List[Dict[str, Any]] = []
-    for idx in sorted(indices):
+    for idx in sorted(cited_keys.get("W", set())):
         if 1 <= idx <= len(search_refs):
             ref = dict(search_refs[idx - 1])
-            ref["_index"] = idx
+            ref["_index"] = f"W{idx}"
+            ref["_kind"] = "web"
             cited.append(ref)
-    return cited
+
+    for idx in sorted(cited_keys.get("R", set())):
+        if 1 <= idx <= len(rag_refs):
+            ref = _normalize_rag_ref(rag_refs[idx - 1], idx)
+            cited.append(ref)
+
+    if cited:
+        return cited
+
+    # Fallback: do not show empty sources when evidence exists but the table omitted source IDs.
+    fallback: List[Dict[str, Any]] = []
+    for idx, ref in enumerate(search_refs[:5], 1):
+        item = dict(ref)
+        item["_index"] = f"W{idx}"
+        item["_kind"] = "web"
+        fallback.append(item)
+    for idx, ref in enumerate(rag_refs[:3], 1):
+        fallback.append(_normalize_rag_ref(ref, idx))
+    return fallback
 
 
-def _cited_source_indices(data: Dict[str, Any]) -> Set[int]:
-    indices: Set[int] = set()
+def _normalize_rag_ref(ref: Any, idx: int) -> Dict[str, Any]:
+    if hasattr(ref, "model_dump"):
+        raw = ref.model_dump()
+    elif isinstance(ref, dict):
+        raw = dict(ref)
+    else:
+        raw = {"content": str(ref)}
+
+    metadata = raw.get("metadata") or {}
+    title = raw.get("title") or raw.get("source") or f"RAG证据{idx}"
+    snippet = raw.get("snippet") or raw.get("content") or ""
+    page_start = raw.get("page_start") or metadata.get("page_start")
+    page_end = raw.get("page_end") or metadata.get("page_end")
+    detail_parts = []
+    if raw.get("date"):
+        detail_parts.append(str(raw["date"]))
+    if page_start:
+        page_text = f"p.{page_start}"
+        if page_end and str(page_end) != str(page_start):
+            page_text += f"-{page_end}"
+        detail_parts.append(page_text)
+    if raw.get("ticker"):
+        detail_parts.append(str(raw["ticker"]))
+    display_title = f"{title} ({', '.join(detail_parts)})" if detail_parts else title
+
+    return {
+        "title": display_title,
+        "url": raw.get("url", ""),
+        "snippet": snippet,
+        "source": raw.get("source", ""),
+        "date": raw.get("date"),
+        "doc_type": raw.get("doc_type", ""),
+        "page_start": page_start,
+        "page_end": page_end,
+        "_index": f"R{idx}",
+        "_kind": "rag",
+    }
+
+
+def _cited_source_indices(data: Dict[str, Any]) -> Dict[str, Set[int]]:
+    indices: Dict[str, Set[int]] = {"W": set(), "R": set()}
 
     analysis_table = data.get("analysis_table")
     if isinstance(analysis_table, dict):
-        indices.update(_indices_from_table(analysis_table))
+        _merge_indices(indices, _indices_from_table(analysis_table))
 
     for block in data.get("source_blocks") or []:
         table = block.get("table")
         if isinstance(table, dict):
             table_indices = _indices_from_table(table)
-            if table_indices:
-                indices.update(table_indices)
+            if table_indices["W"] or table_indices["R"]:
+                _merge_indices(indices, table_indices)
             elif block.get("source_index") is not None:
                 try:
-                    indices.add(int(block["source_index"]))
+                    indices["W"].add(int(block["source_index"]))
                 except (TypeError, ValueError):
                     pass
 
     for table in data.get("tables") or []:
         if isinstance(table, dict):
-            indices.update(_indices_from_table(table))
+            _merge_indices(indices, _indices_from_table(table))
 
     return indices
 
 
-def _indices_from_table(table: Dict[str, Any]) -> Set[int]:
+def _merge_indices(target: Dict[str, Set[int]], source: Dict[str, Set[int]]) -> None:
+    target["W"].update(source.get("W", set()))
+    target["R"].update(source.get("R", set()))
+
+
+def _indices_from_table(table: Dict[str, Any]) -> Dict[str, Set[int]]:
     columns = [str(c) for c in (table.get("columns") or [])]
     rows = table.get("rows") or []
+    indices: Dict[str, Set[int]] = {"W": set(), "R": set()}
     if not columns or not rows:
-        return set()
+        return indices
 
     source_col = next(
-        (i for i, col in enumerate(columns) if "来源" in col),
+        (i for i, col in enumerate(columns) if "\u6765\u6e90" in col),
         None,
     )
     if source_col is None:
-        return set()
+        return indices
 
-    indices: Set[int] = set()
     for row in rows:
         if source_col >= len(row):
             continue
         cell = str(row[source_col])
-        for match in _SOURCE_INDEX_RE.finditer(cell):
-            indices.add(int(match.group(1)))
+        for match in _SOURCE_REF_RE.finditer(cell):
+            prefix = (match.group(1) or "W").upper()
+            if prefix not in indices:
+                prefix = "W"
+            indices[prefix].add(int(match.group(2)))
     return indices
 
 

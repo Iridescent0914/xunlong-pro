@@ -15,16 +15,17 @@ _MAX_CHARS_PER_SOURCE = 2500
 
 _SYSTEM_PROMPT = """你是专业的金融与商业数据分析助手。
 
-任务：阅读用户提供的多篇网页搜索结果，针对用户的「分析问题」，抽取所有在原文中有明确文字依据的数值指标，整理成一张 Markdown 数据表。
+任务：阅读用户提供的多篇网页搜索结果和 RAG 检索证据，针对用户的「分析问题」，抽取所有在原文中有明确文字依据的数值指标，整理成一张 Markdown 数据表。
 
 ## 抽取规则（必须严格遵守）
 
 1. **禁止编造**：所有数值必须能在对应来源正文中找到原文依据；禁止估算、外推、补全或合并不同来源的冲突数字。
 2. **主题相关**：只抽取与用户 query 直接相关的指标（例如 query 问「华为2024年营收」→ 抽营收、收入、净利润、同比增长、研发投入等；不要抽无关公司的数据）。
 3. **保留单位与期间**：数值列保留原文单位（亿元、%、美元等）；有年份/季度则写入「期间」列。
-4. **来源可追溯**：每行必须在「来源」列标注 `[N]`（对应搜索结果编号），在「原文依据」列摘录 ≤40 字的原文片段。
+4. **来源可追溯**：每行必须在「来源」列标注 `[W1]` / `[W2]`（网页证据）或 `[R1]` / `[R2]`（RAG 证据），不要使用无前缀的 `[1]`，在「原文依据」列摘录 ≤40 字的原文片段。
 5. **冲突处理**：若不同来源对同一指标给出不同数值，分多行列出，不要取平均或自行选择。
-6. **空结果**：若所有来源均无相关数值，`rows` 返回空数组，`conclusion` 说明原因。
+6. **英文金额单位**：`$1.86B` / `$1.86 billion` 必须保留为 `$1.86B` 或准确转换为 `18.6 亿美元`；禁止写成 `1.86 亿美元`。`$6.95B` 应为 `69.5 亿美元`，不是 `6.95 亿美元`。`$7.30B to $7.40B` 应为 `73 亿至 74 亿美元`。
+7. **空结果**：若所有来源均无相关数值，`rows` 返回空数组，`conclusion` 说明原因。
 
 ## 输出格式
 
@@ -35,7 +36,7 @@ _SYSTEM_PROMPT = """你是专业的金融与商业数据分析助手。
     "title": "表标题，体现 query 主题",
     "columns": ["指标", "数值", "期间", "来源", "原文依据"],
     "rows": [
-      ["2024年营业收入", "8621亿元", "2024", "[1]", "销售收入8,621亿"]
+      ["2024年营业收入", "8621亿元", "2024", "[W1]", "销售收入8,621亿"]
     ]
   },
   "conclusion": "基于上表 2~4 句中文分析，数值须与表格一致",
@@ -56,13 +57,12 @@ async def extract_table_from_search(
     query: str,
     search_results: List[Dict[str, Any]],
     llm_callback: LLMCallback,
+    rag_evidence: Optional[List[Any]] = None,
 ) -> Optional[LLMSearchAnalysis]:
-    """把搜到的网页正文交给 LLM，返回数值表格与分析结论。"""
-    if not search_results:
-        return None
-
+    """把搜到的网页正文与 RAG 证据交给 LLM，返回数值表格与分析结论。"""
     pages = _format_search_pages(search_results)
-    if not pages:
+    rag_pages = _format_rag_pages(rag_evidence or [])
+    if not pages and not rag_pages:
         return None
 
     user_prompt = json.dumps(
@@ -70,11 +70,12 @@ async def extract_table_from_search(
             "query": query,
             "search_result_count": len(pages),
             "search_results": pages,
+            "rag_result_count": len(rag_pages),
+            "rag_results": rag_pages,
         },
         ensure_ascii=False,
         indent=2,
     )
-
     try:
         response = await llm_callback(user_prompt, _SYSTEM_PROMPT)
         parsed = _parse_json_response(response)
@@ -128,9 +129,37 @@ def _format_search_pages(search_results: List[Dict[str, Any]]) -> List[Dict[str,
             continue
         pages.append(
             {
-                "index": str(i),
+                "index": f"W{i}",
                 "title": title or f"来源{i}",
                 "url": url,
+                "content": body[:_MAX_CHARS_PER_SOURCE],
+            }
+        )
+    return pages
+
+
+def _format_rag_pages(rag_evidence: List[Any]) -> List[Dict[str, str]]:
+    pages: List[Dict[str, str]] = []
+    for i, item in enumerate(rag_evidence[:_MAX_SOURCES], 1):
+        if hasattr(item, "model_dump"):
+            raw = item.model_dump()
+        elif isinstance(item, dict):
+            raw = item
+        else:
+            continue
+
+        title = str(raw.get("title") or raw.get("source") or f"RAG证据{i}").strip()
+        source = str(raw.get("source") or raw.get("doc_type") or "financial_rag").strip()
+        body = str(raw.get("content") or raw.get("summary") or "").strip()
+        if not title and not body:
+            continue
+        pages.append(
+            {
+                "index": f"R{i}",
+                "title": title or f"RAG证据{i}",
+                "source": source,
+                "url": str(raw.get("url") or ""),
+                "score": str(raw.get("score") or ""),
                 "content": body[:_MAX_CHARS_PER_SOURCE],
             }
         )

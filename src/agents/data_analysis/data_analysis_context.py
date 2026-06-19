@@ -49,6 +49,20 @@ def format_analysis_for_writer(
             {"title": r.get("title", ""), "url": r.get("url", "")}
             for r in data.get("search_refs", [])[:5]
         ],
+        "rag_refs": [
+            {
+                "title": r.get("title", "") or r.get("source", ""),
+                "source": r.get("source", ""),
+                "url": r.get("url", ""),
+                "date": r.get("date"),
+                "doc_type": r.get("doc_type", ""),
+                "page_start": r.get("page_start"),
+                "page_end": r.get("page_end"),
+                "content": (r.get("content", "") or "")[:240],
+                "score": r.get("score", 0),
+            }
+            for r in data.get("rag_refs", [])[:5]
+        ],
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
 

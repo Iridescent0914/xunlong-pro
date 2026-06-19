@@ -94,11 +94,15 @@ def _legacy_refs_to_pack(items: List[Any], query: str) -> RAGEvidencePack:
         evidence_items.append(
             EvidenceItem(
                 evidence_id=item.get("evidence_id") or f"rag_{i:03d}",
+                doc_id=item.get("doc_id", ""),
                 doc_type=item.get("doc_type", "knowledge"),
                 title=item.get("title") or source,
                 date=item.get("date"),
                 source=source,
                 url=item.get("url"),
+                ticker=str(item.get("ticker") or ""),
+                company_name=str(item.get("company_name") or ""),
+                chunk_id=item.get("chunk_id"),
                 content=content,
                 summary=(item.get("summary") or content)[:300],
                 score=float(item.get("score") or 0.0),
@@ -132,11 +136,15 @@ def parse_rag_evidence_pack(raw: Dict[str, Any]) -> RAGEvidencePack:
         evidence_items.append(
             EvidenceItem(
                 evidence_id=ev.get("evidence_id") or f"rag_{i:03d}",
+                doc_id=ev.get("doc_id", ""),
                 doc_type=ev.get("doc_type", ""),
                 title=ev.get("title", ""),
                 date=ev.get("date"),
                 source=ev.get("source", ""),
                 url=ev.get("url"),
+                ticker=str(ev.get("ticker") or ""),
+                company_name=str(ev.get("company_name") or ""),
+                chunk_id=ev.get("chunk_id"),
                 content=ev.get("content", ""),
                 summary=ev.get("summary", ""),
                 score=float(ev.get("score") or 0.0),
@@ -172,17 +180,33 @@ def validate_rag_pack(raw: Dict[str, Any]) -> List[str]:
 
 
 def rag_pack_to_refs(pack: RAGEvidencePack) -> List[RAGReference]:
-    """evidence pack → 下游兼容 rag_refs。"""
+    """evidence pack -> report/API refs, preserving citation metadata."""
     refs: List[RAGReference] = []
     for ev in pack.evidence:
+        metadata = ev.metadata or {}
         refs.append(
             RAGReference(
                 content=ev.summary or ev.content or "",
                 source=ev.source or ev.title,
                 score=ev.score,
+                title=ev.title or ev.source,
+                url=ev.url or "",
+                date=ev.date,
+                doc_type=ev.doc_type,
+                ticker=str(ev.ticker or metadata.get("ticker") or metadata.get("symbol") or ""),
+                evidence_id=ev.evidence_id,
+                page_start=_metadata_text(metadata.get("page_start")),
+                page_end=_metadata_text(metadata.get("page_end")),
+                metadata=metadata,
             )
         )
     return refs
+
+
+def _metadata_text(value: Any) -> Optional[str]:
+    if value is None or value == "":
+        return None
+    return str(value)
 
 
 def build_search_refs(evidence: List[EvidenceItem], limit: int = 5) -> List[SearchReference]:

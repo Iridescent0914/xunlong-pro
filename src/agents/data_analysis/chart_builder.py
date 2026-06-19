@@ -7,8 +7,10 @@ from ..html.echarts_generator import EChartsGenerator
 from .schemas import DataTable
 
 _NUMERIC_CELL_RE = re.compile(
-    r"(-?\d[\d,]*(?:\.\d+)?)\s*(%|％|万亿|亿元|亿|万元|万|美元|元)?"
+    r"(-?\d[\d,]*(?:\.\d+)?)\s*(%|\uff05|\u4e07\u4ebf|\u4ebf\u5143|\u4ebf|\u4e07\u5143|\u4e07|\u7f8e\u5143|\u7f8e\u91d1|\u5143|b|bn|billion)?",
+    re.IGNORECASE,
 )
+
 
 
 def build_chart_for_table(
@@ -42,8 +44,14 @@ def build_chart_for_table(
             )
             return {"type": "line", "title": table_obj.title, "spec": spec}
 
+    cells = [str(row[1]) for row in table_obj.rows[:12]]
+    unit_kinds = {_value_unit_kind(cell) for cell in cells}
+    unit_kinds.discard("plain")
+    if len(unit_kinds) > 1:
+        return None
+
     values = [_parse_metric_value(row[1]) for row in table_obj.rows[:12]]
-    y_axis_name = _infer_y_axis_name([str(row[1]) for row in table_obj.rows[:12]])
+    y_axis_name = _infer_y_axis_name(cells)
     if not any(v != 0 for v in values):
         return None
     spec = generator.add_bar_chart(
@@ -76,6 +84,7 @@ def _parse_metric_value(value: Any) -> float:
 
     number = float(match.group(1).replace(",", ""))
     unit = (match.group(2) or "").strip()
+    unit_lower = unit.lower()
 
     if unit in ("%", "％"):
         return number
@@ -85,7 +94,32 @@ def _parse_metric_value(value: Any) -> float:
         return number
     if unit in ("万", "万元"):
         return number / 10000
+    if unit_lower in ("b", "bn", "billion"):
+        return number * 10
     return number
+
+
+def _value_unit_kind(cell: str) -> str:
+    lowered = str(cell).lower()
+    if "%" in lowered or "％" in lowered:
+        return "percent"
+    amount_tokens = (
+        "$",
+        "billion",
+        "bn",
+        "万亿",
+        "亿元",
+        "亿",
+        "万元",
+        "万",
+        "美元",
+        "美金",
+    )
+    if any(token in lowered for token in amount_tokens):
+        return "amount"
+    if re.search(r"\d\s*b\b", lowered):
+        return "amount"
+    return "plain"
 
 
 def _infer_y_axis_name(cells: List[str]) -> str:
@@ -94,8 +128,9 @@ def _infer_y_axis_name(cells: List[str]) -> str:
         return "百分比（%）"
     if "万亿" in joined:
         return "数值（万亿元）"
-    if "亿" in joined:
-        return "数值（亿元）"
+    if any(token in joined for token in ("亿", "美元", "美金", "$")) or re.search(r"(?i)\d\s*(b|bn|billion)\b", joined):
+        return "数值（亿美元）"
     if "万" in joined:
         return "数值（万元）"
     return "数值"
+
