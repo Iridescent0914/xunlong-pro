@@ -198,6 +198,76 @@ async def startup_diagnostics():
 # API
 # ============================================================
 
+# Data analysis API
+class DataAnalysisRequest(BaseModel):
+    query: str = Field(...)
+    search_results: Optional[List[Dict[str, Any]]] = Field(None)
+    rag_pack: Optional[Dict[str, Any]] = Field(None)
+    use_mock: bool = Field(False)
+
+
+@app.post("/api/v1/data_analysis/charts")
+async def data_analysis_charts(request: DataAnalysisRequest):
+    """返回 ECharts option 列表及结构化分析结果。"""
+    try:
+        from src.agents.data_analysis.rag_client import RAGClient
+        from src.agents.data_analysis.evidence_adapter import parse_rag_evidence_pack, build_analysis_input
+        from src.agents.data_analysis.financial_analyzer import FinancialAnalyzer
+        from src.agents.data_analysis.chart_builder import build_charts
+        from src.agents.data_analysis.report_section import build_data_analysis_section
+
+        query = request.query
+        search_results = request.search_results or []
+        rag_pack_raw = request.rag_pack
+        use_mock = request.use_mock
+
+        # parse rag pack if provided
+        rag_refs = []
+        if rag_pack_raw and isinstance(rag_pack_raw, dict):
+            rag_pack = parse_rag_evidence_pack(rag_pack_raw)
+            # convert to simple RAGReference list for analyzer
+            from src.agents.data_analysis.evidence_adapter import rag_pack_to_refs
+            rag_refs = rag_pack_to_refs(rag_pack)
+        else:
+            # try to retrieve using RAGClient (may be mock)
+            client = RAGClient()
+            rag_refs = await client.retrieve(query)
+
+        analyzer = FinancialAnalyzer()
+        analysis_output = await analyzer.analyze(
+            query=query,
+            search_results=search_results,
+            rag_refs=rag_refs,
+            use_mock=use_mock,
+            llm_callback=None,
+            use_llm=False,
+        )
+
+        charts = build_charts(analysis_output)
+
+        # assemble DataAnalysisResult-like dict
+        result = {
+            "status": "success",
+            "source_type": "web_rag" if search_results else "mock",
+            "metrics": analysis_output.metrics,
+            "tables": [t.model_dump() for t in analysis_output.tables],
+            "charts": charts,
+            "key_findings": [f.model_dump() for f in analysis_output.key_findings],
+            "methodology": analysis_output.methodology,
+            "rag_refs": [r.model_dump() for r in analysis_output.rag_refs],
+            "search_refs": [r.model_dump() for r in analysis_output.search_refs],
+        }
+
+        # build report section for embedding
+        da_section = build_data_analysis_section(result, section_index=999)
+
+        return JSONResponse({"result": result, "charts": charts, "section": da_section})
+
+    except Exception as e:
+        logger.error(f"data_analysis_charts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/v1/tasks/report", response_model=TaskResponse)
 async def create_report_task(request: ReportRequest):
     """

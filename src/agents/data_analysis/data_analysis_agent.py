@@ -10,6 +10,7 @@ from .chart_builder import build_charts
 from .financial_analyzer import FinancialAnalyzer
 from .rag_client import RAGClient
 from .schemas import DataAnalysisResult
+from .evidence_adapter import parse_rag_evidence_pack, rag_pack_to_refs
 
 
 class DataAnalysisAgent(BaseAgent):
@@ -39,7 +40,13 @@ class DataAnalysisAgent(BaseAgent):
         use_mock = input_data.get("use_mock", False)
 
         try:
-            rag_refs = await self.rag_client.retrieve(query)
+            # 支持两种 RAG 输入：1) 外部传入的 rag_pack JSON（优先） 2) 通过 RAGClient 检索
+            rag_pack_raw = input_data.get("rag_pack")
+            if rag_pack_raw and isinstance(rag_pack_raw, dict):
+                rag_pack = parse_rag_evidence_pack(rag_pack_raw)
+                rag_refs = rag_pack_to_refs(rag_pack)
+            else:
+                rag_refs = await self.rag_client.retrieve(query)
             use_llm = input_data.get("use_llm", False)
             analysis = await self.analyzer.analyze(
                 query=query,
