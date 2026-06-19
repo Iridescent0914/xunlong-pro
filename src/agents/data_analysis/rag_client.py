@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from .schemas import RAGReference
+from .evidence_adapter import parse_rag_evidence_pack, rag_pack_to_refs
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MOCK_RAG_PATH = PROJECT_ROOT / "fixtures" / "mock_rag.json"
@@ -38,5 +39,19 @@ class RAGClient:
                     score=0.95,
                 )
             ]
+
         raw = json.loads(MOCK_RAG_PATH.read_text(encoding="utf-8"))
-        return [RAGReference(**item) for item in raw]
+        # raw may be a list of reference dicts or a RAG evidence pack dict
+        if isinstance(raw, list):
+            refs = []
+            for item in raw:
+                if isinstance(item, dict):
+                    refs.append(RAGReference(**{k: v for k, v in item.items() if k in RAGReference.__fields__}))
+            return refs
+
+        if isinstance(raw, dict):
+            # parse as evidence pack
+            pack = parse_rag_evidence_pack(raw)
+            return rag_pack_to_refs(pack)
+
+        return []

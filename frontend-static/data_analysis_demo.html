@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Data Analysis Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; padding: 20px }
+    .chart { width: 100%; height: 360px; margin-bottom: 24px }
+  </style>
+</head>
+<body>
+  <h1>金融数据分析 Demo</h1>
+  <p>点击按钮从后端获取分析并渲染 ECharts 图表（示例使用 fixtures/mock_rag.json）。</p>
+  <button id="btnRun">生成并渲染图表</button>
+  <div id="charts"></div>
+
+  <script>
+    async function run() {
+      document.getElementById('btnRun').disabled = true;
+      document.getElementById('btnRun').innerText = '加载中...';
+      const resp = await fetch('/api/v1/data_analysis/charts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: '分析2024年银行业营收趋势', use_mock: true })
+      });
+      const payload = await resp.json();
+      const charts = payload.charts || [];
+      const container = document.getElementById('charts');
+      container.innerHTML = '';
+      charts.forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'chart';
+        div.id = 'chart_' + i;
+        container.appendChild(div);
+        const chart = echarts.init(div);
+        chart.setOption(c.spec ? (typeof c.spec.option === 'string' ? JSON.parse(c.spec.option) : c.spec.option) : c.option);
+      });
+      document.getElementById('btnRun').innerText = '生成并渲染图表';
+      document.getElementById('btnRun').disabled = false;
+    }
+    document.getElementById('btnRun').addEventListener('click', run);
+  </script>
+</body>
+</html>

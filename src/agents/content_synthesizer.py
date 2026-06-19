@@ -34,8 +34,14 @@ class ContentSynthesizerAgent(BaseAgent):
             query = input_data.get("query", "")
             search_results = input_data.get("search_results", [])
             analysis_results = input_data.get("analysis_results", {})
+            data_analysis_results = input_data.get("data_analysis_results") or {}
 
             logger.info(f"[{self.name}] 综合内容: {query}")
+            if data_analysis_results.get("status") == "success":
+                logger.info(
+                    f"[{self.name}] 含金融数据分析: "
+                    f"{len(data_analysis_results.get('key_findings', []))} 条结论"
+                )
 
             # 从 YAML 加载 system prompt
             system_prompt = self.get_prompt(
@@ -45,12 +51,19 @@ class ContentSynthesizerAgent(BaseAgent):
                 report_type="综合报告"
             )
 
+            da_key_findings = data_analysis_results.get("key_findings", [])
+            da_metrics = data_analysis_results.get("metrics", {})
+            da_methodology = data_analysis_results.get("methodology", "")
+
             # 准备综合数据
             synthesis_data = {
                 "query": query,
                 "search_results_count": len(search_results),
                 "key_insights": analysis_results.get("result", {}).get("key_insights", []),
                 "content_themes": analysis_results.get("result", {}).get("content_themes", []),
+                "data_analysis_findings": da_key_findings,
+                "data_analysis_metrics": da_metrics,
+                "data_analysis_methodology": da_methodology,
                 "top_results": []
             }
 
@@ -75,6 +88,13 @@ class ContentSynthesizerAgent(BaseAgent):
     "content_themes": synthesis_data["content_themes"],
     "results_count": synthesis_data["search_results_count"]
 }, ensure_ascii=False, indent=2)}
+
+## 金融数据分析结果（数字不可改写，须原样引用 value）
+{json.dumps({
+    "methodology": synthesis_data["data_analysis_methodology"],
+    "metrics": synthesis_data["data_analysis_metrics"],
+    "key_findings": synthesis_data["data_analysis_findings"],
+}, ensure_ascii=False, indent=2) if da_key_findings or da_metrics else "（无结构化数据分析）"}
 
 ## 搜索结果来源
 {json.dumps(synthesis_data["top_results"], ensure_ascii=False, indent=2)}
@@ -102,6 +122,7 @@ class ContentSynthesizerAgent(BaseAgent):
 3. **内容优化**: 优化表达方式，提高可读性
 4. **观点平衡**: 平衡不同观点，呈现全面视角
 5. **引用标注**: 重要数据和观点需标注来源
+6. **数据分析章节**: 若上方有 key_findings / metrics，须在 report_content 中包含「## 数据分析」小节，**不得改写 metrics 与 key_findings 中的数值**
 
 请直接输出 JSON 结果："""
 
@@ -133,7 +154,19 @@ class ContentSynthesizerAgent(BaseAgent):
             result["query"] = query
             result["synthesis_timestamp"] = datetime.now().isoformat()
             result["sources_count"] = len(search_results)
-            result["analysis_quality"] = "good" if analysis_results.get("status") == "success" else "limited"
+            has_da = data_analysis_results.get("status") == "success"
+            result["data_analysis_included"] = has_da
+            if has_da:
+                result["data_analysis_summary"] = {
+                    "metrics": da_metrics,
+                    "key_findings_count": len(da_key_findings),
+                    "charts_count": len(data_analysis_results.get("charts", [])),
+                }
+            result["analysis_quality"] = (
+                "good"
+                if analysis_results.get("status") == "success" or has_da
+                else "limited"
+            )
 
             logger.info(f"[{self.name}] 综合完成，字数: {len(result.get('report_content', ''))}")
 

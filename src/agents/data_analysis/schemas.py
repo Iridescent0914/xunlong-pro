@@ -67,3 +67,60 @@ class DataAnalysisResult(BaseModel):
     rag_refs: List[RAGReference] = Field(default_factory=list)
     search_refs: List[SearchReference] = Field(default_factory=list)
     message: Optional[str] = None
+
+
+class EvidenceItem(BaseModel):
+    evidence_id: str = Field(default="", description="证据唯一ID")
+    doc_type: str = Field(default="", description="文档类型，如 news/sec_filing")
+    title: str = Field(default="")
+    date: Optional[str] = Field(default=None)
+    source: str = Field(default="")
+    url: Optional[str] = Field(default=None)
+    content: Optional[str] = Field(default=None)
+    summary: Optional[str] = Field(default=None)
+    score: float = Field(default=0.0)
+    origin: str = Field(default="")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RAGSummary(BaseModel):
+    key_points: List[str] = Field(default_factory=list)
+    risk_factors: List[str] = Field(default_factory=list)
+    data_gaps: List[str] = Field(default_factory=list)
+
+
+class RAGEvidencePack(BaseModel):
+    source: str = Field(default="financial_rag")
+    query: str = Field(default="")
+    normalized_query: Optional[str] = Field(default=None)
+    entities: Dict[str, Any] = Field(default_factory=dict)
+    retrieval_scope: Dict[str, Any] = Field(default_factory=dict)
+    evidence: List[EvidenceItem] = Field(default_factory=list)
+    rag_summary: RAGSummary = Field(default_factory=RAGSummary)
+    quality: Dict[str, Any] = Field(default_factory=dict)
+
+
+class WebSearchEvidencePack(BaseModel):
+    query: str = Field(default="")
+    evidence: List[EvidenceItem] = Field(default_factory=list)
+
+
+class UnifiedEvidence(BaseModel):
+    query: str = Field(default="")
+    company_name: Optional[str] = Field(default="")
+    ticker: Optional[str] = Field(default="")
+    web_evidence: List[EvidenceItem] = Field(default_factory=list)
+    rag_evidence: List[EvidenceItem] = Field(default_factory=list)
+    all_evidence: List[EvidenceItem] = Field(default_factory=list)
+    rag_summary: RAGSummary = Field(default_factory=RAGSummary)
+
+
+class AnalysisInput(BaseModel):
+    query: str = Field(default="")
+    company: Optional[str] = Field(default=None)
+    ticker: Optional[str] = Field(default=None)
+    topic: str = Field(default="general")
+    unified: UnifiedEvidence = Field(default_factory=UnifiedEvidence)
+    search_refs: List[SearchReference] = Field(default_factory=list)
+    rag_refs: List[RAGReference] = Field(default_factory=list)
+    use_mock: bool = Field(default=False)
