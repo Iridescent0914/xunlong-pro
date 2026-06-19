@@ -248,13 +248,14 @@ class DeepSearchCoordinator:
                 }
             )
 
-            #  - PPT
+            #  - PPT / 仅分析结束
             workflow.add_conditional_edges(
                 "search_analyzer",
                 self._route_after_search_analyzer,
                 {
                     "content_synthesizer": "content_synthesizer",
-                    "ppt_generator": "ppt_generator"
+                    "ppt_generator": "ppt_generator",
+                    "completed": END,
                 }
             )
 
@@ -710,6 +711,24 @@ class DeepSearchCoordinator:
                         }
                         logger.info(f"PPT")
 
+                elif output_type == "financial_analysis":
+                    deliverable = str(context.get("deliverable") or "report").lower()
+                    if deliverable == "ppt":
+                        ppt_config = context.get("ppt_config") or {}
+                        state["ppt_config"] = {
+                            "style": ppt_config.get("style", "business"),
+                            "slides": ppt_config.get("slides", 10),
+                            "depth": ppt_config.get("depth", context.get("search_depth", "deep")),
+                            "theme": ppt_config.get("theme", "default"),
+                            "speech_notes": ppt_config.get("speech_notes"),
+                        }
+                        logger.info(
+                            f"金融分析+PPT: style={state['ppt_config']['style']}, "
+                            f"slides={state['ppt_config']['slides']}"
+                        )
+                    else:
+                        logger.info(f"金融分析产出: {deliverable}")
+
             else:
                 # 
                 logger.info("")
@@ -985,7 +1004,8 @@ class DeepSearchCoordinator:
                 topic=query,
                 search_results=search_results,
                 ppt_config=ppt_config,
-                output_dir=output_dir
+                output_dir=output_dir,
+                data_analysis_results=state.get("data_analysis_results"),
             )
 
             if result["status"] == "success":
@@ -1123,15 +1143,29 @@ class DeepSearchCoordinator:
         else:
             return "search_analyzer"
 
+    def _financial_deliverable(self, state: DeepSearchState) -> str:
+        context = state.get("context") or {}
+        return str(context.get("deliverable") or "report").lower()
+
     def _route_after_search_analyzer(self, state: DeepSearchState) -> str:
-        """ - reportppt"""
+        """搜索分析后：report 走综合+报告，ppt 走演示文稿，none 仅保留分析结果。"""
+        if self._is_financial_analysis_mode(state):
+            deliverable = self._financial_deliverable(state)
+            if deliverable == "ppt":
+                logger.info("金融分析模式: 生成 PPT")
+                return "ppt_generator"
+            if deliverable == "none":
+                logger.info("金融分析模式: 跳过报告/PPT")
+                return "completed"
+            logger.info("金融分析模式: 生成综合分析报告")
+            return "content_synthesizer"
+
         output_type = state.get("output_type", "report")
         if output_type == "ppt":
             logger.info("PPT")
             return "ppt_generator"
-        else:
-            logger.info("")
-            return "content_synthesizer"
+        logger.info("")
+        return "content_synthesizer"
 
     def _route_after_synthesis(self, state: DeepSearchState) -> str:
         """TODO: Add docstring."""
@@ -1267,7 +1301,11 @@ class DeepSearchCoordinator:
             
             # 
             if final_state["errors"]:
-                status = "partial_success" if final_state.get("final_report") else "error"
+                has_output = bool(final_state.get("final_report"))
+                if not has_output and self._is_financial_analysis_mode(final_state):
+                    da = final_state.get("data_analysis_results") or {}
+                    has_output = da.get("status") in ("success", "skipped")
+                status = "partial_success" if has_output else "error"
             else:
                 status = "success"
 
@@ -1360,6 +1398,28 @@ class DeepSearchCoordinator:
 
                 logger.info(" 5/5: PPT")
                 state = await self._ppt_generator_node(state)
+
+            elif output_type == "financial_analysis":
+                logger.info(" 2/5: ")
+                state = await self._task_decomposer_node(state)
+
+                logger.info(" 3/5: ")
+                state = await self._deep_searcher_node(state)
+
+                logger.info(" 4/5: ")
+                state = await self._search_analyzer_node(state)
+
+                deliverable = self._financial_deliverable(state)
+                if deliverable == "ppt":
+                    logger.info(" 5/5: PPT")
+                    state = await self._ppt_generator_node(state)
+                elif deliverable == "report":
+                    logger.info(" 5/6: ")
+                    state = await self._content_synthesizer_node(state)
+                    logger.info(" 6/6: ")
+                    state = await self._report_generator_node(state)
+                else:
+                    logger.info(" 5/5: 跳过报告/PPT（仅保留金融数据分析）")
 
             else:
                 # 

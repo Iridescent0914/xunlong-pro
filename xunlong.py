@@ -6,7 +6,7 @@ XunLong - Deep Search & Creation CLI
 import asyncio
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import click
 
@@ -182,6 +182,10 @@ async def _execute_report(query: str, report_type: str, depth: str, max_results:
 
 @cli.command('analyze')
 @click.argument('query')
+@click.option('--deliverable', '-D',
+              type=click.Choice(['report', 'ppt', 'none'], case_sensitive=False),
+              default='report',
+              help='产出物：report 综合分析报告 / ppt 演示文稿 / none 仅金融数据分析')
 @click.option('--depth', '-d',
               type=click.Choice(['surface', 'medium', 'deep'], case_sensitive=False),
               default='deep',
@@ -193,15 +197,27 @@ async def _execute_report(query: str, report_type: str, depth: str, max_results:
 @click.option('--output-format', '-o',
               type=click.Choice(['html', 'md', 'markdown'], case_sensitive=False),
               default='html',
-              help='报告格式：html / md')
+              help='报告格式（仅 --deliverable report 时有效）：html / md')
 @click.option('--html-template',
               type=str,
               default='enhanced_professional',
-              help='HTML 模板')
+              help='HTML 模板（仅 report + html 时有效）')
 @click.option('--html-theme',
               type=str,
               default='light',
-              help='HTML 主题：light / dark')
+              help='HTML 主题（仅 report + html 时有效）：light / dark')
+@click.option('--ppt-style', '-s',
+              type=click.Choice(['ted', 'business', 'academic', 'creative', 'simple'], case_sensitive=False),
+              default='business',
+              help='PPT 风格（仅 --deliverable ppt 时有效）')
+@click.option('--slides', '-n',
+              type=int,
+              default=10,
+              help='PPT 页数（仅 --deliverable ppt 时有效）')
+@click.option('--ppt-theme',
+              type=str,
+              default='default',
+              help='PPT 主题（仅 --deliverable ppt 时有效）')
 @click.option('--mock-search',
               is_flag=True,
               help='使用 fixtures/mock_search.json 代替真实网页搜索（联调/离线）')
@@ -211,48 +227,61 @@ async def _execute_report(query: str, report_type: str, depth: str, max_results:
 @click.option('--verbose', '-v',
               is_flag=True,
               help='显示详细日志')
-def analyze(query, depth, max_results, output_format, html_template, html_theme,
-            mock_search, input_file, verbose):
+def analyze(query, deliverable, depth, max_results, output_format, html_template, html_theme,
+            ppt_style, slides, ppt_theme, mock_search, input_file, verbose):
     """
-    金融数据分析模式：网页搜索 + RAG + 结构化分析 + 报告生成。
+    金融数据分析模式：网页搜索 + 结构化分析，可选生成报告或 PPT。
 
     示例：
 
     \b
         xunlong analyze "分析2024年银行业营收趋势"
-        xunlong analyze "某行业毛利率变化" --depth deep -m 30 -v
+        xunlong analyze "分析华为营收" --deliverable report -o html
+        xunlong analyze "分析华为营收" --deliverable ppt -s business -n 12
+        xunlong analyze "分析华为营收" --deliverable none
         xunlong analyze "测试分析" --mock-search -v
     """
     asyncio.run(_execute_analyze(
-        query, depth, max_results, output_format, html_template, html_theme,
-        mock_search, input_file, verbose,
+        query, deliverable, depth, max_results, output_format, html_template, html_theme,
+        ppt_style, slides, ppt_theme, mock_search, input_file, verbose,
     ))
 
 
 async def _execute_analyze(
     query: str,
+    deliverable: str,
     depth: str,
     max_results: int,
     output_format: str,
     html_template: str,
     html_theme: str,
+    ppt_style: str,
+    slides: int,
+    ppt_theme: str,
     mock_search: bool,
     input_file: Optional[Path],
     verbose: bool,
 ):
     click.echo(click.style("\n=== XunLong 金融数据分析 ===\n", fg="yellow", bold=True))
 
+    deliverable = deliverable.lower()
     output_format = 'md' if output_format in ['markdown', 'md'] else output_format
 
     if verbose:
         click.echo(f"查询: {query}")
+        click.echo(f"产出物: {deliverable}")
         click.echo(f"搜索深度: {depth}")
         click.echo(f"最大结果数: {max_results}")
-        click.echo(f"输出格式: {output_format}")
+        if deliverable == 'report':
+            click.echo(f"报告格式: {output_format}")
+            if output_format == 'html':
+                click.echo(f"HTML 模板: {html_template}")
+                click.echo(f"HTML 主题: {html_theme}")
+        elif deliverable == 'ppt':
+            click.echo(f"PPT 风格: {ppt_style}")
+            click.echo(f"PPT 页数: {slides}")
+            click.echo(f"PPT 主题: {ppt_theme}")
         click.echo(f"Mock 搜索: {'是' if mock_search else '否'}")
-        if output_format == 'html':
-            click.echo(f"HTML 模板: {html_template}")
-            click.echo(f"HTML 主题: {html_theme}")
         click.echo()
 
     user_document = _load_user_document(input_file, verbose)
@@ -261,26 +290,43 @@ async def _execute_analyze(
         agent = DeepSearchAgent()
 
         if verbose:
-            click.echo(click.style("正在执行金融数据分析工作流...", fg="green") + "\n")
+            label = {
+                'report': '正在执行金融数据分析 + 报告生成...',
+                'ppt': '正在执行金融数据分析 + PPT 生成...',
+                'none': '正在执行金融数据分析（不生成报告/PPT）...',
+            }.get(deliverable, '正在执行金融数据分析工作流...')
+            click.echo(click.style(label, fg="green") + "\n")
+
+        context: Dict[str, Any] = {
+            'output_type': 'financial_analysis',
+            'deliverable': deliverable,
+            'search_depth': depth,
+            'max_results': max_results,
+            'use_mock_search': mock_search,
+            **user_document,
+        }
+        if deliverable == 'report':
+            context.update({
+                'output_format': output_format,
+                'html_template': html_template,
+                'html_theme': html_theme,
+            })
+        elif deliverable == 'ppt':
+            context['ppt_config'] = {
+                'style': ppt_style,
+                'slides': slides,
+                'depth': depth,
+                'theme': ppt_theme,
+            }
 
         with click.progressbar(length=100, label='分析中') as bar:
-            result = await agent.search(
-                query,
-                context={
-                    'output_type': 'financial_analysis',
-                    'search_depth': depth,
-                    'max_results': max_results,
-                    'output_format': output_format,
-                    'html_template': html_template,
-                    'html_theme': html_theme,
-                    'use_mock_search': mock_search,
-                    **user_document,
-                },
-            )
+            result = await agent.search(query, context=context)
             bar.update(100)
 
         click.echo()
-        _display_result(result, verbose, output_type='financial_analysis', output_format=output_format)
+        display_type = 'ppt' if deliverable == 'ppt' else 'financial_analysis'
+        display_format = 'html' if deliverable == 'ppt' else output_format
+        _display_result(result, verbose, output_type=display_type, output_format=display_format)
 
     except KeyboardInterrupt:
         click.echo(click.style("\n  ", fg="yellow"))
@@ -870,8 +916,8 @@ def _display_result(result: dict, verbose: bool, output_type: str = 'report', ou
                         click.echo(f"{click.style('', fg='green')} HTML: {click.style(str(html_path), fg='cyan')}")
                         click.echo(f"   {click.style(': HTML', fg='bright_black')}")
 
-    # 金融数据分析结果
-    if output_type == 'financial_analysis':
+    # 金融数据分析结果（report / none / ppt 均会执行分析）
+    if output_type in ('financial_analysis', 'ppt'):
         data = result.get('data_analysis_results') or {}
         if data:
             click.echo(f"\n{click.style('=== 金融数据分析 ===', fg='yellow', bold=True)}")

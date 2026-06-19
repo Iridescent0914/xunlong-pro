@@ -1,7 +1,6 @@
-"""金融数据分析智能体单元测试（mock 模式，不依赖 LLM / 真实 RAG）。"""
+"""金融数据分析智能体单元测试（mock 模式，不依赖真实 LLM / 搜索）。"""
 
 import asyncio
-import importlib
 import json
 import sys
 import types
@@ -24,30 +23,11 @@ if "src.agents" not in sys.modules:
     agents_pkg.__path__ = [str(PROJECT_ROOT / "src" / "agents")]
     sys.modules["src.agents"] = agents_pkg
 
-from src.agents.data_analysis.chart_builder import build_charts
 from src.agents.data_analysis.data_analysis_agent import DataAnalysisAgent
-from src.agents.data_analysis.evidence_adapter import (
-    build_analysis_input,
-    build_web_pack,
-    load_rag_evidence_pack,
-    parse_rag_evidence_pack,
-    rag_pack_to_refs,
-    resolve_search_results,
-    search_result_to_evidence,
-)
-from src.agents.data_analysis.search_relevance import (
-    parse_query_terms,
-    select_relevant_search_results_with_fallback,
-)
-from src.agents.data_analysis.data_analysis_context import (
-    has_usable_analysis,
-    mark_data_integration_sections,
-)
 from src.agents.data_analysis.report_section import build_data_analysis_section
-from src.agents.data_analysis.financial_analyzer import FinancialAnalyzer
+from src.agents.data_analysis.ppt_section import build_data_analysis_slides
 from src.agents.data_analysis.file_analyzer import FileDataAnalyzer
-from src.agents.data_analysis.file_report import build_file_analysis_html, build_file_analysis_markdown
-from src.agents.data_analysis.rag_client import RAGClient
+from src.agents.data_analysis.file_report import build_file_analysis_markdown
 
 FIXTURES = PROJECT_ROOT / "fixtures"
 
@@ -55,73 +35,6 @@ FIXTURES = PROJECT_ROOT / "fixtures"
 @pytest.fixture
 def mock_search():
     return json.loads((FIXTURES / "mock_search.json").read_text(encoding="utf-8"))
-
-
-@pytest.fixture
-def mock_rag_raw():
-    return json.loads((FIXTURES / "mock_rag.json").read_text(encoding="utf-8"))
-
-
-class TestSearchRelevance:
-    def test_huawei_revenue_query_rejects_news_digest(self):
-        query = "分析2024年华为公司营收趋势"
-        digest = {
-            "title": "早报｜追觅组织调整，取消未落地业务/DeepSeek识图模式上线",
-            "snippet": "追觅营收同比增长4%。另讯：博世因向华为出货被调查。某板块同比增长23%。",
-            "content": (
-                "追觅组织调整，取消未落地业务。追觅营收同比增长4%。"
-                "另讯：博世因向华为出货被调查。某板块整体同比增长23%。"
-            ),
-        }
-        huawei_article = {
-            "title": "2024年华为公司营收分析",
-            "snippet": "2024年华为公司营业收入同比增长8%。",
-            "content": "2024年华为公司全年营业收入达7000亿元，同比增长8%，业绩稳步提升。",
-        }
-        selected, meta = select_relevant_search_results_with_fallback(
-            query, [digest, huawei_article]
-        )
-        titles = [item["title"] for item in selected]
-        assert any("华为" in t for t in titles)
-        assert not any("追觅" in t for t in titles)
-        assert meta.selected_count >= 1
-
-    def test_no_match_returns_empty_but_runs_analysis_path(self):
-        query = "分析2024年华为公司营收趋势"
-        irrelevant = {
-            "title": "2024年某手机品牌销量排行",
-            "snippet": "市场整体同比增长12%。",
-            "content": "2024年智能手机市场整体同比增长12%，与华为无关。",
-        }
-        selected, meta = select_relevant_search_results_with_fallback(
-            query, [irrelevant]
-        )
-        assert selected == []
-        assert meta.selected_count == 0
-        assert "分析流程已执行" in meta.methodology_note()
-
-    def test_parse_query_terms_huawei(self):
-        terms = parse_query_terms("分析2024年华为公司营收趋势")
-        assert "华为" in terms.entities
-        assert "2024" in terms.years
-        assert "营收" in terms.topics
-
-
-class TestSearchExtractor:
-    def test_comma_separated_revenue_not_truncated(self):
-        from src.agents.data_analysis.search_extractor import extract_from_search_results
-
-        results = [
-            {
-                "title": "华为2024年报发布：营收8621亿，同比增长22%",
-                "content": "2024年华为全年销售收入8,621亿元，同比增长22%，净利润626亿元。",
-            }
-        ]
-        points = extract_from_search_results(results, entity_terms=["华为"])
-        revenue_points = [p for p in points if p.metric_id == "revenue"]
-        assert revenue_points
-        assert revenue_points[0].value == 8621.0
-        assert "8,621" in revenue_points[0].raw_text or "8621" in revenue_points[0].raw_text
 
 
 class TestLLMSearchAnalyzer:
@@ -255,107 +168,76 @@ class TestReportSection:
         assert section["charts"][0]["id"] == "chart_3_0"
 
 
-class TestEvidenceAdapter:
-    def test_resolve_search_no_silent_mock(self):
-        resolved = resolve_search_results([], use_mock=False)
-        assert resolved == []
+class TestPptSection:
+    _UNIFIED_PAYLOAD = {
+        "status": "success",
+        "methodology": "从网页搜索结果抽取",
+        "analysis_table": {
+            "title": "2024年华为营收数值",
+            "columns": ["指标", "数值", "期间", "来源", "原文依据"],
+            "rows": [["营收", "8621亿元", "2024", "[1]", "8,621亿"]],
+        },
+        "analysis_conclusion": "华为2024年营收8621亿元。",
+        "charts": [
+            {
+                "type": "bar",
+                "title": "华为营收",
+                "spec": {
+                    "option": {
+                        "xAxis": {"type": "category", "data": ["2024"]},
+                        "yAxis": {"type": "value"},
+                        "series": [{"type": "bar", "data": [8621]}],
+                    }
+                },
+            }
+        ],
+        "search_refs": [
+            {"title": "华为年报", "url": "https://example.com/1", "snippet": "s1"},
+            {"title": "其他来源", "url": "https://example.com/2", "snippet": "s2"},
+        ],
+    }
 
-    def test_search_result_to_evidence(self, mock_search):
-        ev = search_result_to_evidence(mock_search[0], 1)
-        assert ev.origin == "web_search"
-        assert ev.title == "2024年银行业财报解读"
-        assert "23%" in ev.content or "23%" in ev.summary
+    def test_build_slides_from_unified_analysis(self):
+        slides = build_data_analysis_slides(self._UNIFIED_PAYLOAD, section_index=5)
+        assert len(slides) == 3
+        titles = [s["title"] for s in slides]
+        assert "金融数据分析 · 分析结果" in titles
+        assert "金融数据分析 · 分析来源" in titles
+        assert all(s.get("html_content") for s in slides)
+        assert "8621亿元" in slides[0]["html_content"]
+        assert "echarts.init" in slides[1]["html_content"]
+        sources_html = slides[2]["html_content"]
+        assert "https://example.com/1" in sources_html
+        assert "https://example.com/2" not in sources_html
+        assert "摘要" not in sources_html
 
-    def test_load_rag_evidence_pack_legacy_list(self, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw, query="测试")
-        assert pack.source == "financial_rag"
-        assert len(pack.evidence) == 3
-        assert pack.evidence[0].content
-        assert pack.evidence[0].score > 0
+    def test_build_slides_skipped_when_not_success(self):
+        assert build_data_analysis_slides({"status": "skipped"}) == []
 
-    def test_build_analysis_input(self, mock_search, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        inp = build_analysis_input(
-            query="分析2024年银行业营收趋势",
-            search_results=mock_search,
-            rag_pack=pack,
+    def test_inject_before_conclusion(self):
+        from src.agents.ppt.ppt_coordinator import PPTCoordinator
+
+        coordinator = PPTCoordinator(MagicMock(), MagicMock())
+        slides_data = [
+            {"slide_number": 1, "title": "封面", "html_content": "<div>cover</div>"},
+            {"slide_number": 2, "title": "内容", "html_content": "<div>body</div>"},
+            {"slide_number": 3, "title": "总结", "html_content": "<div>end</div>"},
+        ]
+        outline = {
+            "colors": {"primary": "#111", "accent": "#222"},
+            "pages": [
+                {"page_type": "title"},
+                {"page_type": "content"},
+                {"page_type": "conclusion"},
+            ],
+        }
+        merged = coordinator._inject_data_analysis_slides(
+            slides_data, outline, self._UNIFIED_PAYLOAD
         )
-        assert len(inp.search_refs) >= 1
-        assert len(inp.rag_refs) == 3
-        assert len(inp.unified.all_evidence) == len(mock_search) + 3
-
-    def test_rag_pack_to_refs(self, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        refs = rag_pack_to_refs(pack)
-        assert refs[0].score > 0
-        assert refs[0].content
-
-
-class TestRAGClient:
-    def test_retrieve_pack_mock(self):
-        client = RAGClient(use_mock=True)
-        pack = asyncio.run(client.retrieve_pack("测试查询"))
-        assert pack.source == "financial_rag"
-        assert len(pack.evidence) >= 1
-
-    def test_retrieve_compat(self):
-        client = RAGClient(use_mock=True)
-        refs = asyncio.run(client.retrieve("测试查询"))
-        assert len(refs) >= 1
-        assert refs[0].content
-
-
-class TestFinancialAnalyzer:
-    def test_rule_based_analysis(self, mock_search, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        rag_refs = rag_pack_to_refs(pack)
-        analyzer = FinancialAnalyzer()
-        output = asyncio.run(
-            analyzer.analyze(
-                query="分析2024年银行业营收趋势",
-                search_results=mock_search,
-                rag_refs=rag_refs,
-                use_mock=False,
-            )
-        )
-
-        by_source = output.metrics.get("by_source", {})
-        assert by_source or output.metrics
-        assert len(output.key_findings) >= 1
-        assert len(output.tables) >= 1
-        assert output.search_refs
-        assert output.rag_refs
-
-    def test_empty_search_without_mock(self, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        rag_refs = rag_pack_to_refs(pack)
-        analyzer = FinancialAnalyzer()
-        output = asyncio.run(
-            analyzer.analyze(
-                query="分析华为营收",
-                search_results=[],
-                rag_refs=rag_refs,
-                use_mock=False,
-            )
-        )
-        assert output.metrics == {}
-        assert output.tables == []
-        assert "未获取到网页搜索结果" in output.methodology
-
-    def test_mock_fallback_without_search(self, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        rag_refs = rag_pack_to_refs(pack)
-        analyzer = FinancialAnalyzer()
-        output = asyncio.run(
-            analyzer.analyze(
-                query="分析2024年银行业营收趋势",
-                search_results=[],
-                rag_refs=rag_refs,
-                use_mock=True,
-            )
-        )
-        assert output.metrics
-        assert output.key_findings
+        assert len(merged) == 6
+        assert merged[2].get("is_data_analysis")
+        assert merged[-1]["title"] == "总结"
+        assert [s["slide_number"] for s in merged] == [1, 2, 3, 4, 5, 6]
 
 
 class TestChartBuilder:
@@ -385,23 +267,6 @@ class TestChartBuilder:
         values = [d["value"] if isinstance(d, dict) else d for d in option["series"][0]["data"]]
         assert values[0] == 8621.0
         assert values[1] == 626.0
-
-
-class TestChartBuilderLegacy:
-    def test_build_charts_from_analysis(self, mock_search, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        rag_refs = rag_pack_to_refs(pack)
-        analysis = asyncio.run(
-            FinancialAnalyzer().analyze(
-                query="q",
-                search_results=mock_search,
-                rag_refs=rag_refs,
-            )
-        )
-        charts = build_charts(analysis)
-        assert len(charts) >= 1
-        assert charts[0]["type"] == "bar"
-        assert "spec" in charts[0]
 
 
 class TestDataAnalysisAgent:
@@ -445,29 +310,7 @@ class TestDataAnalysisAgent:
         assert payload["charts"]
         assert payload["search_refs"]
 
-    def test_no_skip_when_search_irrelevant_to_prompt(self, mock_rag_raw):
-        pack = load_rag_evidence_pack(mock_rag_raw)
-        rag_refs = rag_pack_to_refs(pack)
-        irrelevant_search = [
-            {
-                "title": "2024年某手机品牌销量排行",
-                "snippet": "市场整体同比增长12%。",
-                "content": "2024年智能手机市场整体同比增长12%，与华为无关。",
-            }
-        ]
-        analyzer = FinancialAnalyzer()
-        output = asyncio.run(
-            analyzer.analyze(
-                query="分析2024年华为公司营收趋势",
-                search_results=irrelevant_search,
-                rag_refs=rag_refs,
-                use_mock=False,
-            )
-        )
-        assert output.metrics == {}
-        assert "分析流程已执行" in output.methodology
-
-    def test_analyze_mode_not_skipped_with_irrelevant_search(self, mock_rag_raw):
+    def test_analyze_mode_not_skipped_with_irrelevant_search(self):
         llm_manager = MagicMock()
         agent = DataAnalysisAgent(llm_manager=llm_manager)
         agent.get_llm_response = AsyncMock(side_effect=RuntimeError("skip llm"))
@@ -495,7 +338,6 @@ class TestDataAnalysisAgent:
     def test_skipped_without_search(self):
         llm_manager = MagicMock()
         agent = DataAnalysisAgent(llm_manager=llm_manager)
-        agent.get_llm_response = AsyncMock(side_effect=RuntimeError("skip llm"))
 
         result = asyncio.run(
             agent.process(
@@ -515,7 +357,7 @@ class TestDataAnalysisAgent:
     def test_full_mock_mode(self):
         llm_manager = MagicMock()
         agent = DataAnalysisAgent(llm_manager=llm_manager)
-        agent.get_llm_response = AsyncMock(side_effect=RuntimeError("skip llm"))
+        agent.get_llm_response = AsyncMock(return_value=self._banking_llm_response())
 
         result = asyncio.run(
             agent.process(
@@ -527,7 +369,10 @@ class TestDataAnalysisAgent:
             )
         )
         assert result["status"] == "success"
-        assert result["result"]["source_type"] == "mock"
+        payload = result["result"]
+        assert payload["source_type"] == "mock"
+        assert payload["analysis_table"]
+        assert payload["charts"]
 
 
 class TestFileDataAnalyzer:
@@ -580,10 +425,3 @@ class TestFileDataAnalyzer:
 class TestFixtures:
     def test_fixture_files_exist(self):
         assert (FIXTURES / "mock_search.json").exists()
-        assert (FIXTURES / "mock_rag.json").exists()
-        assert (FIXTURES / "mock_stats.json").exists()
-
-    def test_web_pack_shape(self, mock_search):
-        pack = build_web_pack("q", mock_search)
-        assert pack.source == "web_search"
-        assert len(pack.evidence) == len(mock_search)
