@@ -28,6 +28,7 @@ class RAGConfig:
     embedding_model: str
     embedding_base_url: str
     embedding_api_key: str
+    embedding_max_batch_size: int
     chroma_persist_dir: str
     chroma_collection: str
 
@@ -50,7 +51,7 @@ class RAGConfig:
 
         embedding_model = _first_env(
             "EMBEDDING_MODEL",
-            default="text-embedding-v4",
+            default="text-embedding-v3",
         )
         if embedding_model:
             embedding_model = embedding_model.replace(" ", "")
@@ -67,13 +68,16 @@ class RAGConfig:
                 "QWEN_API_KEY",
                 default=api_key,
             ),
-            embedding_model=embedding_model or "text-embedding-v4",
+            embedding_model=embedding_model or "text-embedding-v3",
             embedding_base_url=_first_env(
                 "EMBEDDING_BASE_URL",
                 "LLM_BASE_URL",
                 default="https://dashscope.aliyuncs.com/compatible-mode/v1",
             ),
             embedding_api_key=api_key,
+            embedding_max_batch_size=int(
+                _first_env("EMBEDDING_MAX_BATCH_SIZE", default="10") or "10"
+            ),
             chroma_persist_dir=_first_env(
                 "CHROMA_PERSIST_DIR",
                 default=str(Path("financeRAG") / "rag" / "chroma_db"),

@@ -7,6 +7,46 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Body, Request
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
+from fastapi.encoders import jsonable_encoder
+import numpy as np
+
+
+def _sanitize(obj):
+    """Recursively convert numpy/pandas scalars and arrays to native Python types."""
+    # primitives
+    if obj is None:
+        return None
+    if isinstance(obj, (str, bool, int, float)):
+        return obj
+    # numpy scalar
+    if isinstance(obj, (np.integer, np.int64)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    # dict
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    # list/tuple
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    # pydantic models or objects with model_dump
+    try:
+        if hasattr(obj, "model_dump"):
+            return _sanitize(obj.model_dump())
+    except Exception:
+        pass
+    # fallback: try to convert using iterable -> list or vars
+    try:
+        if hasattr(obj, "__iter__") and not isinstance(obj, str):
+            return [_sanitize(v) for v in obj]
+    except Exception:
+        pass
+    try:
+        return vars(obj)
+    except Exception:
+        return str(obj)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -206,6 +246,15 @@ class DataAnalysisRequest(BaseModel):
     use_mock: bool = Field(False)
 
 
+class FileDataAnalysisRequest(BaseModel):
+    query: Optional[str] = Field("", description="分析主题或业务问题")
+    file_name: Optional[str] = Field(None, description="上传文件名")
+    file_type: Optional[str] = Field(None, description="文件类型提示，如 csv/text")
+    file_content: str = Field(..., description="文件内容文本，CSV 或纯文本")
+    output_formats: List[str] = Field(default_factory=lambda: ["json", "html", "md"], description="输出格式")
+    use_llm: bool = Field(False, description="是否启用 LLM 补充分析")
+
+
 @app.post("/api/v1/data_analysis/charts")
 async def data_analysis_charts(request: DataAnalysisRequest):
     """返回 ECharts option 列表及结构化分析结果。"""
@@ -265,6 +314,162 @@ async def data_analysis_charts(request: DataAnalysisRequest):
 
     except Exception as e:
         logger.error(f"data_analysis_charts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/data_analysis/file")
+async def data_analysis_file(request: FileDataAnalysisRequest):
+    """基于用户上传的 CSV/文本生成自动数据分析报告。"""
+    try:
+        from src.agents.data_analysis.file_analyzer import FileDataAnalyzer
+        from src.agents.data_analysis.file_report import build_file_analysis_html, build_file_analysis_markdown
+        from src.agents.data_analysis.report_section import build_data_analysis_section
+
+        analyzer = FileDataAnalyzer()
+        result = analyzer.analyze_file(
+            query=request.query or request.file_name or "文件分析",
+            file_name=request.file_name,
+            file_type=request.file_type,
+            file_content=request.file_content,
+            use_llm=request.use_llm,
+        )
+
+        # convert to JSON-serializable native types before further processing
+        # sanitize result to native Python types (convert numpy/pandas scalars)
+        try:
+            native_result = _sanitize(result)
+        except Exception:
+            native_result = jsonable_encoder(result)
+
+        # built-in lightweight semantic analysis (fallback when LLM not available)
+        try:
+            metrics = native_result.get("metrics", {})
+            kfs = native_result.get("key_findings", [])
+            conclusion_lines = []
+            risk_lines = []
+            suggestion_lines = []
+
+            if metrics:
+                rc = metrics.get("row_count")
+                cc = metrics.get("column_count")
+                numeric = metrics.get("numeric_columns")
+                missing_ratio = metrics.get("missing_ratio")
+                conclusion_lines.append(f"数据规模：约 {rc} 行、{cc} 列，其中 {numeric} 个数值列。")
+                if missing_ratio and float(missing_ratio) > 0:
+                    conclusion_lines.append(f"缺失情况：缺失率约 {round(float(missing_ratio) * 100, 2)}%。")
+                else:
+                    conclusion_lines.append("缺失情况：缺失值很少或无缺失。")
+                if float(missing_ratio or 0) >= 0.05:
+                    risk_lines.append("缺失率较高，可能影响分析结果准确性。")
+                else:
+                    suggestion_lines.append("当前数据质量较好，可继续基于现有数据进行分析和建模。 ")
+
+            if isinstance(kfs, list) and kfs:
+                for f in kfs[:3]:
+                    title = f.get("title") if isinstance(f, dict) else getattr(f, "title", "")
+                    value = f.get("value") if isinstance(f, dict) else getattr(f, "value", "")
+                    conclusion_lines.append(f"[{title}] {value}")
+                    if "相关" in str(title) or "波动" in str(title) or "缺失" in str(title):
+                        risk_lines.append(f"{title} 需重点关注：{value}")
+
+            if not risk_lines:
+                risk_lines.append("目前未发现明显的风险点，但应继续关注数据的稳定性和一致性。")
+            if not suggestion_lines:
+                suggestion_lines.append("可从数值波动较大的列和高度相关的列入手，进一步做特征分析与风险监控。 ")
+
+            analysis_summary = [
+                "## 结构化分析",
+                "### 总体结论",
+                *[f"- {line}" for line in conclusion_lines],
+                "",
+                "### 风险点",
+                *[f"- {line}" for line in risk_lines],
+                "",
+                "### 建议",
+                *[f"- {line}" for line in suggestion_lines],
+            ]
+            native_result["analysis_summary"] = "\n".join(analysis_summary)
+            native_result.setdefault("key_findings", [])
+            native_result["key_findings"].insert(0, {"title": "自动分析摘要", "value": "\n".join(conclusion_lines[:3]), "evidence": "rule-based"})
+        except Exception:
+            pass
+
+        # optionally call LLM to produce semantic interpretation
+        if request.use_llm:
+            try:
+                from src.llm.manager import LLMManager
+                llm_manager = LLMManager()
+                llm_client = llm_manager.get_client("default")
+
+                # build a concise prompt with structured sections
+                prompt_parts = [
+                    "你是一个数据科学家，请基于下面的统计结果和数据特征，按“总体结论 / 风险点 / 建议”三个部分输出中文分析。",
+                    "\n指标：",
+                    json.dumps(native_result.get("metrics", {}), ensure_ascii=False),
+                ]
+                # include first table and key findings
+                tables = native_result.get("tables", [])
+                if tables:
+                    try:
+                        prompt_parts.append("\n表格示例：")
+                        prompt_parts.append(json.dumps(tables[0], ensure_ascii=False))
+                    except Exception:
+                        pass
+                if native_result.get("key_findings"):
+                    prompt_parts.append("\n已有结论：")
+                    prompt_parts.append(json.dumps(native_result.get("key_findings"), ensure_ascii=False))
+
+                messages = [
+                    {"role": "system", "content": "你是一个数据科学家，能把统计结果转化为业务和含义解释。"},
+                    {"role": "user", "content": "\n".join(prompt_parts)}
+                ]
+
+                # async call
+                # call llm client (async)
+                resp = await llm_client.chat_completion(messages=messages, max_tokens=800)
+                # expect resp to contain 'choices' or 'content'
+                llm_text = None
+                if isinstance(resp, dict):
+                    # try common shapes
+                    if resp.get("choices") and isinstance(resp.get("choices"), list):
+                        first = resp["choices"][0]
+                        llm_text = first.get("message", {}).get("content") or first.get("text") or first.get("content")
+                    else:
+                        llm_text = resp.get("content") or resp.get("text")
+
+                if llm_text:
+                    # attach to native_result and add as a key finding so it appears in report
+                    native_result["llm_analysis"] = llm_text
+                    kf = {"title": "LLM 分析", "value": llm_text, "evidence": "LLM"}
+                    native_result.setdefault("key_findings", [])
+                    native_result["key_findings"].insert(0, kf)
+            except Exception as e:
+                logger.warning(f"data_analysis_file: LLM analysis failed: {e}")
+
+        try:
+            section = build_data_analysis_section(native_result, section_index=1)
+            markdown = build_file_analysis_markdown(section) if section else ""
+            html = build_file_analysis_html(section, report_title=request.query or request.file_name or "数据分析报告") if section else ""
+        except Exception as e:
+            logger.warning(f"data_analysis_file: failed to build section/report: {e}")
+            section = None
+            markdown = ""
+            html = ""
+
+        report: Dict[str, Any] = {}
+        if "md" in [f.lower() for f in request.output_formats]:
+            report["markdown"] = markdown
+        if "html" in [f.lower() for f in request.output_formats]:
+            report["html"] = html
+
+        return JSONResponse(jsonable_encoder({
+            "result": native_result,
+            "section": section,
+            "report": report,
+        }))
+
+    except Exception as e:
+        logger.error(f"data_analysis_file: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

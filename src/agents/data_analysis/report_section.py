@@ -14,18 +14,20 @@ from .schemas import DataFinding
 def build_data_analysis_section(
     data: Dict[str, Any],
     section_index: int,
+    main_sections: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """把数据分析智能体输出转为可插入 FINAL_REPORT 的章节。"""
     if not data or data.get("status") != "success":
         return None
 
-    markdown = _build_markdown(data)
+    markdown = _build_markdown(data, main_sections=main_sections or [])
     charts = _normalize_charts(data.get("charts", []), section_index)
     content_html = _render_html(markdown)
 
     return {
         "section_id": "data_analysis",
         "title": "金融数据分析",
+        "anchor": "金融数据分析",
         "content": markdown,
         "content_html": content_html,
         "charts": charts,
@@ -40,25 +42,61 @@ def build_data_analysis_section(
     }
 
 
-def _build_markdown(data: Dict[str, Any]) -> str:
+def _build_markdown(
+    data: Dict[str, Any],
+    main_sections: Optional[List[Dict[str, Any]]] = None,
+) -> str:
     parts: List[str] = []
+
+    from .data_analysis_context import build_main_body_relation
+
+    relation = build_main_body_relation(main_sections or [], data)
+    if relation:
+        parts.append(relation)
 
     methodology = data.get("methodology", "")
     if methodology:
-        parts.append("本节内容由**金融数据分析智能体**基于网页搜索结果与 RAG 指标口径，经算法抽取与计算生成。")
+        parts.append(
+            "本节内容由**金融数据分析智能体**基于网页搜索结果与 RAG 指标口径，"
+            "经算法抽取与计算生成；与正文叙述形成「论点—数据」对应关系。"
+        )
         parts.append(f"\n**分析口径**：{methodology}\n")
+
+    analysis_summary = data.get("analysis_summary")
+    if analysis_summary:
+        parts.append(analysis_summary)
+        parts.append("")
 
     metrics = data.get("metrics", {})
     if metrics:
-        parts.append("### 核心指标\n")
-        parts.append("| 指标 | 数值 |")
-        parts.append("| --- | --- |")
-        for key, value in metrics.items():
-            display = _format_metric_value(key, value)
-            parts.append(f"| {_metric_label(key)} | {display} |")
-        parts.append("")
+        by_source = metrics.get("by_source") if isinstance(metrics, dict) else None
+        if by_source:
+            parts.append("### 分来源核心指标\n")
+            for src_key in sorted(by_source.keys(), key=lambda x: int(x) if str(x).isdigit() else x):
+                block = by_source[src_key]
+                title = block.get("source_title", "")
+                src_idx = block.get("source_index", src_key)
+                parts.append(f"#### 来源 [{src_idx}] {title}\n")
+                src_metrics = block.get("metrics") or {}
+                if src_metrics:
+                    parts.append("| 指标 | 数值 |")
+                    parts.append("| --- | --- |")
+                    for key, value in src_metrics.items():
+                        display = _format_metric_value(key, value)
+                        parts.append(f"| {_metric_label(key)} | {display} |")
+                    parts.append("")
+        else:
+            parts.append("### 核心指标\n")
+            parts.append("| 指标 | 数值 |")
+            parts.append("| --- | --- |")
+            for key, value in metrics.items():
+                display = _format_metric_value(key, value)
+                parts.append(f"| {_metric_label(key)} | {display} |")
+            parts.append("")
 
     for table in data.get("tables", []):
+        if table.get("title") == "数值列相关性矩阵":
+            continue
         parts.append(f"### {table.get('title', '数据表')}\n")
         columns = table.get("columns", [])
         rows = table.get("rows", [])
@@ -118,16 +156,29 @@ def _build_markdown(data: Dict[str, Any]) -> str:
 def _normalize_charts(charts: List[Dict[str, Any]], section_index: int) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     for j, chart in enumerate(charts):
-        spec = chart.get("spec", {})
-        chart_id = spec.get("id") or f"chart_da_{j}"
+        # support two shapes: {"spec": {"id":..., "option":...}, ...} or {"id":..., "option":..., ...}
+        spec = chart.get("spec") or {}
+        chart_id = None
+        option = None
+
+        if spec:
+            chart_id = spec.get("id")
+            option = spec.get("option")
+        else:
+            chart_id = chart.get("id")
+            option = chart.get("option")
+
+        chart_id = chart_id or f"chart_da_{j}"
         chart_id = f"chart_{section_index}_{j}"
 
-        option = spec.get("option", {})
         if isinstance(option, str):
             try:
                 option = json.loads(option)
             except json.JSONDecodeError:
                 option = {}
+
+        if option is None:
+            option = {}
 
         normalized.append({
             "id": chart_id,

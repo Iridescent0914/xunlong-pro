@@ -226,6 +226,7 @@ class SectionWriter:
 ## 参考资料
 
 {references}
+{self._build_data_analysis_writing_block(context, section)}
 
 ## 写作指令
 
@@ -282,6 +283,7 @@ class SectionWriter:
 ## 参考资料
 
 {references}
+{self._build_data_analysis_writing_block(context, section)}
 
 ## 写作指令
 
@@ -309,6 +311,46 @@ class SectionWriter:
 
 """
             return prompt
+
+    def _build_data_analysis_writing_block(
+        self,
+        context: Optional[Dict[str, Any]],
+        section: Dict[str, Any],
+    ) -> str:
+        """正文章节写作时注入结构化分析约束，并与独立模块建立交叉引用。"""
+        if not context:
+            return ""
+
+        da_summary = context.get("data_analysis_summary")
+        if not da_summary:
+            return ""
+
+        module_title = context.get("data_analysis_module_title", "金融数据分析")
+        integrate = section.get("integrate_data_analysis") or context.get(
+            "integrate_data_analysis"
+        )
+
+        lines = [
+            "",
+            "## 结构化金融数据分析（正文须与此一致，详表见独立模块）",
+            da_summary,
+            "",
+            "### 数据整合要求",
+            f"- 本报告另有独立模块「{module_title}」，本章叙述须与其逻辑衔接",
+            f"- 涉及财务/经营数字时，须引用上方 JSON 中 metrics 或 key_findings 的 value，**不得编造或改写数值**",
+            f"- 需要展开表格或图表时，正文写「详见[{module_title}](#{module_title})」",
+        ]
+        if integrate:
+            lines.extend([
+                f"- **本章为数据整合重点章节**：至少引用 2 条 key_findings 或 metrics 中的具体数值，",
+                "  并解释其对本章论点的支撑关系",
+            ])
+        else:
+            lines.append(
+                "- 若本章不涉及量化指标，可只做定性叙述，但勿与上述数据矛盾"
+            )
+        lines.append("")
+        return "\n".join(lines)
 
     def _build_fiction_writing_prompt(
         self,

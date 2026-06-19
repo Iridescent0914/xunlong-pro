@@ -104,10 +104,24 @@ class ReportCoordinator:
             available_content = search_results
 
         try:
+            from ..data_analysis.data_analysis_context import (
+                format_analysis_for_writer,
+                has_usable_analysis,
+            )
+
+            da_summary = None
+            if has_usable_analysis(data_analysis_results):
+                da_summary = format_analysis_for_writer(data_analysis_results)
+
             # Phase 1:
             logger.info(f"[{self.name}] Phase 1: ")
             outline_result = await self.outline_generator.generate_outline(
-                query, available_content, synthesis_results, report_type, refined_subtasks
+                query,
+                available_content,
+                synthesis_results,
+                report_type,
+                refined_subtasks,
+                data_analysis_results=data_analysis_results,
             )
 
             if outline_result["status"] != "success":
@@ -121,7 +135,12 @@ class ReportCoordinator:
             # Phase 2:
             logger.info(f"[{self.name}] Phase 2:  {len(sections)} ")
             section_results = await self._parallel_section_writing(
-                sections, available_content, query, report_type, refined_subtasks
+                sections,
+                available_content,
+                query,
+                report_type,
+                refined_subtasks,
+                data_analysis_summary=da_summary,
             )
 
             # Phase 3:
@@ -156,6 +175,7 @@ class ReportCoordinator:
                 query,
                 report_type,
                 data_analysis_results=data_analysis_results,
+                outline_sections=sections,
             )
 
             logger.info(f"[{self.name}] : {final_report['word_count']}")
@@ -191,7 +211,8 @@ class ReportCoordinator:
         available_content: List[Dict[str, Any]],
         query: str,
         report_type: str,
-        refined_subtasks: Optional[List[Dict[str, Any]]] = None  # NEW
+        refined_subtasks: Optional[List[Dict[str, Any]]] = None,  # NEW
+        data_analysis_summary: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """TODO: Add docstring."""
 
@@ -213,7 +234,8 @@ class ReportCoordinator:
                     previous_requirements=previous_requirements,
                     available_content=available_content,
                     query=query,
-                    report_type=report_type
+                    report_type=report_type,
+                    data_analysis_summary=data_analysis_summary,
                 )
             )
 
@@ -245,7 +267,8 @@ class ReportCoordinator:
         previous_requirements: str,
         available_content: List[Dict[str, Any]],
         query: str,
-        report_type: str
+        report_type: str,
+        data_analysis_summary: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         
@@ -254,7 +277,9 @@ class ReportCoordinator:
         context = {
             "query": query,
             "report_type": report_type,
-            "previous_section": previous_requirements
+            "previous_section": previous_requirements,
+            "data_analysis_summary": data_analysis_summary,
+            "data_analysis_module_title": "金融数据分析",
         }
 
         writer_result = await self.section_writer.write_section(
@@ -384,6 +409,7 @@ class ReportCoordinator:
         query: str,
         report_type: str,
         data_analysis_results: Optional[Dict[str, Any]] = None,
+        outline_sections: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """TODO: Add docstring."""
 
@@ -448,13 +474,31 @@ class ReportCoordinator:
         if data_analysis_results and data_analysis_results.get("status") == "success":
             from ..data_analysis.report_section import build_data_analysis_section
 
+            main_sections = []
+            outline_by_id = {
+                s.get("id"): s for s in (outline_sections or outline.get("sections", []))
+            }
+            for section in sections_sorted:
+                oid = section.get("section_id")
+                outline_sec = outline_by_id.get(oid, {})
+                main_sections.append({
+                    "id": oid,
+                    "section_id": oid,
+                    "title": section.get("title", ""),
+                    "integrate_data_analysis": outline_sec.get(
+                        "integrate_data_analysis", False
+                    ),
+                })
+
             da_section = build_data_analysis_section(
                 data_analysis_results,
                 section_index=len(sections_sorted),
+                main_sections=main_sections,
             )
             if da_section:
                 logger.info(f"[{self.name}] 插入金融数据分析模块")
-                report_parts.append(f"\n## {da_section['title']}\n")
+                anchor = da_section.get("anchor", "金融数据分析")
+                report_parts.append(f'\n<a id="{anchor}"></a>\n## {da_section["title"]}\n')
                 report_parts.append(da_section["content"])
                 section_entries.append({
                     "id": da_section["section_id"],

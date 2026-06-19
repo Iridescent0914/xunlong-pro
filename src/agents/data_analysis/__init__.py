@@ -3,6 +3,7 @@
 from .analysis_output import AnalysisOutput
 from .data_analysis_agent import DataAnalysisAgent
 from .financial_analyzer import FinancialAnalyzer
+from .file_analyzer import FileDataAnalyzer
 from .schemas import DataAnalysisResult, SearchReference
 
 __all__ = [
@@ -10,5 +11,6 @@ __all__ = [
     "DataAnalysisAgent",
     "DataAnalysisResult",
     "FinancialAnalyzer",
+    "FileDataAnalyzer",
     "SearchReference",
 ]

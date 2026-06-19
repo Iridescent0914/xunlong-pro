@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -31,9 +31,12 @@ def resolve_search_results(
     search_results: List[Dict[str, Any]],
     use_mock: bool = False,
 ) -> List[Dict[str, Any]]:
-    if use_mock or not search_results:
-        logger.info("[EvidenceAdapter] 使用 mock_search.json")
+    if use_mock:
+        logger.info("[EvidenceAdapter] 显式启用 mock：使用 mock_search.json")
         return load_mock_search()
+    if not search_results:
+        logger.warning("[EvidenceAdapter] 搜索结果为空，未回退 mock")
+        return []
     return search_results
 
 
@@ -70,8 +73,56 @@ def build_web_pack(
     return WebSearchEvidencePack(query=query, evidence=evidence)
 
 
+def load_rag_evidence_pack(raw: Any, query: str = "") -> RAGEvidencePack:
+    """加载 RAG 证据：支持 evidence-pack（dict）与 legacy 引用列表（list）。"""
+    if isinstance(raw, list):
+        return _legacy_refs_to_pack(raw, query)
+    if isinstance(raw, dict):
+        return parse_rag_evidence_pack(raw)
+    logger.warning(f"[EvidenceAdapter] 无法识别的 RAG 输入类型: {type(raw)}")
+    return RAGEvidencePack(query=query)
+
+
+def _legacy_refs_to_pack(items: List[Any], query: str) -> RAGEvidencePack:
+    """fixtures/mock_rag.json 旧格式：[{content, source, score}, ...]"""
+    evidence_items: List[EvidenceItem] = []
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        content = item.get("content", "")
+        source = item.get("source", "")
+        evidence_items.append(
+            EvidenceItem(
+                evidence_id=item.get("evidence_id") or f"rag_{i:03d}",
+                doc_type=item.get("doc_type", "knowledge"),
+                title=item.get("title") or source,
+                date=item.get("date"),
+                source=source,
+                url=item.get("url"),
+                content=content,
+                summary=(item.get("summary") or content)[:300],
+                score=float(item.get("score") or 0.0),
+                origin="financial_rag",
+                metadata=item.get("metadata") or {},
+            )
+        )
+    pack_query = query
+    if not pack_query and items and isinstance(items[0], dict):
+        pack_query = items[0].get("query", "")
+    return RAGEvidencePack(
+        source="financial_rag",
+        query=pack_query,
+        evidence=evidence_items,
+    )
+
+
 def parse_rag_evidence_pack(raw: Dict[str, Any]) -> RAGEvidencePack:
-    """解析 RAG 组 evidence pack JSON。"""
+    """解析 RAG 组 evidence pack JSON（dict 格式，见 docs/rag输出格式.md）。"""
+    if not isinstance(raw, dict):
+        raise TypeError(
+            f"evidence pack 应为 dict，收到 {type(raw).__name__}；"
+            "legacy 列表请改用 load_rag_evidence_pack()"
+        )
     # 简单校验输入形状，记录缺失的关键字段
     missing = validate_rag_pack(raw)
     if missing:
@@ -126,12 +177,9 @@ def rag_pack_to_refs(pack: RAGEvidencePack) -> List[RAGReference]:
     for ev in pack.evidence:
         refs.append(
             RAGReference(
-                content=ev.summary or ev.content,
+                content=ev.summary or ev.content or "",
                 source=ev.source or ev.title,
                 score=ev.score,
-                doc_type=ev.doc_type,
-                title=ev.title,
-                evidence_id=ev.evidence_id,
             )
         )
     return refs
@@ -191,7 +239,7 @@ def build_analysis_input(
         unified=unified,
         search_refs=build_search_refs(unified.web_evidence),
         rag_refs=rag_pack_to_refs(rag_pack),
-        use_mock=use_mock or not search_results,
+        use_mock=use_mock,
     )
 
 

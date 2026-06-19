@@ -123,6 +123,7 @@ class ContentSynthesizerAgent(BaseAgent):
 4. **观点平衡**: 平衡不同观点，呈现全面视角
 5. **引用标注**: 重要数据和观点需标注来源
 6. **数据分析章节**: 若上方有 key_findings / metrics，须在 report_content 中包含「## 数据分析」小节，**不得改写 metrics 与 key_findings 中的数值**
+7. **模块关系**: 正文「数据分析」小节为叙述性整合；完整指标表与图表见独立模块「金融数据分析」，正文引用时使用「详见金融数据分析模块」
 
 请直接输出 JSON 结果："""
 

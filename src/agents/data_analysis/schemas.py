@@ -58,7 +58,7 @@ class DataAnalysisResult(BaseModel):
     """数据分析智能体最终输出，写入 state['data_analysis_results']。"""
 
     status: Literal["success", "error", "skipped"]
-    source_type: Literal["web_rag", "mock", "excel", "csv", "database"] = "web_rag"
+    source_type: Literal["web_rag", "mock", "excel", "csv", "database", "text"] = "web_rag"
     metrics: Dict[str, Any] = Field(default_factory=dict)
     tables: List[Dict[str, Any]] = Field(default_factory=list)
     charts: List[Dict[str, Any]] = Field(default_factory=list)
