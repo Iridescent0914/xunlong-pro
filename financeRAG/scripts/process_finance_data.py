@@ -64,17 +64,23 @@ def process_single_dataset(
     total_records_processed = 0
     all_stats = {
         'total_records': 0,
+        'total_raw_rows': 0,
         'total_valid_records': 0,
         'total_invalid_records': 0,
         'total_documents': 0,
         'total_chunks': 0,
         'batch_outputs': []
     }
+    reader = pipeline.news_reader if data_source == 'stock_news' else pipeline.earning_reader
+    total_rows = reader.get_row_count(parquet_path)
+    max_total_records = min(total_rows, max_total_records) if max_total_records else total_rows
+    logger.info(f"Parquet total rows: {total_rows:,}; rows to process: {max_total_records:,}")
     
     # 持续处理，直到达到 max_records_per_batch 或文件结束
-    while True:
+    while total_records_processed < max_total_records:
         batch_num += 1
-        max_records_in_batch = max_records_per_batch
+        max_records_in_batch = min(max_records_per_batch, max_total_records - total_records_processed)
+        start_row = total_records_processed
         
         # 如果设定了总记录数限制，调整本批次的最大记录数
         if max_total_records:
@@ -106,11 +112,13 @@ def process_single_dataset(
             documents = batch_pipeline.process_stock_news(
                 parquet_path=parquet_path,
                 max_records=max_records_in_batch,
+                start_row=start_row,
             )
         else:  # stock_earning_call
             documents = batch_pipeline.process_stock_earning_calls(
                 parquet_path=parquet_path,
                 max_records=max_records_in_batch,
+                start_row=start_row,
             )
         
         # 保存文档（使用流式保存，内存优化）
@@ -121,25 +129,27 @@ def process_single_dataset(
         )
         
         if not save_stats['total_saved']:
-            logger.info(f"第 {batch_num} 个分片处理完成：无有效文档，停止处理")
-            break
+            logger.info(f"第 {batch_num} 个分片处理完成：无有效文档，继续处理下一分片")
         
         # 累计统计信息
         batch_stats = batch_pipeline.get_statistics()
         all_stats['total_records'] += batch_stats['total_records']
+        all_stats['total_raw_rows'] += max_records_in_batch
         all_stats['total_valid_records'] += batch_stats['valid_records']
         all_stats['total_invalid_records'] += batch_stats['invalid_records']
         all_stats['total_documents'] += batch_stats['total_documents']
         all_stats['total_chunks'] += batch_stats['total_chunks']
         all_stats['batch_outputs'].append({
             'batch_num': batch_num,
+            'start_row': start_row,
+            'raw_rows': max_records_in_batch,
             'output_file': output_file,
             'file_size_mb': save_stats['file_size_mb'],
             'documents': save_stats['total_saved'],
             'records': batch_stats['total_records'],
         })
         
-        total_records_processed += batch_stats['total_records']
+        total_records_processed += max_records_in_batch
         
         logger.info(f"✓ 第 {batch_num} 个分片完成")
         logger.info(f"  - 输入记录: {batch_stats['total_records']:,}")
@@ -149,7 +159,7 @@ def process_single_dataset(
         logger.info(f"  - 累计记录: {total_records_processed:,}")
         
         # 内存优化：检查是否处理完所有记录
-        if batch_stats['total_records'] < max_records_in_batch:
+        if total_records_processed >= max_total_records:
             logger.info(f"数据集处理完成（共 {batch_num} 个分片）")
             break
     
@@ -245,11 +255,6 @@ def main():
         if earning_stats:
             for batch_info in earning_stats['batch_outputs']:
                 batch_output_files.append(batch_info['output_file'])
-        
-        # 合并所有批次文件
-        if batch_output_files:
-            final_output_file = os.path.join(OUTPUT_DIR, "combined_documents.jsonl")
-            merge_jsonl_files(batch_output_files, final_output_file)
         
         # 打印最终统计信息
         logger.info("=" * 80)

@@ -27,6 +27,7 @@ langchain>=0.1.0         # LangChain核心
 langchain-core>=0.1.0    # LangChain核心组件
 langchain-openai>=0.1.0  # LangChain OpenAI集成
 langchain-anthropic>=0.1.0  # LangChain Anthropic集成
+chromadb>=0.5.0          # FinanceRAG向量库
 
 # LLM可观测性
 langfuse>=2.0.0          # LLM监控和追踪

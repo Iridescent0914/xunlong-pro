@@ -15,8 +15,14 @@ class DocumentMetadata(BaseModel):
     report_date: Optional[str] = None
     source_type: Optional[str] = None  # STORY, REPORT等
     link: Optional[str] = None
+    uuid: Optional[str] = None  # 用于 stock_news
+    fiscal_year: Optional[int] = None  # 用于 earnings call
+    fiscal_quarter: Optional[int] = None  # 用于 earnings call
+    transcripts_id: Optional[int] = None  # 用于 earnings call
     speaker: Optional[str] = None  # 用于 earnings call
     original_index: int = 0  # 原始数据中的索引
+    original_content_length: int = 0  # 清洗/切块前的正文长度
+    text_segment_count: int = 0  # 段落数或转录片段数
     processed_at: str = ""  # 处理时间
     raw_record: Optional[Dict[str, Any]] = None  # 原始记录备份
 
