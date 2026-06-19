@@ -68,6 +68,7 @@ class FinanceDataPipeline:
         parquet_path: str,
         save_processed: bool = True,
         max_records: Optional[int] = None,
+        start_row: int = 0,
     ) -> Generator[Document, None, None]:
         """
         处理股票新闻数据
@@ -89,7 +90,11 @@ class FinanceDataPipeline:
         chunk_count = 0
         
         # 使用进度条包装记录迭代
-        for record in self.news_reader.get_records_batch(parquet_path):
+        for record in self.news_reader.get_records_batch(
+            parquet_path,
+            start_row=start_row,
+            max_rows=max_records,
+        ):
             self.stats['total_records'] += 1
             record_count += 1
             
@@ -127,7 +132,10 @@ class FinanceDataPipeline:
                 report_date=record.get('report_date'),
                 source_type=record.get('source_type'),
                 link=record.get('link'),
+                uuid=record.get('uuid'),
                 original_index=record.get('original_row_index', 0),
+                original_content_length=record.get('content_length', len(cleaned_content)),
+                text_segment_count=record.get('text_segment_count', 0),
                 processed_at=datetime.now().isoformat(),
             )
             
@@ -164,6 +172,7 @@ class FinanceDataPipeline:
         parquet_path: str,
         save_processed: bool = True,
         max_records: Optional[int] = None,
+        start_row: int = 0,
     ) -> Generator[Document, None, None]:
         """
         处理股票财报电话会议
@@ -184,7 +193,11 @@ class FinanceDataPipeline:
         document_count = 0
         chunk_count = 0
         
-        for record in self.earning_reader.get_records_batch(parquet_path):
+        for record in self.earning_reader.get_records_batch(
+            parquet_path,
+            start_row=start_row,
+            max_rows=max_records,
+        ):
             self.stats['total_records'] += 1
             record_count += 1
             
@@ -217,8 +230,13 @@ class FinanceDataPipeline:
             metadata = DocumentMetadata(
                 source='stock_earning_call',
                 symbol=record.get('symbol', ''),
+                fiscal_year=record.get('fiscal_year'),
+                fiscal_quarter=record.get('fiscal_quarter'),
                 report_date=record.get('report_date'),
+                transcripts_id=record.get('transcripts_id'),
                 original_index=record.get('original_row_index', 0),
+                original_content_length=record.get('content_length', len(cleaned_content)),
+                text_segment_count=record.get('text_segment_count', 0),
                 processed_at=datetime.now().isoformat(),
             )
             
@@ -297,6 +315,7 @@ class FinanceDataPipeline:
         output_file: str,
         batch_size: int = 1000,
         save_interval: int = 1000,
+        append: bool = False,
     ) -> Dict[str, Any]:
         """
         批量保存处理后的文档到 JSONL 格式（流式写入，内存优化）
@@ -322,9 +341,13 @@ class FinanceDataPipeline:
         pbar = tqdm(desc="保存文档", unit="doc")
         
         # 使用 JSONL 格式（每行一个 JSON 对象）- 易于流式处理和追加
-        with open(output_file, 'a', encoding='utf-8') as f:
+        mode = 'a' if append else 'w'
+        with open(output_file, mode, encoding='utf-8') as f:
             for doc in documents:
-                doc_dict = doc.dict(exclude_unset=True)
+                if hasattr(doc, "model_dump"):
+                    doc_dict = doc.model_dump(exclude_none=True)
+                else:
+                    doc_dict = doc.dict(exclude_none=True)
                 buffer.append(doc_dict)
                 total_saved += 1
                 pbar.update(1)
