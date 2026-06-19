@@ -217,3 +217,34 @@ python financeRAG/scripts/query_chroma.py "Agilent 2025 年 earnings call 提到
 5. 用 `query_chroma.py` 做检索测试。
 6. 需要自然语言答案时加 `--answer`。
 
+## 接入金融数据分析智能体
+
+当前主流程已经支持同时检索两套 RAG：
+
+```text
+RAG/data/chroma_db           公开公司年报 PDF RAG
+financeRAG/rag/chroma_db     Yahoo Finance 数据集子集 RAG
+```
+
+在项目根目录 `.env` 中开启：
+
+```env
+ANNUAL_REPORT_RAG_ENABLED=true
+ANNUAL_REPORT_RAG_PERSIST_DIR=RAG/data/chroma_db
+ANNUAL_REPORT_RAG_COLLECTION=annual_report_rag
+ANNUAL_REPORT_RAG_ENV_FILE=financeRAG/rag/.env
+
+YAHOO_FINANCE_RAG_ENABLED=true
+YAHOO_FINANCE_RAG_PERSIST_DIR=financeRAG/rag/chroma_db
+YAHOO_FINANCE_RAG_COLLECTION=finance_rag
+YAHOO_FINANCE_RAG_ENV_FILE=financeRAG/rag/.env
+```
+
+接入点在：
+
+```text
+src/agents/data_analysis/rag_client.py
+```
+
+`DataAnalysisAgent` 会调用 `RAGClient.retrieve()`，该客户端会分别查询年报 PDF RAG 和 Yahoo Finance RAG，再合并为统一的 `RAGReference` 证据列表传给金融数据分析模块。
+
