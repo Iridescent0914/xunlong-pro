@@ -380,7 +380,6 @@ def main():
     except:
         print(" API")
         print("API: python run_api.py")
-        print(": python start_worker.py")
         return
 
     # 

@@ -124,8 +124,8 @@ def main():
         
         print("\n :")
         print("1. : python minimal_test.py")
-        print("2. : python main.py search \"\" --topk 1 --verbose")
-        print("3. ")
+        print("2. CLI: python xunlong.py status")
+        print("3. Web: python run_api.py，然后访问 http://localhost:8000")
         
         print("\n :")
         print("1. Visual Studio Build Tools:")

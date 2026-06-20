@@ -131,7 +131,6 @@ def main():
     print("=" * 60)
     print("\n :")
     print("   - API")
-    print("   - worker: python start_worker.py")
     print("   - : python examples/async_api_client.py")
     print()
 
