@@ -288,6 +288,91 @@ class TestChartBuilder:
         assert option["series"][0]["data"][0]["value"] == 6.538
 
 
+class TestLLMSearchAnalyzer:
+    def test_normalize_table_monetary_units_unifies_yuan_and_yi(self):
+        from src.agents.data_analysis.llm_search_analyzer import normalize_table_monetary_units
+        from src.agents.data_analysis.schemas import DataTable
+
+        table = DataTable(
+            title="贵州茅台关键指标",
+            columns=["指标", "数值", "期间", "来源", "原文依据"],
+            rows=[
+                ["2026年第一季度营业收入", "547.03亿元", "2026Q1", "[W1]", "片段1"],
+                ["2025年营业总收入", "170899152276.34元", "2025", "[W2]", "片段2"],
+                ["2024年归母净利润", "86228146421.62元", "2024", "[W3]", "片段3"],
+                ["营收同比增长", "6.538%", "2024", "[W4]", "片段4"],
+            ],
+        )
+
+        normalized = normalize_table_monetary_units(table)
+
+        assert normalized.rows[0][1] == "547.03亿元"
+        assert normalized.rows[1][1] == "1708.99亿元"
+        assert normalized.rows[2][1] == "862.28亿元"
+        assert normalized.rows[3][1] == "6.538%"
+        assert normalized.columns[1] == "数值（亿元）"
+
+    def test_normalize_table_uses_wan_for_small_amounts(self):
+        from src.agents.data_analysis.llm_search_analyzer import normalize_table_monetary_units
+        from src.agents.data_analysis.schemas import DataTable
+
+        table = DataTable(
+            title="门店营收",
+            columns=["指标", "数值", "期间"],
+            rows=[
+                ["门店A营收", "520万元", "2024"],
+                ["门店B营收", "860万元", "2024"],
+                ["门店C营收", "12000000元", "2024"],
+            ],
+        )
+        normalized = normalize_table_monetary_units(table)
+        assert normalized.rows[0][1] == "520万元"
+        assert normalized.rows[1][1] == "860万元"
+        assert normalized.rows[2][1] == "1200万元"
+        assert normalized.columns[1] == "数值（万元）"
+
+    def test_normalize_table_uses_yuan_for_tiny_amounts(self):
+        from src.agents.data_analysis.llm_search_analyzer import normalize_table_monetary_units
+        from src.agents.data_analysis.schemas import DataTable
+
+        table = DataTable(
+            title="费用明细",
+            columns=["指标", "数值", "期间"],
+            rows=[
+                ["办公费用", "3500元", "2024"],
+                ["差旅费用", "8200元", "2024"],
+            ],
+        )
+        normalized = normalize_table_monetary_units(table)
+        assert normalized.rows[0][1] == "3500元"
+        assert normalized.rows[1][1] == "8200元"
+        assert normalized.columns[1] == "数值（元）"
+
+    def test_normalize_table_monetary_units_enables_bar_chart(self):
+        from src.agents.data_analysis.chart_builder import build_chart_for_table
+        from src.agents.data_analysis.llm_search_analyzer import normalize_table_monetary_units
+        from src.agents.data_analysis.schemas import DataTable
+
+        table = normalize_table_monetary_units(
+            DataTable(
+                title="营收对比",
+                columns=["指标", "数值", "期间"],
+                rows=[
+                    ["2025年营业收入", "1720.54亿元", "2025"],
+                    ["2025年营业总收入", "170899152276.34元", "2025"],
+                ],
+            )
+        )
+        chart = build_chart_for_table(table, chart_id="chart_unified")
+        assert chart is not None
+        option_raw = chart["spec"]["option"]
+        option = json.loads(option_raw) if isinstance(option_raw, str) else option_raw
+        values = [d["value"] if isinstance(d, dict) else d for d in option["series"][0]["data"]]
+        assert len(values) == 2
+        assert values[0] == 1720.54
+        assert values[1] == 1708.99
+
+
 class TestDataAnalysisAgent:
     @staticmethod
     def _banking_llm_response():

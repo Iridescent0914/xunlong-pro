@@ -1,3 +1,63 @@
+### 架构组件图
+
+```mermaid
+graph TB
+    subgraph "用户接口层"
+        CLI[CLI命令行工具]
+    end
+
+    subgraph "智能体编排层"
+        Coordinator[🎯 协调器 Coordinator<br/>任务分解与流程编排]
+    end
+
+    subgraph "知识增强层"
+        RAG[📚 金融 RAG 知识库<br/>年报向量库 · RAGClient · evidence_adapter]
+    end
+
+    subgraph "核心智能体层"
+        direction LR
+        SearchAgent[🔍 搜索智能体<br/>网络搜索 & 内容提取]
+        AnalysisAgent[📊 金融数据分析智能体<br/>RAG+网页 · LLM分析 · 图表]
+        ReportAgent[📄 报告生成器<br/>Business / Academic / Technical]
+        PPTAgent[📊 PPT 生成器<br/>Business / Creative / Minimal]
+    end
+
+    subgraph "支持服务层"
+        HTMLConverter[📄 HTML 转换器<br/>Markdown → HTML]
+        ExportManager[📁 导出管理器<br/>PDF / DOCX / PPTX]
+        StorageManager[💾 存储管理器<br/>项目文件管理]
+    end
+
+    subgraph "LLM 服务层"
+        LLMManager[🤖 LLM 管理器<br/>OpenAI / Anthropic / DeepSeek / Qwen]
+        Observability[📈 可观测性<br/>LangFuse 监控]
+    end
+
+    CLI --> Coordinator
+    Coordinator --> SearchAgent
+    Coordinator --> AnalysisAgent
+    Coordinator --> ReportAgent
+    Coordinator --> PPTAgent
+
+    ReportAgent --> HTMLConverter
+    PPTAgent --> HTMLConverter
+    HTMLConverter --> ExportManager
+    ExportManager --> StorageManager
+
+    Coordinator -.-> RAG
+
+    SearchAgent -.调用.-> LLMManager
+    AnalysisAgent -.调用.-> LLMManager
+    ReportAgent -.调用.-> LLMManager
+    PPTAgent -.调用.-> LLMManager
+    LLMManager -.监控.-> Observability
+
+    style Coordinator fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style LLMManager fill:#4c6ef5,stroke:#364fc7,color:#fff
+    style Observability fill:#ae3ec9,stroke:#862e9c,color:#fff
+```
+
+
 ### 核心智能体（金融数据分析模式）
 
 > **模式说明**：用户通过 `xunlong analyze` 进入金融数据分析模式。协调器**先完成网页搜索**，再调用金融数据分析智能体；智能体内部检索 **RAG 年报证据**，与 `search_results` 一并交给 **LLM 抽取数值表**，生成结构化 `data_analysis_results`，最后按 `--deliverable` 产出报告 / PPT / 仅分析 JSON。
