@@ -221,26 +221,74 @@ class SectionEvaluator:
 
         return prompt
 
+    def _clean_json(self, text: str) -> str:
+        """Clean text to extract valid JSON, replacing common formatting issues."""
+        # 去除代码块标记
+        cleaned = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = re.sub(r"//.*", "", cleaned)
+        cleaned = re.sub(r"/\*[\s\S]*?\*/", "", cleaned)
+        # 去除尾部多余的非JSON内容（在 } 之后）
+        last_brace = cleaned.rfind("}")
+        if last_brace > 0:
+            cleaned = cleaned[:last_brace + 1]
+        # 替换中文全角标点为半角（解决 LLM 返回中文标点导致 JSON 解析失败）
+        replacements = {
+            '，': ',', '。': '.', '：': ':', '；': ';',
+            '！': '!', '？': '?', '（': '(', '）': ')',
+            '【': '[', '】': ']', '「': '"', '」': '"',
+            '"': '"', '"': '"', ''': "'", ''': "'",
+            '－': '-', '—': '-', '～': '~',
+        }
+        for cn, en in replacements.items():
+            cleaned = cleaned.replace(cn, en)
+        # 去除尾部多余内容
+        cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
+        return cleaned.strip()
+
     def _parse_evaluation_response(self, response: str) -> Dict[str, Any]:
-        """TODO: Add docstring."""
-
-        try:
-            # JSON
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group()
-                evaluation = json.loads(json_str)
-
-                # 
-                if "scores" in evaluation:
-                    return evaluation
-
-            logger.warning(f"[{self.name}] JSON")
-            return self._get_fallback_evaluation()
-
-        except Exception as e:
-            logger.error(f"[{self.name}] : {e}")
-            return self._get_fallback_evaluation()
+        """Parse LLM evaluation response, extracting JSON with robust error handling."""
+        last_error = None
+        # 尝试多种 JSON 提取方式
+        patterns = [
+            r'```(?:json)?\s*(\{[\s\S]*?\})\s*```',  # 代码块中的JSON
+            r'\{[\s\S]*"scores"[\s\S]*\}',            # 从scores字段开始的JSON
+            r'\{[\s\S]*?\}'                             # 第一个 {...} 块
+        ]
+        for pattern in patterns:
+            for match in re.finditer(pattern, response):
+                candidate = match.group(1) if '```' in pattern else match.group()
+                cleaned = self._clean_json(candidate)
+                try:
+                    evaluation = json.loads(cleaned)
+                    if isinstance(evaluation, dict) and "scores" in evaluation:
+                        return evaluation
+                except Exception as e:
+                    last_error = e
+        # 回退到逐字符匹配，找到第一个 { 开始的完整 JSON
+        brace_count = 0
+        started = False
+        start_pos = -1
+        for i, ch in enumerate(response):
+            if ch == '{':
+                if not started:
+                    start_pos = i
+                    started = True
+                brace_count += 1
+            elif ch == '}':
+                brace_count -= 1
+                if started and brace_count == 0:
+                    candidate = response[start_pos:i+1]
+                    cleaned = self._clean_json(candidate)
+                    try:
+                        evaluation = json.loads(cleaned)
+                        if isinstance(evaluation, dict) and "scores" in evaluation:
+                            return evaluation
+                    except Exception as e:
+                        last_error = e
+                    break
+        logger.warning(f"[{self.name}] JSON 解析失败: {last_error}")
+        return self._get_fallback_evaluation()
 
     def _get_fallback_evaluation(self) -> Dict[str, Any]:
         """TODO: Add docstring."""

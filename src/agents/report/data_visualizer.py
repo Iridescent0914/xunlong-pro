@@ -236,14 +236,27 @@ JSONvisualizations"""
         cleaned = re.sub(r"//.*", "", cleaned)
         cleaned = re.sub(r"/\*[\s\S]*?\*/", "", cleaned)
         cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
+        # 替换中文全角标点符号为英文半角
+        chinese_punctuation = {
+            '，': ',', '。': '.', '：': ':', '；': ';',
+            '！': '!', '？': '?', '（': '(', '）': ')',
+            '【': '[', '】': ']', '「': '"', '」': '"',
+            '‘': "'", '’': "'", '""': '"', '""': '"',
+            '－': '-', '—': '-', '～': '~',
+        }
+        for cn, en in chinese_punctuation.items():
+            cleaned = cleaned.replace(cn, en)
         return cleaned.strip()
 
     async def _generate_visualization(
         self,
         viz_spec: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
-        """TODO: Add docstring."""
+        """Generate visualization from a spec dict. Returns None on failure."""
         try:
+            if not isinstance(viz_spec, dict):
+                logger.warning(f"[{self.name}] viz_spec is {type(viz_spec).__name__}, expected dict: {str(viz_spec)[:100]}")
+                return None
             viz_type = viz_spec.get("type", "table")
             title = viz_spec.get("title", "")
             data = viz_spec.get("data", {})

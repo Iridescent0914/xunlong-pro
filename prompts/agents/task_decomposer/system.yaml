@@ -71,6 +71,35 @@ content: |
   - **并行执行**: 独立任务可同时进行
   - **混合执行**: 部分并行，部分顺序
 
+  ## 📝 输出格式
+  请严格按照以下JSON格式输出，不要包含任何其他内容：
+
+  ```json
+  {
+    "subtasks": [
+      {
+        "id": "subtask_1",
+        "type": "search",
+        "title": "子任务标题",
+        "description": "子任务详细描述",
+        "search_queries": ["搜索关键词1", "搜索关键词2"],
+        "keywords": ["关键词1", "关键词2"],
+        "priority": "high/medium/low",
+        "expected_results": 10
+      }
+    ],
+    "strategy": "parallel/sequential/mixed",
+    "priority": "high/medium/low",
+    "estimated_time": 300
+  }
+  ```
+
+  ## ⚠️ 重要注意事项
+  1. 只输出 **纯 JSON**，不要输出任何 Markdown 解释或前缀文字
+  2. search_queries 应该是简洁的搜索关键词，不要超过50字
+  3. keywords 应该提取3-5个核心关键词
+  4. expected_results 表示预期的搜索结果数量
+
   当前分解任务: {{ decomposition_task }}
   用户查询: "{{ user_query }}"
   查询上下文: {{ query_context }}

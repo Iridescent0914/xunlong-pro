@@ -2,6 +2,8 @@
  - 
 """
 import asyncio
+import json
+import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from loguru import logger
@@ -219,45 +221,89 @@ JSON:
         return prompt
 
     def _parse_decomposition_response(self, response: str) -> Dict[str, Any]:
-        """TODO: Add docstring."""
-        try:
-            import json
-            import re
-            
-            # JSON
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group()
-                decomposition = json.loads(json_str)
-                
-                # 
-                if "subtasks" in decomposition and isinstance(decomposition["subtasks"], list):
-                    return decomposition
-            
-            # JSON
-            logger.warning(f"[{self.name}] JSON")
-            return self._create_default_decomposition(response)
-            
-        except Exception as e:
-            logger.error(f"[{self.name}] : {e}")
-            return self._create_default_decomposition(response)
+        """Parse LLM decomposition response with robust JSON extraction."""
+        last_error = None
+
+        # 尝试多种 JSON 提取方式
+        patterns = [
+            r'```(?:json)?\s*(\{[\s\S]*?\})\s*```',  # 代码块中的JSON
+            r'\{[\s\S]*"subtasks"[\s\S]*\}',          # 从subtasks字段开始
+            r'\{[\s\S]*?\}'                             # 第一个 {...} 块
+        ]
+        for pattern in patterns:
+            for match in re.finditer(pattern, response):
+                candidate = match.group(1) if '```' in pattern else match.group()
+                cleaned = self._clean_json(candidate)
+                try:
+                    decomposition = json.loads(cleaned)
+                    if isinstance(decomposition, dict) and "subtasks" in decomposition:
+                        if isinstance(decomposition["subtasks"], list):
+                            return decomposition
+                except Exception as e:
+                    last_error = e
+
+        # 逐字符匹配完整 JSON 块（兜底）
+        brace_count = 0
+        started = False
+        start_pos = -1
+        for i, ch in enumerate(response):
+            if ch == '{':
+                if not started:
+                    start_pos = i
+                    started = True
+                brace_count += 1
+            elif ch == '}':
+                brace_count -= 1
+                if started and brace_count == 0:
+                    candidate = response[start_pos:i+1]
+                    cleaned = self._clean_json(candidate)
+                    try:
+                        decomposition = json.loads(cleaned)
+                        if isinstance(decomposition, dict) and "subtasks" in decomposition:
+                            if isinstance(decomposition["subtasks"], list):
+                                return decomposition
+                    except Exception as e:
+                        last_error = e
+                    break
+
+        logger.warning(f"[{self.name}] JSON 解析失败: {last_error}")
+        return self._create_default_decomposition(response)
+
+    def _clean_json(self, text: str) -> str:
+        """Clean text to extract valid JSON."""
+        cleaned = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = re.sub(r"//.*", "", cleaned)
+        cleaned = re.sub(r"/\*[\s\S]*?\*/", "", cleaned)
+        # 替换中文全角标点
+        replacements = {
+            '，': ',', '。': '.', '：': ':', '；': ';',
+            '！': '!', '？': '?', '（': '(', '）': ')',
+            '【': '[', '】': ']', '「': '"', '」': '"',
+            '"': '"', '"': '"', ''': "'", ''': "'",
+        }
+        for cn, en in replacements.items():
+            cleaned = cleaned.replace(cn, en)
+        # 去除尾部多余内容
+        cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
+        return cleaned.strip()
     
     def _create_default_decomposition(self, query_or_response: str) -> Dict[str, Any]:
-        """TODO: Add docstring."""
+        """Create a fallback decomposition when parsing fails."""
         return {
             "subtasks": [
                 {
                     "id": "default_search",
                     "type": "search",
-                    "title": "",
-                    "description": "",
-                    "search_queries": [query_or_response[:100]],
-                    "keywords": [],
+                    "title": "通用信息搜索",
+                    "description": "搜索与用户查询相关的通用信息",
+                    "search_queries": ["AI", "LLM", "人工智能"],
+                    "keywords": ["AI", "LLM", "人工智能"],
                     "priority": "medium",
                     "expected_results": 10
                 }
             ],
-            "strategy": "fallback",
+            "strategy": "parallel",
             "priority": "medium",
             "estimated_time": 300
         }

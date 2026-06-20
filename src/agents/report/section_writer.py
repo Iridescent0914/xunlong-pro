@@ -51,8 +51,13 @@ class SectionWriter:
                 ""
             )
 
-            # Clean LLM preamble/postamble
-            enhanced_content = self._clean_llm_response(response)
+            # 检查响应是否有效
+            if not response:
+                logger.warning(f"[{self.name}]  {section_id} LLM")
+                enhanced_content = ""
+            else:
+                # Clean LLM preamble/postamble
+                enhanced_content = self._clean_llm_response(response)
 
             # 
             confidence = self._calculate_confidence(
@@ -125,12 +130,13 @@ class SectionWriter:
                 ""
             )
 
-            # 
-            section_result["content"] = response
-            section_result["word_count"] = len(response)
-            section_result["confidence"] = self._calculate_confidence(
-                response, {"requirements": section_result.get("title", "")}, []
-            )
+            # 检查响应是否有效
+            if response:
+                section_result["content"] = response
+                section_result["word_count"] = len(response)
+                section_result["confidence"] = self._calculate_confidence(
+                    response, {"requirements": section_result.get("title", "")}, []
+                )
 
             logger.info(f"[{self.name}]  {section_id} ")
 
