@@ -47,8 +47,7 @@ class BaseHTMLAgent(ABC):
         self.jinja_env = Environment(
             loader=FileSystemLoader([str(path) for path in template_dirs]),
             autoescape=True,
-            trim_blocks=True,
-            lstrip_blocks=True
+            trim_blocks=True
         )
 
         # 

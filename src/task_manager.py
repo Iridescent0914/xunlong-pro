@@ -25,6 +25,7 @@ class TaskType(str, Enum):
     REPORT = "report"
     FICTION = "fiction"
     PPT = "ppt"
+    FILE_ANALYSIS = "file_analysis"
 
 
 @dataclass

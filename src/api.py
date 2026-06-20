@@ -47,6 +47,65 @@ def _sanitize(obj):
         return vars(obj)
     except Exception:
         return str(obj)
+
+
+def _build_simple_content_html(result: Optional[Dict[str, Any]], charts: List[Any]) -> str:
+    """当 build_data_analysis_section 返回 None 时，为 build_file_analysis_html 构建最小的 content_html。"""
+    if not result:
+        return "<p>暂无分析数据。</p>"
+
+    parts = []
+
+    # 关键指标
+    metrics = result.get("metrics") or {}
+    if metrics:
+        rows = "".join(
+            f"<tr><th>{_esc(k)}</th><td>{_esc(str(v))}</td></tr>"
+            for k, v in list(metrics.items())[:8]
+        )
+        parts.append(f"<h3>关键指标</h3><table><thead><tr><th>指标</th><th>数值</th></tr></thead><tbody>{rows}</tbody></table>")
+
+    # 关键发现
+    findings = result.get("key_findings") or []
+    if findings:
+        parts.append("<h3>关键发现</h3><ul>")
+        for f in findings:
+            title = _esc(f.get("title", f.get("label", "发现")))
+            content = _esc(f.get("content", f.get("value", "")))
+            parts.append(f"<li><strong>{title}</strong>：{content}</li>")
+        parts.append("</ul>")
+
+    # 表格
+    tables = result.get("tables") or []
+    for tbl in tables:
+        title = _esc(tbl.get("title", "数据表"))
+        cols = tbl.get("columns", [])
+        rows_data = tbl.get("rows", [])
+        if rows_data:
+            th = "".join(f"<th>{_esc(str(c))}</th>" for c in cols)
+            trs = "".join(
+                "<tr>" + "".join(f"<td>{_esc(str(cell))}</td>" for cell in row) + "</tr>"
+                for row in rows_data
+            )
+            parts.append(f"<h3>{title}</h3><div class='report-table'><table><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table></div>")
+
+    # 结论
+    conclusion = result.get("conclusion") or result.get("message") or ""
+    if conclusion:
+        parts.append(f"<h3>分析结论</h3><p>{_esc(conclusion)}</p>")
+
+    return "".join(parts)
+
+
+def _esc(s: str) -> str:
+    return (str(s)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#39;"))
+
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -60,15 +119,17 @@ from .task_manager import get_task_manager, TaskType, TaskStatus
 
 # Pydantic
 class ReportRequest(BaseModel):
-    """TODO: Add docstring."""
-    query: str = Field(..., description="")
-    report_type: str = Field("comprehensive", description=": comprehensive/daily/analysis/research")
-    search_depth: str = Field("deep", description=": surface/medium/deep")
-    max_results: int = Field(20, description="")
-    output_format: str = Field("html", description=": html/md")
-    html_template: str = Field("academic", description="HTML: academic/technical")
-    html_theme: str = Field("light", description="HTML: light/dark")
+    """研究报告请求"""
+    query: str = Field(..., description="研究主题")
+    report_type: str = Field("comprehensive", description="报告类型: comprehensive/daily/analysis/research")
+    search_depth: str = Field("deep", description="检索深度: surface/medium/deep")
+    max_results: int = Field(20, description="最大检索结果数")
+    output_format: str = Field("html", description="输出格式: html/md")
+    html_template: str = Field("enhanced_professional", description="HTML模板: enhanced_professional/academic/technical")
+    html_theme: str = Field("light", description="HTML主题: light/dark")
+    add_data_analysis: bool = Field(False, description="是否添加金融数据分析")
     user_document: Optional[Dict[str, Any]] = Field(None, description="上传的上下文文档: {filename, content}")
+    rag_config: Optional[Dict[str, bool]] = Field(None, description="RAG开关配置: {annual_report_rag_enabled, yahoo_finance_rag_enabled}")
 
 
 class FictionRequest(BaseModel):
@@ -85,14 +146,25 @@ class FictionRequest(BaseModel):
 
 
 class PPTRequest(BaseModel):
-    """PPT"""
-    query: str = Field(..., description="PPT")
-    slides: int = Field(15, description="")
-    style: str = Field("business", description=": business/creative/minimal/educational")
-    theme: str = Field("corporate-blue", description="")
-    depth: str = Field("medium", description=": surface/medium/deep")
+    """PPT演示文稿请求"""
+    query: str = Field(..., description="演示主题")
+    slides: int = Field(15, description="幻灯片页数")
+    style: str = Field("business", description="风格: business/creative/minimal/educational/ted")
+    theme: str = Field("default", description="主题: default/corporate-blue/minimal/nature")
+    depth: str = Field("medium", description="深度: surface/medium/deep")
     speech_notes: Optional[str] = Field("", description="演说稿说明")
+    add_data_analysis: bool = Field(False, description="是否添加金融数据分析")
     user_document: Optional[Dict[str, Any]] = Field(None, description="上传的上下文文档: {filename, content}")
+    rag_config: Optional[Dict[str, bool]] = Field(None, description="RAG开关配置: {annual_report_rag_enabled, yahoo_finance_rag_enabled}")
+
+
+class FileAnalysisRequest(BaseModel):
+    """文件数据分析请求"""
+    query: Optional[str] = Field("", description="分析主题或业务问题")
+    file_name: Optional[str] = Field(None, description="上传文件名")
+    file_type: Optional[str] = Field(None, description="文件类型提示，如 csv/text")
+    file_content: str = Field(..., description="文件内容文本，CSV 或纯文本")
+    use_llm: bool = Field(False, description="是否启用 LLM 补充分析")
 
 
 class TaskResponse(BaseModel):
@@ -157,7 +229,14 @@ async def root():
     """Serve frontend or redirect to it."""
     index_path = frontend_static / "index.html"
     if index_path.exists():
-        return FileResponse(str(index_path))
+        from fastapi.responses import StreamingResponse
+        import io
+        with open(index_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return StreamingResponse(
+            io.StringIO(content),
+            media_type="text/html; charset=utf-8"
+        )
     return {
         "name": "XunLong API",
         "version": "1.0.0",
@@ -240,10 +319,15 @@ async def startup_diagnostics():
 
 # Data analysis API
 class DataAnalysisRequest(BaseModel):
-    query: str = Field(...)
-    search_results: Optional[List[Dict[str, Any]]] = Field(None)
-    rag_pack: Optional[Dict[str, Any]] = Field(None)
-    use_mock: bool = Field(False)
+    """金融数据分析请求"""
+    query: str = Field(..., description="分析主题/查询")
+    search_results: Optional[List[Dict[str, Any]]] = Field(None, description="搜索结果列表（可选，不提供则自动搜索）")
+    search_depth: Optional[str] = Field("deep", description="搜索深度: surface/medium/deep")
+    max_results: Optional[int] = Field(20, description="最大搜索结果数")
+    deliverable: Optional[str] = Field("analysis_html", description="交付物类型: analysis_html/analysis_json")
+    rag_pack: Optional[Dict[str, Any]] = Field(None, description="RAG证据包")
+    use_mock: bool = Field(False, description="是否使用Mock数据（离线测试）")
+    rag_config: Optional[Dict[str, bool]] = Field(None, description="RAG开关配置: {annual_report_rag_enabled, yahoo_finance_rag_enabled}")
 
 
 class FileDataAnalysisRequest(BaseModel):
@@ -257,7 +341,12 @@ class FileDataAnalysisRequest(BaseModel):
 
 @app.post("/api/v1/data_analysis/charts")
 async def data_analysis_charts(request: DataAnalysisRequest):
-    """返回 ECharts option 列表及结构化分析结果。"""
+    """
+    金融数据分析接口。
+    - 如果不提供 search_results，则自动执行网页搜索
+    - 返回结构化分析结果和 ECharts 图表配置
+    - 如果 deliverable=analysis_html，还会生成独立的 HTML 报告
+    """
     try:
         from src.llm.manager import LLMManager
         from src.agents.data_analysis.data_analysis_agent import DataAnalysisAgent
@@ -266,19 +355,74 @@ async def data_analysis_charts(request: DataAnalysisRequest):
         query = request.query
         search_results = request.search_results or []
         use_mock = request.use_mock
+        deliverable = request.deliverable or "analysis_html"
 
+        # 如果没有提供搜索结果，自动执行真实搜索
+        if not search_results:
+            try:
+                from src.search.manager import SearchManager
+                search_manager = SearchManager()
+
+                if use_mock:
+                    logger.warning("[data_analysis_charts] use_mock=True 已废弃，始终使用真实搜索")
+
+                # 根据搜索深度设置参数
+                depth_map = {"surface": 5, "medium": 10, "deep": 20}
+                topk = depth_map.get(request.search_depth, 20)
+
+                # 真实搜索，SearchLink 转为 dict 传给 agent
+                raw_results = await search_manager.search(
+                    query=query,
+                    topk=request.max_results or topk,
+                    depth=request.search_depth or "deep"
+                ) or []
+                search_results = [
+                    {"title": r.title, "url": r.url, "snippet": r.snippet}
+                    for r in raw_results
+                ]
+
+                logger.info(f"[data_analysis_charts] 搜索完成，获取 {len(search_results)} 条结果")
+            except Exception as search_err:
+                logger.warning(f"[data_analysis_charts] 搜索失败: {search_err}，使用空搜索结果继续")
+                search_results = []
+
+        # 执行数据分析
         agent = DataAnalysisAgent(LLMManager())
         out = await agent.process({
             "query": query,
             "search_results": search_results,
             "use_mock": use_mock,
+            "rag_config": request.rag_config or {},
         })
         result = out.get("result") or {}
         charts = result.get("charts") or []
 
+        # 构建分析章节
         da_section = build_data_analysis_section(result, section_index=999)
 
-        return JSONResponse({"result": result, "charts": charts, "section": da_section})
+        response_data = {
+            "result": result,
+            "charts": charts,
+            "section": da_section,
+            "search_count": len(search_results)
+        }
+
+        # 如果是 analysis_html 交付物，生成完整的 HTML 报告
+        if deliverable == "analysis_html":
+            try:
+                from src.agents.data_analysis.file_report import build_file_analysis_html
+                # 始终确保 section 有 content_html，避免 da_section 为 None 时 HTML 内容为空
+                section_for_html = da_section
+                if not section_for_html:
+                    section_for_html = dict(result or {})
+                    section_for_html.setdefault("content_html", _build_simple_content_html(result, charts))
+                    section_for_html.setdefault("title", "金融数据分析")
+                html_report = build_file_analysis_html(section_for_html, report_title=f"金融分析报告：{query}")
+                response_data["html"] = html_report
+            except Exception as html_err:
+                logger.warning(f"[data_analysis_charts] 生成HTML报告失败: {html_err}")
+
+        return JSONResponse(response_data)
 
     except Exception as e:
         logger.error(f"data_analysis_charts: {e}")
@@ -449,7 +593,7 @@ async def create_report_task(request: ReportRequest):
     IDID
     """
     try:
-        # 
+        # 构建 context
         context = {
             'output_type': 'report',
             'report_type': request.report_type,
@@ -458,7 +602,9 @@ async def create_report_task(request: ReportRequest):
             'output_format': request.output_format,
             'html_template': request.html_template,
             'html_theme': request.html_theme,
-            'user_document': request.user_document
+            'add_data_analysis': request.add_data_analysis,
+            'user_document': request.user_document,
+            'rag_config': request.rag_config or {},
         }
 
         # 
@@ -540,7 +686,9 @@ async def create_ppt_task(request: PPTRequest):
                 'depth': request.depth,
                 'speech_notes': request.speech_notes,
             },
-            'user_document': request.user_document
+            'add_data_analysis': request.add_data_analysis,
+            'user_document': request.user_document,
+            'rag_config': request.rag_config or {},
         }
 
         # 
@@ -560,6 +708,40 @@ async def create_ppt_task(request: PPTRequest):
 
     except Exception as e:
         logger.error(f"PPT: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/tasks/file_analysis", response_model=TaskResponse)
+async def create_file_analysis_task(request: FileAnalysisRequest):
+    """
+    文件数据分析任务
+
+    创建异步任务并返回 task_id
+    """
+    try:
+        context = {
+            'file_name': request.file_name,
+            'file_type': request.file_type,
+            'file_content': request.file_content,
+            'use_llm': request.use_llm,
+        }
+
+        task_id = task_manager.create_task(
+            task_type=TaskType.FILE_ANALYSIS,
+            query=request.query or request.file_name or "文件数据分析",
+            context=context
+        )
+
+        logger.info(f"文件分析任务: {task_id}")
+
+        return TaskResponse(
+            task_id=task_id,
+            status="pending",
+            message=f"文件分析任务已创建: {task_id}"
+        )
+
+    except Exception as e:
+        logger.error(f"文件分析任务: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -801,6 +983,64 @@ async def get_config():
         "shots_dir": config.shots_dir,
         "browser_timeout": config.browser_timeout,
         "page_wait_time": config.page_wait_time
+    }
+
+
+# ============ RAG 配置 API ============
+# 全局 RAG 开关状态（内存中，可通过 API 动态修改）
+_rag_config = {
+    "annual_report_rag_enabled": True,  # 对应 ANNUAL_REPORT_RAG_ENABLED
+    "yahoo_finance_rag_enabled": False,  # 对应 YAHOO_FINANCE_RAG_ENABLED
+    "data_analysis_rag_mock": False,  # 对应 DATA_ANALYSIS_RAG_MOCK
+}
+
+
+class RAGConfigUpdate(BaseModel):
+    annual_report_rag_enabled: Optional[bool] = None
+    yahoo_finance_rag_enabled: Optional[bool] = None
+    data_analysis_rag_mock: Optional[bool] = None
+
+
+@app.get("/api/v1/config/rag", summary="获取 RAG 配置")
+async def get_rag_config():
+    """获取当前 RAG 全局开关状态"""
+    return {
+        "annual_report_rag_enabled": _rag_config["annual_report_rag_enabled"],
+        "yahoo_finance_rag_enabled": _rag_config["yahoo_finance_rag_enabled"],
+        "data_analysis_rag_mock": _rag_config["data_analysis_rag_mock"],
+    }
+
+
+@app.put("/api/v1/config/rag", summary="更新 RAG 配置")
+async def update_rag_config(cfg: RAGConfigUpdate):
+    """更新 RAG 全局开关状态"""
+    if cfg.annual_report_rag_enabled is not None:
+        _rag_config["annual_report_rag_enabled"] = cfg.annual_report_rag_enabled
+    if cfg.yahoo_finance_rag_enabled is not None:
+        _rag_config["yahoo_finance_rag_enabled"] = cfg.yahoo_finance_rag_enabled
+    if cfg.data_analysis_rag_mock is not None:
+        _rag_config["data_analysis_rag_mock"] = cfg.data_analysis_rag_mock
+    logger.info(f"RAG 配置已更新: {_rag_config}")
+    return {"status": "ok", "rag_config": _rag_config}
+
+
+@app.get("/api/v1/config/rag/initial", summary="获取初始 RAG 配置")
+async def get_initial_rag_config():
+    """从环境变量读取初始 RAG 配置"""
+    import os
+    return {
+        "annual_report_rag_enabled": os.getenv("ANNUAL_REPORT_RAG_ENABLED", "true").lower() == "true",
+        "yahoo_finance_rag_enabled": os.getenv("YAHOO_FINANCE_RAG_ENABLED", "false").lower() == "true",
+        "data_analysis_rag_mock": os.getenv("DATA_ANALYSIS_RAG_MOCK", "false").lower() == "true",
+    }
+
+
+def get_rag_config_dict() -> Dict[str, bool]:
+    """供其他模块使用的 RAG 配置获取函数"""
+    return {
+        "annual_report_rag_enabled": _rag_config["annual_report_rag_enabled"],
+        "yahoo_finance_rag_enabled": _rag_config["yahoo_finance_rag_enabled"],
+        "data_analysis_rag_mock": _rag_config["data_analysis_rag_mock"],
     }
 
 

@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument("query")
     parser.add_argument("--persist-dir", default="RAG/data/chroma_db")
     parser.add_argument("--collection", default="annual_report_rag")
-    parser.add_argument("--env-file", default="financeRAG/rag/.env")
+    parser.add_argument("--env-file", default=".env")
     parser.add_argument("--top-k", type=int, default=8)
     parser.add_argument("--output", default="")
     args = parser.parse_args()

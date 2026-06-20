@@ -72,7 +72,7 @@ class DocumentHTMLAgent(BaseHTMLAgent):
             for section in metadata['sections']:
                 sections.append({
                     'level': section.get('level', 2),
-                    'title': section.get('title', ''),
+                    'title': self._clean_title(section.get('title', '')),
                     'id': section.get('id') or self._generate_section_id(section.get('title', '')),
                     'content': section.get('content', ''),
                     'content_html': section.get('content_html', ''),
@@ -171,7 +171,7 @@ class DocumentHTMLAgent(BaseHTMLAgent):
 
                 current_section = {
                     'level': level,
-                    'title': title,
+                    'title': self._clean_title(title),
                     'id': self._generate_section_id(title),
                     'content': ''
                 }
@@ -193,16 +193,37 @@ class DocumentHTMLAgent(BaseHTMLAgent):
         # """Abstract"
         for section in sections:
             if section['title'].lower() in ['', 'abstract', 'summary', '']:
-                return section['content']
+                raw = section['content']
+                return self._clean_abstract(raw)
 
-        # 
+        #
         paragraphs = content.split('\n\n')
         for para in paragraphs:
-            # 
+            #
             if not para.strip().startswith('#') and len(para.strip()) > 50:
-                return para.strip()[:300] + '...'
+                return self._clean_abstract(para.strip()[:300] + '...')
 
         return ""
+
+    def _clean_abstract(self, text: str) -> str:
+        """Clean LLM noise from abstract text."""
+        import re
+        # Remove ****: xxx pattern (LLM debug/metadata artifacts)
+        text = re.sub(r'\*{4}:\s*\S+', '', text)
+        text = re.sub(r'\*{4}:\s*', '', text)
+        # Remove Python object repr artifacts
+        text = re.sub(r'<[^>]+>', '', text)
+        # Remove timestamp-like noise (e.g. "18:02:36 comprehensive ---")
+        text = re.sub(r'\d{2}:\d{2}:\d{2}\s+\w+\s*-{3,}', '', text)
+        # Remove remaining asterisk sequences
+        text = re.sub(r'\*{2,}', '', text)
+        # Remove very short lines/fragments (likely JSON cutoffs)
+        lines = text.split('\n')
+        lines = [l.strip() for l in lines if len(l.strip()) > 20]
+        text = '\n'.join(lines)
+        # Collapse whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
 
     def _generate_toc(self, sections: List[Dict]) -> str:
         """
@@ -240,7 +261,7 @@ class DocumentHTMLAgent(BaseHTMLAgent):
                     toc_html.append('</li>')
 
             # Add the current item
-            toc_html.append(f'<li><a href="#{section_id}">{title}</a>')
+            toc_html.append(f'<li><a href="#{section_id}">{self._clean_title(title)}</a>')
             current_level = level
 
         # Close all remaining open tags
@@ -291,7 +312,7 @@ class DocumentHTMLAgent(BaseHTMLAgent):
 
             # Add section heading with anchor
             heading_tag = f'h{level}'
-            content_parts.append(f'<{heading_tag} id="{section_id}">{title}</{heading_tag}>')
+            content_parts.append(f'<{heading_tag} id="{section_id}">{self._clean_title(title)}</{heading_tag}>')
 
             # Convert markdown to HTML if needed
             if section_content and not section.get('content_html'):
@@ -324,6 +345,22 @@ class DocumentHTMLAgent(BaseHTMLAgent):
         section_id = re.sub(r'[^\w\s-]', '', title.lower())
         section_id = re.sub(r'[\s_-]+', '-', section_id)
         return section_id
+
+    def _clean_title(self, title: Any) -> str:
+        """Clean section titles that may contain LLM artifacts."""
+        import types
+        # Reject Python built-in method objects (e.g. str.title)
+        if isinstance(title, types.MethodType):
+            return 'untitled'
+        if not isinstance(title, str):
+            return str(title) if title else ''
+        # Remove Python object repr artifacts
+        cleaned = re.sub(r'<[^>]+>', '', title)
+        # Remove asterisk sequences (LLM noise)
+        cleaned = re.sub(r'\*{2,}', '', cleaned)
+        # Collapse whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned or 'untitled'
 
     def _calculate_stats(self, content: str) -> Dict[str, int]:
         """TODO: Add docstring."""

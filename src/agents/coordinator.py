@@ -328,10 +328,14 @@ class DeepSearchCoordinator:
     
     @staticmethod
     def _is_financial_analysis_mode(state: DeepSearchState) -> bool:
+        """检查是否为金融分析模式：单独的金融分析任务，或报告/PPT的增强分析"""
         if state.get("output_type") == "financial_analysis":
             return True
         context = state.get("context") or {}
-        return context.get("mode") == "financial_analysis"
+        # 支持两种模式：
+        # 1. financial_analysis 模式：output_type == "financial_analysis"
+        # 2. 报告/PPT 增强模式：context.add_data_analysis == True
+        return context.get("add_data_analysis") == True
 
     @staticmethod
     def _load_mock_search_results() -> List[Dict[str, Any]]:
@@ -359,6 +363,7 @@ class DeepSearchCoordinator:
                 "search_results": state.get("search_results", []),
                 "task_analysis": state.get("task_analysis", {}),
                 "use_mock": context.get("use_mock_search", False),
+                "rag_config": context.get("rag_config", {}),
             })
             state["data_analysis_results"] = result.get("result", {})
             state["data_analysis_status"] = result.get("status", "unknown")
@@ -1149,6 +1154,14 @@ class DeepSearchCoordinator:
 
     def _route_after_search_analyzer(self, state: DeepSearchState) -> str:
         """搜索分析后：report 走综合+报告，ppt 走演示文稿，none 仅保留分析结果。"""
+        output_type = state.get("output_type", "report")
+
+        # PPT 独立走 PPT 生成器，不受金融分析开关影响
+        if output_type == "ppt":
+            logger.info("PPT")
+            return "ppt_generator"
+
+        # 仅在非 PPT 时处理金融分析模式
         if self._is_financial_analysis_mode(state):
             deliverable = self._financial_deliverable(state)
             if deliverable == "ppt":
@@ -1160,10 +1173,6 @@ class DeepSearchCoordinator:
             logger.info("金融分析模式: 生成综合分析报告")
             return "content_synthesizer"
 
-        output_type = state.get("output_type", "report")
-        if output_type == "ppt":
-            logger.info("PPT")
-            return "ppt_generator"
         logger.info("")
         return "content_synthesizer"
 
@@ -1387,16 +1396,22 @@ class DeepSearchCoordinator:
 
             elif output_type == "ppt":
                 # PPT
-                logger.info(" 2/5: ")
+                logger.info(" 2/5: 任务分解")
                 state = await self._task_decomposer_node(state)
 
-                logger.info(" 3/5: ")
+                logger.info(" 3/5: 网页搜索")
                 state = await self._deep_searcher_node(state)
 
-                logger.info(" 4/5: ")
+                logger.info(" 4/5: 内容分析")
                 state = await self._search_analyzer_node(state)
 
-                logger.info(" 5/5: PPT")
+                # 如果开启了 add_data_analysis，执行金融数据分析
+                context = state.get("context") or {}
+                if context.get("add_data_analysis"):
+                    logger.info(" 4.5/6: 金融数据分析（报告增强）")
+                    state = await self._data_analyzer_node(state)
+
+                logger.info(" 5/6: 生成PPT" if context.get("add_data_analysis") else " 5/5: 生成PPT")
                 state = await self._ppt_generator_node(state)
 
             elif output_type == "financial_analysis":
@@ -1422,20 +1437,26 @@ class DeepSearchCoordinator:
                     logger.info(" 5/5: 跳过报告/PPT（仅保留金融数据分析）")
 
             else:
-                # 
-                logger.info(" 2/6: ")
+                # 普通报告
+                logger.info(" 2/6: 任务分解")
                 state = await self._task_decomposer_node(state)
 
-                logger.info(" 3/6: ")
+                logger.info(" 3/6: 网页搜索")
                 state = await self._deep_searcher_node(state)
 
-                logger.info(" 4/6: ")
+                logger.info(" 4/6: 内容分析")
                 state = await self._search_analyzer_node(state)
 
-                logger.info(" 5/6: ")
+                # 如果开启了 add_data_analysis，执行金融数据分析
+                context = state.get("context") or {}
+                if context.get("add_data_analysis"):
+                    logger.info(" 4.5/7: 金融数据分析（报告增强）")
+                    state = await self._data_analyzer_node(state)
+
+                logger.info(" 5/7: 内容综合" if context.get("add_data_analysis") else " 5/6: 内容综合")
                 state = await self._content_synthesizer_node(state)
 
-                logger.info(" 6/6: ")
+                logger.info(" 6/7: 生成报告" if context.get("add_data_analysis") else " 6/6: 生成报告")
                 state = await self._report_generator_node(state)
 
             return state

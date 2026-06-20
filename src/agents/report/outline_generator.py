@@ -279,14 +279,21 @@ class OutlineGenerator:
     def _parse_outline_response(self, response: str) -> Dict[str, Any]:
         """解析 LLM 响应"""
         try:
-            # 尝试提取 JSON
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group()
-                outline = json.loads(json_str)
+            # 优先尝试将整个响应解析为 JSON
+            try:
+                outline = json.loads(response.strip())
+                if isinstance(outline, dict) and "sections" in outline:
+                    return outline
+            except json.JSONDecodeError:
+                pass
 
-                # 验证必需字段
-                if "title" in outline and "sections" in outline:
+            # 用平衡大括号找到第一个完整的 JSON 对象
+            first_brace = response.find('{')
+            last_brace = response.rfind('}')
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                json_str = response[first_brace:last_brace + 1]
+                outline = json.loads(json_str)
+                if isinstance(outline, dict) and "sections" in outline:
                     return outline
 
             logger.warning(f"[{self.name}] JSON 解析失败")
@@ -323,12 +330,14 @@ class OutlineGenerator:
             if "id" not in section:
                 section["id"] = i + 1
 
-            # 章节标题
-            if "title" not in section or not section["title"]:
+            # 章节标题（必须为非空字符串）
+            title = section.get("title", "")
+            if not isinstance(title, str) or not title.strip():
                 section["title"] = f"第{i+1}章"
 
             # 写作要求
-            if "requirements" not in section or not section["requirements"]:
+            req = section.get("requirements", "")
+            if not isinstance(req, str) or not req.strip():
                 section["requirements"] = f"{outline.get('title', '')}的{section['title']}部分"
 
             # 字数
