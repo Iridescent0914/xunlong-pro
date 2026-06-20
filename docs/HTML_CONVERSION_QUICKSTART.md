@@ -94,7 +94,7 @@ html = agent.convert_to_html(
 ### 完整示例
 
 ```bash
-python examples/html_conversion_example.py
+python xunlong.py --help
 ```
 
 这将生成3个示例文件：
@@ -280,7 +280,7 @@ python xunlong.py to-html report.md --output report.html --type document --templ
 
 - [完整使用指南](HTML_CONVERSION_GUIDE.md)
 - [实现文档](HTML_CONVERSION_IMPLEMENTATION.md)
-- [示例代码](../examples/html_conversion_example.py)
+- 当前精简版已移除 `examples/` 示例目录；请使用 `python xunlong.py ...` 或 `python run_api.py`。
 
 ## 🐛 故障排除
 
@@ -289,7 +289,7 @@ python xunlong.py to-html report.md --output report.html --type document --templ
 ```bash
 # 确保在项目根目录运行
 cd /path/to/XunLong
-python examples/html_conversion_example.py
+python xunlong.py --help
 ```
 
 ### 问题2: markdown库未安装

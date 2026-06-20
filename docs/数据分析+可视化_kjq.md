@@ -32,7 +32,7 @@
 
 新增文件（示例/辅助）
 -	`frontend-static/data_analysis_demo.html`（前端示例页面 — 我已加入仓库作为参考，但你要求不要把 demo 整合到 README 中，这里仅记录文件存在）
--	`scripts/demo_data_analysis_run.py`（离线演示脚本 — 已加入仓库，用于快速离线验证）
+-	根目录 `scripts/` 已从当前精简版移除；数据分析功能通过 `python run_api.py` 和前端/API 验证。
 
 设计要点与兼容性
 -	RAG 输入形状：兼容两类常见输入形式：

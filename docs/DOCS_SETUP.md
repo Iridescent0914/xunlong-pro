@@ -201,11 +201,6 @@ docs/
 ├── api/                      # API文档
 │   ├── cli.md               # CLI命令
 │   └── configuration.md      # 配置说明
-├── examples/                 # 示例
-│   ├── report.md
-│   ├── fiction.md
-│   ├── ppt.md
-│   └── iteration.md
 ├── advanced/                 # 高级主题
 │   ├── custom-templates.md
 │   ├── llm-integration.md

@@ -361,7 +361,7 @@ html = agent.convert_to_html(
 ## 📚 相关文档
 
 - [HTML_CONVERSION_GUIDE.md](HTML_CONVERSION_GUIDE.md) - 使用指南
-- [examples/html_conversion_example.py](../examples/html_conversion_example.py) - 代码示例
+- 当前精简版已移除 `examples/` 示例目录；HTML 转换请通过 `python xunlong.py ...`、`python run_api.py` 或前端界面使用。
 
 ## 🎉 总结
 

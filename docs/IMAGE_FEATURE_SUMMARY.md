@@ -136,7 +136,7 @@ IMAGE_INSERT_MODE=smart
 ### 7. 测试用例和文档
 
 **文件**:
-- ✅ `examples/image_feature_test.py` - 完整测试套件
+- `examples/` 示例目录已从当前精简版移除；图片功能通过主 API/前端流程验证。
 - ✅ `docs/IMAGE_FEATURE_GUIDE.md` - 详细使用指南
 - ✅ `requirements.txt` - 添加 Pillow 依赖
 
@@ -316,7 +316,7 @@ result = await coordinator.generate_report(
 
 - [使用指南](./IMAGE_FEATURE_GUIDE.md) - 详细使用说明
 - [API 文档](./API_README.md) - API 接口说明
-- [测试示例](../examples/image_feature_test.py) - 测试代码
+- 当前精简版已移除 `examples/` 示例目录。
 
 ---
 

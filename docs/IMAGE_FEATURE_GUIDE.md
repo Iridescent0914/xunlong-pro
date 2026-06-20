@@ -70,7 +70,7 @@ IMAGE_INSERT_MODE=smart
 
 ```bash
 # 测试图片功能
-python examples/image_feature_test.py
+# examples/ 已移除；请通过 python run_api.py 启动后使用前端或 API 验证图片功能
 ```
 
 测试将验证:

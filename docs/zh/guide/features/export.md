@@ -510,7 +510,7 @@ python xunlong.py export <project-id> \
 # 导出后运行脚本
 python xunlong.py export <project-id> \
   --format pdf \
-  --post-process ./scripts/add-watermark.sh
+  --post-process <your-script-path>
 ```
 
 ## 导出质量

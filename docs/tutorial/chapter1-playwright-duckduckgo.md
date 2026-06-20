@@ -205,7 +205,7 @@ async def _extract_content_from_page(self, page) -> str:
 The tutorial includes a self-contained example at:
 
 ```
-examples/tutorial/chapter1_playwright_duckduckgo.py
+The standalone tutorial script was removed from the trimmed project.
 ```
 
 **Complete Example Code:**
@@ -300,11 +300,11 @@ playwright install firefox webkit
 
 ```bash
 # Basic usage
-python examples/tutorial/chapter1_playwright_duckduckgo.py "AI industry trends"
+# Standalone examples were removed from the trimmed project.
 
 # With different queries
-python examples/tutorial/chapter1_playwright_duckduckgo.py "machine learning 2024"
-python examples/tutorial/chapter1_playwright_duckduckgo.py "web scraping best practices"
+# Use python xunlong.py ... or python run_api.py for current workflows.
+# See README.md for the supported entry points.
 ```
 
 You should see the top results printed to the console with titles, URLs, and snippets.

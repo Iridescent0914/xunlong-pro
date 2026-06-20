@@ -520,7 +520,7 @@ python xunlong.py export <project-id> \
 # Run custom script after export
 python xunlong.py export <project-id> \
   --format pdf \
-  --post-process "./scripts/sign_pdf.sh"
+  --post-process "<your-script-path>"
 ```
 
 ## Export Comparison

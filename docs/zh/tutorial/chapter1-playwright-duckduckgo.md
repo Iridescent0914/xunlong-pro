@@ -287,7 +287,7 @@ async def _extract_single_result(self, element):
 教程分支包含一个独立的示例：
 
 ```python
-# examples/tutorial/chapter1_playwright_duckduckgo.py
+# 当前精简版已移除独立 examples/tutorial 示例脚本。
 import asyncio
 from playwright.async_api import async_playwright
 
@@ -351,7 +351,7 @@ playwright install chromium
 ### 运行演示
 
 ```bash
-python examples/tutorial/chapter1_playwright_duckduckgo.py "AI行业趋势"
+# 当前精简版已移除独立示例脚本；请使用 python xunlong.py ... 或 python run_api.py。
 ```
 
 您应该能看到搜索结果打印到控制台。

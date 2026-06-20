@@ -70,7 +70,7 @@ asyncio.run(search())
 
 ```bash
 # 运行使用示例
-python examples/mcp_search_example.py
+# examples/ 已移除；请通过主 CLI/API 流程验证 MCP 搜索能力
 
 # 运行测试
 python tests/test_mcp_search.py
