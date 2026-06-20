@@ -1,670 +1,385 @@
-# XunLong 🐉
+﻿# SmartFin
 
-<div align="center">
+SmartFin 是一个面向金融分析、研究报告、演示文稿和数据洞察的多智能体内容生成系统。项目基于 XunLong 的多智能体框架演进而来，保留通用内容生成能力，并强化了金融数据分析、RAG 证据增强、可视化报告和 Web/API 工作流。
 
-**AI-Powered Multi-Modal Content Generation System**
+> 基于 XunLong 项目改造，当前项目定位为 SmartFin 智能金融分析与内容生成平台。
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![LangGraph](https://img.shields.io/badge/powered%20by-LangGraph-orange)](https://github.com/langchain-ai/langgraph)
-[![Documentation](https://img.shields.io/badge/docs-VitePress-brightgreen)](https://jaguarliuu.github.io/xunlong/ )
+## 核心能力
 
-English | [简体中文](./README_CN.md) | [📚 Documentation](https://jaguarliuu.github.io/xunlong/ )
-</div>
+- 智能金融分析：结合网页搜索、RAG 证据包和结构化分析，生成关键指标、关键发现、图表与分析报告。
+- 文件数据分析：通过 Web/API 上传 CSV 或文本内容，生成统计指标、数据洞察、可视化图表和 HTML/Markdown 报告。
+- RAG 证据增强：内置年报 RAG 和 Yahoo Finance RAG 配置入口，可在前端动态切换知识来源。
+- 研究报告生成：支持综合、日报、分析、研究等报告类型，可输出 HTML 或 Markdown。
+- PPT 生成：根据主题自动生成演示结构、页面内容、主题风格和演讲备注，并可导出为 PPTX。
+- 多智能体协作：基于 LangGraph 编排任务分解、网页搜索、内容综合、质量评估、报告/PPT/小说生成等流程。
+- 文档上下文：CLI 和 API 可接收 `.txt`、`.pdf`、`.docx` 作为补充材料。
+- 多格式导出：支持 Markdown、HTML、PDF、DOCX、PPTX 等常用交付格式。
+- 任务化 Web API：长任务采用任务队列模型，前端可轮询进度、查看详情并下载结果。
+- 通用内容创作：保留小说创作等 XunLong 原有能力，适合演示多智能体扩展场景。
 
----
+## 项目结构
 
-## 📖 Introduction
-
-**XunLong** is an intelligent content generation system powered by Large Language Models, capable of automatically generating high-quality **Research Reports**, **Novels**, and **Presentations (PPT)** through natural language commands.
-
-The system employs a multi-agent collaborative architecture, orchestrating agent workflows via LangGraph to achieve end-to-end automation from requirement analysis, information retrieval, content generation, to format export.
-
-### ✨ Key Features
-
-- 🤖 **Multi-Agent Collaboration**: Agent orchestration based on LangGraph with task decomposition and parallel execution
-- 📊 **Multi-Modal Generation**: Supports Report, Fiction, and PPT generation modes
-- 📂 **Document-Aware Input**: Ingest `.txt`, `.pdf`, `.docx` as structured context for any workflow (images not yet supported)
-- 🔍 **Intelligent Search**: Automated web search, content extraction, and knowledge integration
-- 🎨 **Professional Export**: Supports Markdown, HTML, PDF, DOCX, PPTX formats
-- 🔄 **Iterative Refinement**: Local or global modifications to generated content
-- 🎯 **Style Customization**: Multiple writing and presentation styles
-- 📈 **Observability**: Integrated with LangFuse for full-process tracking and monitoring
-
----
-
-## 🏗️ Architecture
-
-### System Architecture Diagram
-
-```mermaid
-graph TB
-    subgraph "User Interface Layer"
-        CLI[CLI Tool]
-    end
-
-    subgraph "Agent Orchestration Layer"
-        Coordinator[🎯 Coordinator<br/>Task Decomposition & Orchestration]
-    end
-
-    subgraph "Core Agent Layer"
-        SearchAgent[🔍 Search Agent<br/>Web Search & Content Extraction]
-        ReportAgent[📄 Report Generator<br/>Business/Academic/Technical]
-        FictionAgent[📖 Fiction Generator<br/>Romance/Scifi/Mystery]
-        PPTAgent[📊 PPT Generator<br/>Business/Creative/Minimal]
-        IterationAgent[🔄 Iteration Agent<br/>Local/Partial/Global Modification]
-    end
-
-    subgraph "Support Service Layer"
-        HTMLConverter[📄 HTML Converter<br/>Markdown → HTML]
-        ExportManager[📁 Export Manager<br/>PDF/DOCX/PPTX]
-        StorageManager[💾 Storage Manager<br/>Project File Management]
-    end
-
-    subgraph "LLM Service Layer"
-        LLMManager[🤖 LLM Manager<br/>OpenAI/Anthropic/DeepSeek]
-        Observability[📈 Observability<br/>LangFuse Monitoring]
-    end
-
-    CLI --> Coordinator
-    Coordinator --> SearchAgent
-    Coordinator --> ReportAgent
-    Coordinator --> FictionAgent
-    Coordinator --> PPTAgent
-    Coordinator --> IterationAgent
-
-    ReportAgent --> HTMLConverter
-    FictionAgent --> HTMLConverter
-    PPTAgent --> HTMLConverter
-
-    HTMLConverter --> ExportManager
-    IterationAgent --> StorageManager
-
-    SearchAgent -.invoke.-> LLMManager
-    ReportAgent -.invoke.-> LLMManager
-    FictionAgent -.invoke.-> LLMManager
-    PPTAgent -.invoke.-> LLMManager
-    IterationAgent -.invoke.-> LLMManager
-
-    LLMManager -.monitor.-> Observability
-
-    ExportManager --> StorageManager
-
-    style Coordinator fill:#ff6b6b,stroke:#c92a2a,color:#fff
-    style LLMManager fill:#4c6ef5,stroke:#364fc7,color:#fff
-    style Observability fill:#ae3ec9,stroke:#862e9c,color:#fff
+```text
+SmartFin/
+├── xunlong.py                  # CLI 入口
+├── run_api.py                  # Web/API 开发启动入口
+├── requirements.txt            # Python 依赖
+├── src/
+│   ├── api.py                  # FastAPI 主应用
+│   ├── deep_search_agent.py    # 统一智能体入口
+│   ├── agents/                 # 报告、PPT、小说、数据分析等智能体
+│   ├── llm/                    # LLM 配置、客户端、Prompt 管理
+│   ├── tools/                  # 搜索、图片、文档、Excel 等工具
+│   ├── export/                 # PDF/DOCX/PPTX/Markdown 导出
+│   ├── mcp/                    # MCP 搜索集成
+│   ├── search/                 # 搜索管理
+│   └── task_manager.py         # Web 任务管理
+├── frontend-static/
+│   └── index.html              # 单文件前端界面
+├── RAG/                        # 年报 RAG 子系统
+├── financeRAG/                 # 金融数据 RAG 子系统
+├── prompts/                    # 智能体和任务提示词
+├── templates/                  # HTML 输出模板
+├── docs/                       # 文档站和项目说明
+├── tests/                      # 单元测试与集成测试
+├── storage/                    # 生成项目与输出文件
+└── tasks/                      # Web/API 任务记录
 ```
 
-### Content Generation Workflow
+## 环境准备
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant User as 👤 User
-    participant CLI as 💻 CLI
-    participant Coord as 🎯 Coordinator
-    participant Search as 🔍 Search Agent
-    participant Gen as 📊 Generation Agent
-    participant HTML as 📄 HTML Converter
-    participant Export as 📁 Export Manager
-    participant Storage as 💾 Storage Manager
+推荐使用 Python 3.10+。如果使用 Conda：
 
-    User->>CLI: Input generation command
-    CLI->>Coord: Start workflow
-
-    Coord->>Coord: Requirement analysis & task decomposition
-    Note over Coord: Identify content type<br/>Break down subtasks
-
-    Coord->>Search: Execute parallel search tasks
-    activate Search
-    Search->>Search: Web search
-    Search->>Search: Content extraction
-    Search->>Search: Quality assessment
-    Search-->>Coord: Return search results
-    deactivate Search
-
-    Coord->>Gen: Generate content
-    activate Gen
-
-    alt Report Mode
-        Gen->>Gen: Generate outline
-        Gen->>Gen: Chapter generation
-        Gen->>Gen: Quality review
-    else Fiction Mode
-        Gen->>Gen: Plot design
-        Gen->>Gen: Chapter writing
-        Gen->>Gen: Character consistency check
-    else PPT Mode
-        Gen->>Gen: Outline design
-        Gen->>Gen: Slide content generation
-        Gen->>Gen: Color scheme & layout
-    end
-
-    Gen-->>Coord: Return Markdown content
-    deactivate Gen
-
-    Coord->>HTML: Convert to HTML
-    HTML-->>Coord: Return HTML
-
-    Coord->>Storage: Save project files
-    Storage-->>Storage: Save metadata.json<br/>intermediate results<br/>final report
-
-    opt User requests export
-        User->>CLI: export command
-        CLI->>Export: Execute export
-        Export->>Export: Generate PDF/DOCX/PPTX
-        Export->>Storage: Save to exports/
-        Export-->>User: Export complete
-    end
-
-    opt User requests iteration
-        User->>CLI: iterate command
-        CLI->>Coord: Start iteration workflow
-        Coord->>Storage: Create version backup
-        Coord->>Gen: Modify content based on requirements
-        Gen-->>Storage: Save new version
-        Storage-->>User: Iteration complete
-    end
-```
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.10+
-- OpenAI API Key or Anthropic API Key or DeepSeek API Key
-- (Optional) Perplexity API Key for advanced search
-
-### Installation
-
-1. **Clone the Repository**
-```bash
-git clone https://github.com/jaguarliuu/xunlong.git
-cd XunLong
-```
-
-2. **Create Virtual Environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-```
-
-3. **Install Dependencies**
-```bash
+```powershell
+conda create -n xunlong python=3.11
+conda activate xunlong
 pip install -r requirements.txt
 ```
 
-4. **Install System Dependencies (For PDF Export)**
+网页搜索依赖 Playwright 浏览器：
 
-macOS:
-```bash
-brew install pango gdk-pixbuf libffi
-```
-
-Ubuntu/Debian:
-```bash
-sudo apt-get install libpango-1.0-0 libpangoft2-1.0-0 gdk-pixbuf2.0
-```
-
-5. **Install Browser (For Web Search)**
-```bash
+```powershell
 playwright install chromium
 ```
 
-6. **Configure Environment Variables**
+PDF 导出依赖 WeasyPrint。Windows 通常随 Python 包安装即可；macOS/Linux 如需 PDF 导出，可根据 WeasyPrint 官方说明安装系统库。
 
-Copy `.env.example` to `.env` and fill in your API keys:
-```bash
-cp .env.example .env
+## 配置环境变量
+
+复制环境变量模板：
+
+```powershell
+copy .env.example .env
 ```
 
-Edit `.env` file:
+至少配置一个可用的大模型服务。当前代码优先支持 OpenAI 兼容接口，并内置 Qwen、OpenAI、Anthropic、Zhipu、DeepSeek、Azure OpenAI、Ollama 等 provider 识别。
+
+常用配置示例：
+
 ```env
-# Primary LLM Provider (choose one)
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o
+DEFAULT_LLM_PROVIDER=qwen
+DEFAULT_LLM_MODEL=qwen-max
+DASHSCOPE_API_KEY=your_dashscope_api_key
 
-# Or use Anthropic
-ANTHROPIC_API_KEY=your_anthropic_api_key
-ANTHROPIC_MODEL=claude-3-5-sonnet-20251022
-
-# Or use DeepSeek
-DEEPSEEK_API_KEY=your_deepseek_api_key
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
-
-# Search (Optional)
-PERPLEXITY_API_KEY=your_perplexity_api_key
-
-# Observability (Optional)
-LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
 LANGFUSE_SECRET_KEY=your_langfuse_secret_key
-LANGFUSE_BASE_URL=https://cloud.langfuse.com  # Use https://us.cloud.langfuse.com for US projects
+LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
+LANGFUSE_BASE_URL=https://us.cloud.langfuse.com
+
+ZHIPU_MCP_API_KEY=your_zhipu_mcp_api_key
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+PEXELS_API_KEY=your_pexels_api_key
+
+ANNUAL_REPORT_RAG_ENABLED=true
+YAHOO_FINANCE_RAG_ENABLED=false
 ```
 
----
+## 运行方式
 
-## 💡 Usage Guide
+### 1. CLI
 
-### Use Existing Documents as Context
-
-All generation commands accept `--input-file` to preload `.txt`, `.pdf`, or `.docx` files. The document is parsed, summarised, and injected as high-priority context (images are not supported yet).
-
-```bash
-# Generate a report from an existing brief
-python xunlong.py report "AI Startup Business Plan" --input-file ./docs/company_overview.pdf
-
-# Novel creation seeded with world-building notes
-python xunlong.py fiction "Interstellar odyssey" --genre scifi --input-file ./docs/worldbuilding.txt
-
-# Build a deck from meeting notes
-python xunlong.py ppt "Board strategy update" --style business --input-file ./docs/board_meeting.docx
+```powershell
+conda activate xunlong
+python xunlong.py --help
+python xunlong.py status
 ```
 
-### Basic Commands
+当前 CLI 文件仍为 `xunlong.py`，支持以下子命令：
 
-XunLong provides a clean command-line interface:
-
-```bash
-python xunlong.py [command] [arguments] [options]
+```text
+report    生成研究报告
+analyze   金融数据分析，可选生成报告或 PPT
+fiction   小说创作
+ppt       演示文稿生成
+export    导出项目
+iterate   迭代修改已有项目
+ask       快速问答入口
+status    查看运行配置状态
 ```
 
-### 1. Generate Research Report
+### 2. Web/API
 
-```bash
-# Basic usage
-python xunlong.py report "2025 AI Industry Trends Analysis"
-
-# With style and depth options
-python xunlong.py report "Blockchain Technology Research" \
-  --style academic \
-  --depth comprehensive \
-  --verbose
+```powershell
+conda activate xunlong
+python run_api.py
 ```
 
-**Style Options**:
-- `business`: Business report (default)
-- `academic`: Academic paper
-- `technical`: Technical documentation
-- `consulting`: Consulting report
+服务默认运行在：
 
-**Depth Options**:
-- `overview`: Overview (fast)
-- `standard`: Standard (default)
-- `comprehensive`: In-depth
-
-### 2. Generate Novel
-
-```bash
-# Basic usage
-python xunlong.py fiction "A sci-fi story about time travel"
-
-# With style and chapter options
-python xunlong.py fiction "Urban mystery thriller" \
-  --style mystery \
-  --chapters 10 \
-  --verbose
+```text
+http://127.0.0.1:8000/
 ```
 
-**Style Options**:
-- `romance`: Romance
-- `scifi`: Science Fiction
-- `fantasy`: Fantasy
-- `mystery`: Mystery
-- `urban`: Urban Fiction
+访问根路径会打开内置前端界面，API 文档可通过 FastAPI 自动文档查看：
 
-### 3. Generate Presentation
-
-```bash
-# Basic usage
-python xunlong.py ppt "2025 AI Product Launch" --slides 15
-
-# Full example with options
-python xunlong.py ppt "Annual Company Review" \
-  --style business \
-  --slides 20 \
-  --speech-notes "Presentation for all employees" \
-  --verbose
+```text
+http://127.0.0.1:8000/docs
 ```
 
-**Style Options**:
-- `business`: Business style (default)
-- `creative`: Creative style
-- `minimal`: Minimalist style
-- `academic`: Academic style
+### 3. 后端主应用
 
-**Speaker Notes**: Use `--speech-notes` to generate speaker notes for each slide
+FastAPI 主应用位于 `src/api.py`，可按模块方式直接启动：
 
-### 4. Iterate and Refine Content
-
-Modify previously generated content:
-
-```bash
-# Modify report
-python xunlong.py iterate <project_id> "Add more case studies in Chapter 2"
-
-# Modify PPT
-python xunlong.py iterate <project_id> "Change chart on slide 5 to pie chart"
-
-# Modify novel
-python xunlong.py iterate <project_id> "Rewrite Chapter 3 with more suspense"
+```powershell
+conda activate xunlong
+python -m src.api
 ```
 
-**Project ID**: The folder name in `storage/` directory, e.g., `20251004_220823`
+也可以使用 Uvicorn：
 
-### 5. Export Functions
-
-```bash
-# Export to PDF
-python xunlong.py export <project_id> pdf
-
-# Export to DOCX
-python xunlong.py export <project_id> docx
-
-# Export to PPTX (PPT projects)
-python xunlong.py export <project_id> pptx
-
-# Custom output path
-python xunlong.py export <project_id> pdf --output /path/to/output.pdf
+```powershell
+uvicorn src.api:app --host 127.0.0.1 --port 8000
 ```
 
----
+### 4. 前端界面
 
-## 📂 Project Structure
+前端是 `frontend-static/index.html` 单文件应用。最方便的方式是启动后端后访问：
 
-```
-XunLong/
-├── src/
-│   ├── agents/              # Agent modules
-│   │   ├── coordinator.py   # Main coordinator
-│   │   ├── iteration_agent.py  # Iteration agent
-│   │   ├── report/          # Report generation agents
-│   │   ├── fiction/         # Fiction generation agents
-│   │   ├── ppt/             # PPT generation agents
-│   │   └── html/            # HTML conversion agents
-│   ├── llm/                 # LLM management
-│   │   ├── manager.py       # LLM manager
-│   │   ├── client.py        # LLM client
-│   │   └── prompts.py       # Prompt management
-│   ├── search/              # Search module
-│   │   ├── web_search.py    # Web search
-│   │   └── content_extractor.py  # Content extraction
-│   ├── export/              # Export module
-│   │   ├── pdf_exporter.py  # PDF export
-│   │   ├── docx_exporter.py # DOCX export
-│   │   └── pptx_exporter.py # PPTX export
-│   └── storage/             # Storage management
-│       └── manager.py
-├── config/                  # Configuration files
-├── frontend-static/         # Built-in single-file web UI served by FastAPI
-├── templates/               # HTML templates
-├── storage/                 # Project storage directory
-├── xunlong.py              # CLI entry point
-├── requirements.txt        # Dependencies
-└── README.md               # English documentation
+```text
+http://127.0.0.1:8000/
 ```
 
----
+也可以单独启动静态服务器：
 
-## 🎯 How It Works
-
-### Multi-Agent Workflow
-
-XunLong uses LangGraph-based state machine workflow:
-
-```mermaid
-graph LR
-    A[👤 User Input] --> B[🔍 Requirement Analysis]
-    B --> C[📋 Task Decomposition]
-    C --> D[🌐 Parallel Search]
-    D --> E[📦 Content Integration]
-    E --> F[✨ Intelligent Generation]
-    F --> G[✅ Quality Review]
-    G --> H[🔄 Format Conversion]
-    H --> I[📤 Export Output]
-
-    style A fill:#e3f2fd,stroke:#1976d2
-    style B fill:#f3e5f5,stroke:#7b1fa2
-    style C fill:#f3e5f5,stroke:#7b1fa2
-    style D fill:#fff3e0,stroke:#f57c00
-    style E fill:#fff3e0,stroke:#f57c00
-    style F fill:#e8f5e9,stroke:#388e3c
-    style G fill:#e8f5e9,stroke:#388e3c
-    style H fill:#fce4ec,stroke:#c2185b
-    style I fill:#fce4ec,stroke:#c2185b
+```powershell
+cd frontend-static
+python -m http.server 8080
 ```
 
-### Core Agents
+然后访问：
 
-```mermaid
-graph TD
-    subgraph "Coordination Layer"
-        Coordinator["🎯 Coordinator<br/>━━━━━━━━━━━<br/>• Task Decomposition<br/>• Workflow Orchestration<br/>• State Management"]
-    end
-
-    subgraph "Execution Layer"
-        SearchAgent["🔍 Search Agent<br/>━━━━━━━━━━━<br/>• Web Search<br/>• Content Extraction<br/>• Information Integration"]
-
-        GenerationAgent["📝 Generation Agent<br/>━━━━━━━━━━━<br/>• Content Creation<br/>• Structure Organization<br/>• Style Control"]
-
-        ReviewAgent["✅ Review Agent<br/>━━━━━━━━━━━<br/>• Quality Check<br/>• Content Optimization<br/>• Consistency Verification"]
-
-        IterationAgent["🔄 Iteration Agent<br/>━━━━━━━━━━━<br/>• Requirement Analysis<br/>• Local Modification<br/>• Version Management"]
-    end
-
-    Coordinator --> SearchAgent
-    Coordinator --> GenerationAgent
-    Coordinator --> ReviewAgent
-    Coordinator --> IterationAgent
-
-    SearchAgent -.provide materials.-> GenerationAgent
-    GenerationAgent -.submit review.-> ReviewAgent
-    ReviewAgent -.feedback.-> GenerationAgent
-
-    style Coordinator fill:#ff6b6b,stroke:#c92a2a,color:#fff
-    style SearchAgent fill:#4c6ef5,stroke:#364fc7,color:#fff
-    style GenerationAgent fill:#51cf66,stroke:#2b8a3e,color:#fff
-    style ReviewAgent fill:#ffd43b,stroke:#f59f00,color:#333
-    style IterationAgent fill:#ae3ec9,stroke:#862e9c,color:#fff
+```text
+http://127.0.0.1:8080/index.html
 ```
 
-### Data Flow
+前端默认调用 `http://localhost:8000/api/v1`，因此提交任务、查看进度和下载结果时需要同时运行后端服务。
 
-Each project creates an independent folder in `storage/`:
+## CLI 使用示例
 
+### 生成研究报告
+
+```powershell
+python xunlong.py report "2026年人工智能行业趋势分析"
+python xunlong.py report "新能源汽车产业链研究" --type research --depth deep --max-results 30 -o html -v
+python xunlong.py report "企业数字化转型方案" --input-file .\docs\brief.docx
 ```
-storage/20251004_220823_ProjectName/
-├── metadata.json           # Project metadata
-├── intermediate/           # Intermediate results
+
+常用参数：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--type` / `-t` | `comprehensive`、`daily`、`analysis`、`research` |
+| `--depth` / `-d` | `surface`、`medium`、`deep` |
+| `--max-results` / `-m` | 最大搜索结果数 |
+| `--output-format` / `-o` | `html`、`md`、`markdown` |
+| `--html-template` | HTML 模板，如 `enhanced_professional` |
+| `--html-theme` | HTML 主题，如 `light`、`dark` |
+| `--input-file` | 补充 `.txt`、`.pdf`、`.docx` 文档 |
+
+### 金融数据分析
+
+```powershell
+python xunlong.py analyze "分析2024年银行业营收趋势"
+python xunlong.py analyze "分析华为营收表现" --deliverable report -o html
+python xunlong.py analyze "分析新能源行业财务表现" --deliverable ppt -s business -n 12
+python xunlong.py analyze "仅输出结构化金融分析" --deliverable none
+```
+
+常用参数：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--deliverable` / `-D` | `report`、`ppt`、`none` |
+| `--depth` / `-d` | 搜索深度 |
+| `--max-results` / `-m` | 最大搜索结果数 |
+| `--ppt-style` / `-s` | PPT 风格 |
+| `--slides` / `-n` | PPT 页数 |
+| `--mock-search` | 使用本地 mock 搜索数据进行联调 |
+| `--input-file` | 补充参考文档 |
+
+### 生成 PPT
+
+```powershell
+python xunlong.py ppt "2026年产品发布会"
+python xunlong.py ppt "公司年度经营复盘" --style business --slides 15 --theme blue
+python xunlong.py ppt "AI 在教育行业的应用" --speech-notes "面向高校教师的分享"
+```
+
+### 创作小说
+
+```powershell
+python xunlong.py fiction "暴风雪山庄中的密室推理" --genre mystery --length short
+python xunlong.py fiction "星际移民时代的家族史诗" --genre scifi --length medium --viewpoint third
+python xunlong.py fiction "江湖门派纷争" --genre wuxia -c "群像叙事" -c "保留开放式结尾"
+```
+
+### 迭代与导出
+
+生成任务完成后，终端会显示项目 ID 和项目目录。项目文件通常保存在 `storage/` 下。
+
+```powershell
+python xunlong.py iterate <project_id> "补充第三章的数据案例，并让结论更聚焦"
+
+python xunlong.py export <project_id> --type pdf
+python xunlong.py export <project_id> --type docx
+python xunlong.py export <project_id> --type pptx
+python xunlong.py export <project_id> --type md -o output.md
+```
+
+## Web/API 使用示例
+
+API 基础地址：
+
+```text
+http://127.0.0.1:8000/api/v1
+```
+
+健康检查：
+
+```http
+GET /health
+```
+
+创建报告任务：
+
+```http
+POST /api/v1/tasks/report
+Content-Type: application/json
+
+{
+  "query": "人工智能在金融风控中的应用",
+  "report_type": "research",
+  "search_depth": "deep",
+  "max_results": 20,
+  "output_format": "html",
+  "html_template": "enhanced_professional",
+  "html_theme": "light"
+}
+```
+
+创建 PPT 任务：
+
+```http
+POST /api/v1/tasks/ppt
+Content-Type: application/json
+
+{
+  "query": "新能源行业投资分析",
+  "slides": 12,
+  "style": "business",
+  "theme": "default",
+  "depth": "medium",
+  "speech_notes": "用于课堂展示"
+}
+```
+
+创建文件数据分析任务：
+
+```http
+POST /api/v1/tasks/file_analysis
+Content-Type: application/json
+
+{
+  "query": "分析销售数据",
+  "file_name": "sales.csv",
+  "file_type": "csv",
+  "file_content": "date,region,sales\n2026-01,East,1200",
+  "use_llm": false
+}
+```
+
+查询任务：
+
+```http
+GET /api/v1/tasks/{task_id}
+GET /api/v1/tasks/{task_id}/result
+GET /api/v1/tasks/{task_id}/download?file_type=html
+GET /api/v1/tasks?limit=20
+```
+
+RAG 配置：
+
+```http
+GET /api/v1/config/rag
+PUT /api/v1/config/rag
+GET /api/v1/config/rag/initial
+```
+
+## 产物目录
+
+每次生成会创建独立项目目录，保存元数据、中间过程和最终结果：
+
+```text
+storage/<project_id>/
+├── metadata.json
+├── intermediate/
 │   ├── 01_task_decomposition.json
 │   ├── 02_search_results.json
-│   └── 03_content_outline.json
-├── reports/                # Final outputs
+│   └── 03_data_analysis.json
+├── reports/
 │   ├── FINAL_REPORT.md
-│   ├── FINAL_REPORT.html
-│   └── PPT_DATA.json       # PPT projects only
-├── versions/               # Iteration versions
-│   └── 20251005_101435/
-└── exports/                # Exported files
+│   └── FINAL_REPORT.html
+├── ppt/
+│   └── ...
+├── versions/
+│   └── ...
+└── exports/
     ├── report.pdf
-    └── report.docx
+    ├── report.docx
+    └── presentation.pptx
 ```
 
----
+## 技术栈
 
-## 🔧 Advanced Configuration
+- Python 3.10+
+- FastAPI / Uvicorn
+- LangGraph / LangChain
+- OpenAI-compatible LLM Client
+- Playwright / aiohttp / trafilatura
+- Pandas / OpenPyXL
+- ChromaDB
+- Jinja2 / Markdown / Markdown2
+- WeasyPrint / python-docx / python-pptx
+- Langfuse
+- ECharts
 
-### LLM Provider Configuration
+## 测试与验证
 
-Configure multiple LLM providers in `config/llm_config.yaml`:
-
-```yaml
-providers:
-  default:
-    provider: "openai"
-    model: "gpt-4o"
-    temperature: 0.7
-
-  creative:
-    provider: "anthropic"
-    model: "claude-3-5-sonnet-20251022"
-    temperature: 0.9
-
-  search:
-    provider: "perplexity"
-    model: "sonar"
+```powershell
+conda activate xunlong
+python -m compileall src
+python -m unittest
 ```
 
-### Search Engine Configuration
+也可以按模块运行已有测试文件：
 
-Configure search behavior in `config/search_config.yaml`:
-
-```yaml
-search:
-  max_results: 10
-  timeout: 30
-  engines:
-    - perplexity  # Primary: Perplexity
-    - playwright  # Fallback: Browser search
+```powershell
+python tests\test_html_conversion.py
+python tests\test_echarts_template_script.py
 ```
 
-### Custom Export Templates
+## 许可证
 
-HTML templates in `templates/` directory support customization:
+本项目采用 [MIT License](./LICENSE)。
 
-- `templates/report_template.html`: Report template
-- `templates/fiction_template.html`: Fiction template
-- `templates/ppt_slide_template.html`: PPT slide template
 
----
 
-## 📊 Roadmap
-
-### ✅ Completed Features (MVP)
-
-- [x] Report generation (Markdown/HTML/PDF/DOCX)
-- [x] Fiction generation (multi-chapter, multi-style)
-- [x] PPT generation (structured, styled, layouted)
-- [x] Speaker notes generation
-- [x] Content iteration and refinement
-- [x] Multi-format export
-- [x] LangFuse observability integration
-
-### 🚧 Next Phase Development
-
-#### 1. Document Enhancement
-- [ ] Support image insertion in documents
-- [ ] Custom template support
-- [ ] Richer styling options
-
-#### 2. Intelligent Document Parsing
-- [ ] Parse uploaded documents (PDF, Word, PPT)
-- [ ] Continue writing based on existing content
-- [ ] Multi-document fusion generation
-
-#### 3. Data Analysis Mode
-- [ ] Excel data intelligent analysis
-- [ ] Database query and analysis
-- [ ] Auto-generate data reports with visualizations
-
-#### 4. Complete PPT Export
-- [ ] Full chart support (bar, line, pie charts, etc.)
-- [ ] Image and icon library integration
-- [ ] Animation effects and transitions
-- [ ] More professional layout templates
-
-#### 5. Other Features
-- [ ] Multi-language support
-- [ ] Web interface
-- [ ] Collaborative editing
-- [ ] Template marketplace
-
----
-
-## 🐛 Known Issues
-
-1. **PDF export on macOS requires system libraries**: Need to install `pango` and other libraries via Homebrew
-2. **First-time Playwright use requires browser download**: Run `playwright install chromium`
-3. **Large PPT export may be slow**: Complex layouts and charts take time to generate
-4. **Limited iteration support for PPT projects**: PPT iteration currently regenerates the entire presentation
-
----
-
-## 🤝 Contributing
-
-We welcome all forms of contributions!
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Report Bugs
-
-Please report issues via [GitHub Issues](https://github.com/jaguarliuu/xunlong/issues) with:
-
-- Detailed problem description
-- Steps to reproduce
-- System environment information
-- Relevant log output
-
----
-
-## 📝 FAQ
-
-### Q: Which LLM models are supported?
-A: Currently supports OpenAI (GPT-4/GPT-3.5), Anthropic (Claude series), DeepSeek, etc. Through LangChain integration, theoretically supports all OpenAI API-compatible models.
-
-### Q: How long does it take to generate a report?
-A: Depends on report depth and search scope. Standard reports take 5-10 minutes, in-depth reports may take 15-20 minutes.
-
-### Q: Can it be used offline?
-A: No. The system requires LLM API calls and web searches, so internet connection is necessary.
-
-### Q: Can generated content be used commercially?
-A: Generated content follows MIT license, but note: 1) Comply with LLM provider's terms of service 2) Take responsibility for content accuracy and legality.
-
-### Q: How to improve generation quality?
-A: Suggestions: 1) Use more powerful models (e.g., GPT-4) 2) Provide more detailed requirements 3) Use iteration feature for refinement 4) Configure Perplexity API for better search results.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-## 🙏 Acknowledgments
-
-Thanks to these open-source projects:
-
-- [LangChain](https://github.com/langchain-ai/langchain) - LLM application framework
-- [LangGraph](https://github.com/langchain-ai/langgraph) - Graph-based state machine workflow
-- [LangFuse](https://langfuse.com/) - LLM observability platform
-- [Playwright](https://playwright.dev/) - Browser automation
-- [WeasyPrint](https://weasyprint.org/) - HTML to PDF conversion
-- [python-pptx](https://python-pptx.readthedocs.io/) - PowerPoint generation
-
----
-
-## 📧 Contact
-
-- Project Home: [https://github.com/jaguarliuu/xunlong](https://github.com/jaguarliuu/xunlong)
-- Issue Tracker: [GitHub Issues](https://github.com/jaguarliuu/xunlong/issues)
-
----
-
-<div align="center">
-
-**If this project helps you, please give us a ⭐️**
-
-Made with ❤️ by XunLong Team
-
-</div>
