@@ -438,6 +438,7 @@ XunLong/
 │   └── storage/             # 存储管理
 │       └── manager.py
 ├── config/                  # 配置文件
+├── frontend-static/         # FastAPI 内置托管的单文件网页前端
 ├── templates/               # HTML模板
 ├── storage/                 # 项目存储目录
 ├── xunlong.py              # CLI入口

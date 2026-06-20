@@ -399,6 +399,7 @@ XunLong/
 │   └── storage/             # Storage management
 │       └── manager.py
 ├── config/                  # Configuration files
+├── frontend-static/         # Built-in single-file web UI served by FastAPI
 ├── templates/               # HTML templates
 ├── storage/                 # Project storage directory
 ├── xunlong.py              # CLI entry point

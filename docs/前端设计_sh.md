@@ -6,41 +6,18 @@
 
 ## 一、项目结构
 
-项目包含两套前端实现，共存于同一仓库：
+项目当前只保留一套前端实现：`frontend-static/`。该前端由 FastAPI 后端直接托管，访问 `http://localhost:8000` 即可打开。
 
 ```
 xunlong-pro-main/
-├── frontend/              # React + Vite 现代 SPA 项目（备用）
-│   ├── index.html         # 入口 HTML
-│   ├── package.json       # 依赖配置
-│   ├── vite.config.js     # Vite 构建配置（含 API 代理）
-│   ├── tailwind.config.js  # Tailwind CSS 配置
-│   ├── postcss.config.js   # PostCSS 配置
-│   ├── public/            # 静态公共资源
-│   └── src/
-│       ├── main.jsx       # React 根组件挂载
-│       ├── App.jsx        # 根组件（路由入口）
-│       ├── api/
-│       │   └── client.js  # API 客户端封装
-│       ├── components/
-│       │   ├── Sidebar.jsx       # 侧边导航栏
-│       │   └── TaskMonitor.jsx   # 任务状态监控组件
-│       ├── pages/
-│       │   ├── ReportPage.jsx     # 研究报告表单页
-│       │   ├── FictionPage.jsx    # 小说创作表单页
-│       │   ├── PptPage.jsx       # 演示文稿表单页
-│       │   ├── TaskHistory.jsx    # 任务历史记录页
-│       │   ├── AnalysisPlaceholder.jsx   # 数据分析占位页
-│       │   └── RagPlaceholder.jsx        # RAG 检索占位页
-│       └── styles/
-│           └── global.css   # 全局样式
-│
-└── frontend-static/      # 纯 HTML + CSS 单文件（当前主推）
-    ├── index.html         # 完整 SPA，所有交互逻辑内联（~2000 行）
-    └── screenshot_report_form.png
+└── frontend-static/      # 纯 HTML + CSS + JavaScript 单文件前端
+    ├── index.html         # 完整 SPA，所有交互逻辑内联（约 2000 行）
+    ├── index_old.html     # 历史备份版本
+    ├── data_analysis_demo.html  # 数据分析演示页
+    └── src/api/client.js  # API 客户端参考实现
 ```
 
-**说明**：`frontend-static/index.html` 是当前使用的单文件版本，无需任何构建，可直接在浏览器打开或部署到任意静态服务器。
+**说明**：`frontend-static/index.html` 是当前使用的单文件版本，无需 npm 构建，也不需要单独启动前端开发服务器。
 
 ---
 
@@ -89,7 +66,7 @@ DELETE /api/v1/tasks/{task_id}  → 取消任务
 
 ## 五、启动方法
 
-> **总原则**：始终先启动后端，再启动前端。两个终端同时运行。
+> **总原则**：只需要启动后端。前端已集成到 FastAPI 服务中。
 
 ### 5.1 启动后端（第一步，必须先跑）
 
@@ -105,15 +82,15 @@ copy .env.example .env   # Windows
 #    DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxx
 #    （通义千问 / OpenAI / DeepSeek 等至少配置一个）
 
-# 4. 启动后端（监听 0.0.0.0:8000）
+# 4. 启动后端（服务监听本机 8000 端口）
 python run_api.py
 ```
 
-> 后端启动后会输出：`INFO: Uvicorn running on http://0.0.0.0:8000`
+> 后端会以本机地址提供服务，前端统一通过 `http://localhost:8000` 访问。
 
 ### 5.2 访问前端
 
-> **重要**：后端 `run_api.py` 已经内置了前端静态文件路由，直接访问 `http://localhost:8000` 即可看到前端页面。
+> **重要**：后端 `run_api.py` 已经内置了前端静态文件路由，当前前端访问地址统一以 `http://localhost:8000` 为准。
 
 ```
 浏览器访问 http://localhost:8000
@@ -207,3 +184,4 @@ file_analysis: { color: '#7a9ec0', accent: '#eef2f6' } // 莫兰迪蓝
 3. **CORS 跨域**：后端 FastAPI 已配置 CORS 中间件（`src/api.py`），使用后端内置前端时（同端口 8000），无跨域问题。
 
 4. **图表数据格式**：后端返回的 chart 对象需包含 `title`、`spec` 或 `option` 字段，前端弹窗使用 ECharts 渲染。
+
