@@ -246,6 +246,12 @@ JSONvisualizations"""
         }
         for cn, en in chinese_punctuation.items():
             cleaned = cleaned.replace(cn, en)
+        # 清理 LLM 生成的 Python 表达式（ast.literal_eval 只能解析字面量）
+        # 匹配 "value": <expr> 或 "value": "<expr>" 中的表达式，替换为 null
+        cleaned = re.sub(r'("(?:value|data|amount|count|total|percentage|ratio|rate|score|index)")\s*:\s*"[^"]*"', r'\1: null', cleaned)
+        cleaned = re.sub(r'("(?:value|data|amount|count|total|percentage|ratio|rate|score|index)")\s*:\s*([+\-*/()]|[0-9]+\s*[+\-*/^]\s*[0-9]+)', r'\1: null', cleaned)
+        # 清理剩余的函数调用表达式
+        cleaned = re.sub(r':\s*"[^"]*(?:round|sum|avg|mean|max|min|len|abs|int|float)\s*\([^)]*\)"', ': null', cleaned, flags=re.IGNORECASE)
         return cleaned.strip()
 
     async def _generate_visualization(

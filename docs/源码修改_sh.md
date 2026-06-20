@@ -392,6 +392,73 @@ context = {
 
 ---
 
+### 1.8 文件分析任务完成后端对接
+
+#### 问题背景
+
+文件分析（file_analysis）任务切换为异步执行后，前端在任务完成时只显示监控面板，没有展示 LLM 分析结果、指标卡片和图表弹窗。
+
+#### 修改文件
+
+**`src/task_worker.py`** — `_execute_file_analysis_task` 方法
+
+1. **LLM 分析集成**：当 `use_llm=True` 时，调用 LLM 补充语义分析：
+
+```python
+if context.get("use_llm"):
+    from src.llm.manager import LLMManager
+    llm_manager = LLMManager()
+    llm_client = llm_manager.get_client("default")
+
+    prompt_parts = [
+        '你是一个数据科学家，请基于下面的统计结果和数据特征，按"总体结论 / 风险点 / 建议"三个部分输出中文分析。',
+        "\n指标：",
+        json.dumps(native_result.get("metrics", {}), ensure_ascii=False),
+    ]
+    # ... 调用 LLM 并将结果写入 native_result["llm_analysis"]
+```
+
+2. **charts 合并**：将 `section["charts"]` 合并到 `native_result`：
+
+```python
+if section:
+    if section.get("charts"):
+        native_result["charts"] = section["charts"]
+    if section.get("content_html"):
+        native_result["content_html"] = section["content_html"]
+```
+
+3. **返回结构**：返回包含 `result`（metrics、key_findings、charts、llm_analysis 等）的完整结果。
+
+**`frontend-static/index.html`** — `pollMonitor` 函数
+
+任务完成后获取结果并渲染分析视图：
+
+```javascript
+if (['completed', 'failed', 'cancelled'].includes(info.status)) {
+  clearInterval(state.monitorTimer);
+  state.monitorTimer = null;
+  // file_analysis 任务完成后获取结果并展示分析视图
+  if (info.status === 'completed' && info.task_type === 'file_analysis') {
+    const resultData = await api(`/tasks/${encodeURIComponent(taskId)}/result`);
+    state.fileDataResult = resultData.result || resultData;
+    renderFileAnalysisResult(resultData.result || resultData);
+  }
+}
+```
+
+#### 修改效果
+
+| 功能 | 修复前 | 修复后 |
+|------|--------|--------|
+| LLM 分析 | ❌ 异步任务中未调用 | ✅ 自动补充语义分析 |
+| 指标卡片 | ❌ 不显示 | ✅ 显示 metrics 统计指标 |
+| 关键发现 | ❌ 不显示 | ✅ 显示 key_findings（含 LLM 分析） |
+| 图表弹窗 | ❌ 不显示 | ✅ 可点击查看 ECharts 弹窗 |
+| Markdown 下载 | ❌ 显示 | ✅ file_analysis 不显示 |
+
+---
+
 ## 二、Prompt 完善
 
 ### 2.0 Prompts 目录主要问题
@@ -815,7 +882,8 @@ python -c "from src.llm.prompts import PromptManager; pm = PromptManager('prompt
 | `src/agents/query_optimizer.py` | 修改 | 重写 user prompt，正确传入 YAML 模板变量，增强 JSON 解析 |
 | `src/agents/content_synthesizer.py` | 修改 | 重写 user prompt，正确传入 YAML 模板变量，修复 `synthesize_subtask()` |
 | `src/agents/content_evaluator.py` | 修改 | 重写 `_build_evaluation_prompt()`，充分利用 YAML 评分标准 |
-| `frontend-static/index.html` | 修改 | API_BASE 硬编码为 `http://localhost:8000`；下载按钮动态文案（PPT 任务显示"下载 PPT"）；PPT `submit()` 补充 `depth`/`speech_notes` 字段 |
+| `frontend-static/index.html` | 修改 | API_BASE 硬编码为 `http://localhost:8000`；下载按钮动态文案（PPT/file_analysis 任务）；`pollMonitor()` 在 file_analysis 任务完成时调用 `renderFileAnalysisResult()` |
+| `src/task_worker.py` | 修改 | `_execute_file_analysis_task()` 集成 LLM 分析、合并 charts 到返回结果 |
 | `frontend/src/components/Sidebar.jsx` | 修改 | activeClass 添加文字颜色（如 `text-blue-900`） |
 | `run_api.py` | 修改 | `logger.remove()` + level=INFO，屏蔽 DEBUG 日志 |
 | `prompts/agents/*` | 新增 | 新增 22 个 YAML prompt 文件，统一管理 Agent 系统提示词 |

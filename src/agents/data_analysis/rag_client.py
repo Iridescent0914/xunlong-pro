@@ -24,12 +24,28 @@ DEFAULT_SYMBOL_ALIASES_PATH = PROJECT_ROOT / "financeRAG" / "rag" / "company_ali
 
 
 class RAGClient:
-    def __init__(self, use_mock: Optional[bool] = None, api_url: Optional[str] = None):
+    def __init__(
+        self,
+        use_mock: Optional[bool] = None,
+        api_url: Optional[str] = None,
+        annual_report_enabled: Optional[bool] = None,
+        yahoo_enabled: Optional[bool] = None,
+    ):
+        # 外部传入优先，否则读环境变量
         if use_mock is None:
             use_mock = os.getenv("DATA_ANALYSIS_RAG_MOCK", "false").lower() == "true"
         self.use_mock = use_mock
         self.api_url = api_url or os.getenv("FINANCIAL_RAG_API_URL", "")
-        self.local_enabled = os.getenv("ANNUAL_REPORT_RAG_ENABLED", "false").lower() == "true"
+        self.local_enabled = (
+            annual_report_enabled
+            if annual_report_enabled is not None
+            else os.getenv("ANNUAL_REPORT_RAG_ENABLED", "false").lower() == "true"
+        )
+        self.yahoo_enabled = (
+            yahoo_enabled
+            if yahoo_enabled is not None
+            else os.getenv("YAHOO_FINANCE_RAG_ENABLED", "false").lower() == "true"
+        )
         self.local_persist_dir = os.getenv(
             "ANNUAL_REPORT_RAG_PERSIST_DIR",
             str(PROJECT_ROOT / "RAG" / "data" / "chroma_db"),

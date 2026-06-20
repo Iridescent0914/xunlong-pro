@@ -68,22 +68,6 @@ content: |
   - 提出建议或展望
   - 与整体报告主题呼应
 
-  ## 📝 输出格式
-  请按照以下JSON格式输出章节内容：
-
-  ```json
-  {
-    "section_title": "章节标题",
-    "content": "## 章节标题\n\n章节内容（Markdown格式）",
-    "key_findings": ["关键发现1", "关键发现2"],
-    "data_mentioned": ["引用的数据1", "引用的数据2"],
-    "references": [
-      {"source": "来源1", "description": "引用描述"}
-    ],
-    "word_count": 1500
-  }
-  ```
-
   ## 🎯 质量标准
   1. **完整性**: 覆盖大纲要求的所有要点
   2. **准确性**: 数据和事实准确无误

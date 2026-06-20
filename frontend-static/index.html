@@ -3,88 +3,308 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>XunLong 可视化工作台</title>
+  <title>SmartFin · 智能金融分析终端</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <style>
     :root {
-      --bg-start: #eef2ff;
-      --bg-end: #fff1f2;
-      --panel: rgba(255, 255, 255, 0.82);
-      --panel-border: rgba(255, 255, 255, 0.7);
-      --ink: #1f2933;
-      --subtle: #6b7280;
-      --border: #e5e7eb;
-      --blue: #2563eb;
-      --blue-hover: #1d4ed8;
-      --fuchsia: #db2777;
-      --fuchsia-hover: #be185d;
-      --emerald: #059669;
-      --emerald-hover: #047857;
-      --amber: #d97706;
-      --violet: #7c3aed;
-      --danger: #dc2626;
-      --ok: #16a34a;
+      /* ---- SmartFin token system (Morandi 水蓝水灰浅色主题) ---- */
+      /* 主背景：极浅水蓝灰，几乎白但带一点蓝调 */
+      --bg: #eef2f6;              /* 页面底色 */
+      --bg-rail: #e4ebf2;         /* 侧栏层次（更深一点） */
+      --bg-raised: #ffffff;       /* 主面板层次（白） */
+      --bg-card: #f6f9fc;         /* 内容卡片层次（更白） */
+      --bg-inset: #e8eef4;        /* 输入框凹陷（灰蓝） */
+      --border: #d4dde6;          /* 主边框（柔和水灰） */
+      --border-soft: #dde4ec;     /* 次边框 */
+      --border-strong: #b8c4d2;   /* 高亮边框 */
+      /* 玻璃感专用 token */
+      --glass-bg: rgba(255, 255, 255, 0.72);          /* 提高不透明度，让面板更"实在" */
+      --glass-bg-soft: rgba(246, 249, 252, 0.72);     /* 侧栏/次级面板用 */
+      --glass-border: rgba(255, 255, 255, 0.7);        /* 边框略实 */
+      --glass-inner-top: rgba(255, 255, 255, 0.95);    /* 内边光更亮、更宽 */
+      --glass-inner-bottom: rgba(60, 90, 130, 0.06);   /* 内底边光 */
+      /* 外阴影：极柔的扩散阴影（更小偏移、更大模糊、更低透明度） */
+      --glass-shadow: 0 1px 2px rgba(60, 90, 130, 0.04), 0 8px 28px -8px rgba(60, 90, 130, 0.10);
+      --glass-hover-shadow: 0 1px 3px rgba(60, 90, 130, 0.05), 0 16px 40px -10px rgba(60, 90, 130, 0.16);
+
+      /* 文字 */
+      --ink: #2a3744;             /* 主文字（深水灰） */
+      --ink-soft: #4d5a6b;        /* 次文字 */
+      --subtle: #6b7a8c;          /* 辅助文字 */
+      --faint: #98a4b4;           /* 弱化文字/placeholder */
+
+      /* 品牌色 - 莫兰迪金（柔和的金黄） */
+      --gold: #c9a96a;            /* 主品牌色（暖金，低饱和） */
+      --gold-hover: #b8985a;
+      --gold-soft: rgba(201, 169, 106, 0.14);
+
+      /* 状态色 - 莫兰迪绿/红（柔和） */
+      --green: #7eb59a;           /* 上升/成功（莫兰迪绿） */
+      --green-dim: rgba(126, 181, 154, 0.16);
+      --green-border: rgba(126, 181, 154, 0.5);
+      --red: #c98a8a;             /* 下降/错误（莫兰迪红） */
+      --red-dim: rgba(201, 138, 138, 0.16);
+      --red-border: rgba(201, 138, 138, 0.5);
+
+      /* 模块色 - 莫兰迪蓝/绿/紫 */
+      --blue: #7a9ec0;            /* 报告（莫兰迪蓝） */
+      --blue-dim: rgba(122, 158, 192, 0.16);
+      --emerald: #7eb59a;         /* PPT */
+      --emerald-dim: rgba(126, 181, 154, 0.16);
+      --violet: #a89cc4;          /* 金融分析（莫兰迪紫） */
+      --violet-dim: rgba(168, 156, 196, 0.16);
+
+      /* 半透明效果：让面板/按钮有玻璃感 */
+      --trans-panel: rgba(255, 255, 255, 0.78);
+      --trans-card: rgba(246, 249, 252, 0.82);
+      --trans-hover: rgba(212, 221, 230, 0.5);
+
+      /* 圆角：外层卡片 8px，内部元素 4-6px */
+      --r-card: 8px;
+      --r-input: 5px;
+      --r-btn: 5px;
+      --r-tag: 3px;
+
+      /* 阴影：浅色主题用更轻的阴影 */
+      --shadow-card: 0 2px 8px rgba(60, 90, 130, 0.08);
+      --shadow-hover: 0 4px 16px rgba(60, 90, 130, 0.12);
+
+      /* 字体：中文黑体、英文 Times New Roman */
+      --zh-font: "黑体", "SimHei", "Heiti SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      --en-font: "Times New Roman", Times, Georgia, "Cambria", serif;
+      --font-ui: "Times New Roman", Times, Georgia, "黑体", "SimHei", "Heiti SC", "Microsoft YaHei", system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
       min-height: 100vh;
-      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-      background: linear-gradient(135deg, var(--bg-start), #ffffff, var(--bg-end));
+      font-family: var(--font-ui);
+      background: var(--bg);
       color: var(--ink);
     }
+    /* 不支持 backdrop-filter 的浏览器用不透明米白作 fallback（不透明版本） */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .panel, .stage-form, .analysis-result, .topbar, .rag-toggle-group, .module-btn, .task-item, .info-card, .metric-card, .chart-container, .file-preview, .toggle-row, .ghost-btn, .topbar a, .chip, .badge, input[type="text"], input[type="number"], select, textarea, input[type="file"] {
+        background: rgba(255, 255, 255, 0.95) !important;
+      }
+    }
+    /* 柔和的莫兰迪 mesh gradient 背景层 — 让玻璃模糊有内容可"消化" */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(at 18% 12%, rgba(201, 169, 106, 0.18) 0px, transparent 50%),
+        radial-gradient(at 82% 8%, rgba(168, 156, 196, 0.16) 0px, transparent 50%),
+        radial-gradient(at 70% 88%, rgba(122, 158, 192, 0.18) 0px, transparent 50%),
+        radial-gradient(at 12% 82%, rgba(126, 181, 154, 0.14) 0px, transparent 50%),
+        linear-gradient(180deg, #eef2f6 0%, #e8eef4 100%);
+    }
+    /* 中英文分字体：中文→黑体，英文→Times New Roman */
+    body, .form-title, .form-desc, label, .toggle-label,
+    .info-card-title, .info-card-content, .footer, .module-name,
+    .module-desc, .task-title, .panel-header h2, .panel-header p,
+    .section-title, .key-finding-title, .key-finding-content,
+    .file-preview-text, .file-preview-name,
+    .tab-btn, .badge, .topbar a {
+      font-family: var(--zh-font);
+    }
+    .topbar h1, .topbar p, .metric-value, .metric-label,
+    .empty, .task-meta, .rag-toggle-group, .rag-toggle-item label,
+    .field-error, .info-row, .meta-row {
+      font-family: var(--en-font);
+    }
+    .topbar h1 .brand-text, .form-title, .panel-header h2,
+    .section-title, .info-card-title {
+      font-family: var(--zh-font);
+      font-weight: 700;
+    }
 
-    .app {
-      min-height: 100vh;
+    ::selection { background: var(--gold); color: #2a3744; }
+
+    .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ---- Ticker rail: the signature element ---- */
+    .ticker-rail {
+      overflow: hidden;
+      background: #4a5a7c;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      height: 28px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+    }
+    .ticker-track {
+      display: inline-flex;
+      align-items: center;
+      gap: 28px;
+      padding-left: 100%;
+      animation: ticker-scroll 38s linear infinite;
+      font-family: var(--en-font);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .ticker-track span { color: rgba(255, 255, 255, 0.85); }
+    .ticker-track .tk-up { color: #b6d9c1; }
+    .ticker-track .tk-down { color: #e8b8b8; }
+    .ticker-track span { color: var(--faint); }
+    .ticker-track .tk-up { color: var(--green); }
+    .ticker-track .tk-down { color: var(--red); }
+    @keyframes ticker-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-track { animation: none; padding-left: 16px; }
     }
 
     .topbar {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.7);
-      background: rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(212, 221, 230, 0.5);
+      background: rgba(255, 255, 255, 0.45);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      backdrop-filter: blur(16px) saturate(160%);
     }
     .topbar-inner {
-      max-width: 80rem;
+      max-width: 90rem;
       margin: 0 auto;
-      padding: 18px 24px;
+      padding: 14px 24px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+    .topbar .topbar-left {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 18px;
+      gap: 12px;
+    }
+    .topbar .topbar-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .topbar .topbar-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
     }
     .topbar h1 {
       margin: 0;
       font-size: 20px;
       font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      line-height: 1.1;
+    }
+    .topbar h1 .mark {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--gold) 0%, #a88a4d 100%);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      font-family: var(--en-font);
+      letter-spacing: 0.04em;
+    }
+    .topbar h1 .brand-fin {
+      color: var(--gold);
+      font-family: var(--en-font);
+      font-style: italic;
+      font-weight: 700;
+    }
+    .topbar h1 .brand-zh {
+      color: var(--ink);
+      font-family: var(--en-font);
+      font-weight: 700;
     }
     .topbar p {
-      margin: 4px 0 0;
-      font-size: 13px;
-      color: var(--subtle);
+      margin: 0;
+      font-size: 12px;
+      color: var(--faint);
+      font-family: var(--zh-font);
     }
     .topbar a {
       display: inline-flex;
       align-items: center;
-      border-radius: 14px;
+      gap: 6px;
       border: 1px solid var(--border);
-      background: #ffffff;
-      padding: 10px 14px;
-      font-size: 12px;
-      color: #374151;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 9px 16px;
+      font-size: 13px;
+      color: var(--ink-soft);
       text-decoration: none;
+      border-radius: var(--r-btn);
+      transition: all 0.15s;
     }
-    .topbar a:hover { background: #f9fafb; }
+    .topbar a:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .topbar a::before { content: "↗"; font-size: 13px; }
+
+    .rag-toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 8px 18px;
+      border-radius: var(--r-input);
+      backdrop-filter: blur(8px);
+    }
+    .rag-toggle-group .rag-label {
+      font-weight: 700;
+      white-space: nowrap;
+      color: var(--gold);
+      font-family: var(--en-font);
+      letter-spacing: 0.06em;
+      font-size: 13px;
+    }
+    .rag-toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rag-toggle-item input[type="checkbox"] {
+      width: 15px; height: 15px; cursor: pointer;
+      accent-color: var(--gold);
+    }
+    .rag-toggle-item label {
+      cursor: pointer;
+      color: var(--ink);
+      font-family: var(--zh-font);
+      font-size: 13px;
+    }
+    .rag-status-dot {
+      width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+    }
+    .rag-status-dot.on {
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(126, 181, 154, 0.7);
+    }
+    .rag-status-dot.off { background: var(--faint); }
 
     .layout {
-      max-width: 80rem;
+      max-width: 90rem;
       margin: 0 auto;
       width: 100%;
-      padding: 28px 24px 34px;
+      padding: 24px 24px 34px;
       display: grid;
-      grid-template-columns: 18rem 1fr;
-      gap: 26px;
+      /* 侧栏略宽一些，便于阅读任务记录 */
+      grid-template-columns: 22rem 1fr;
+      gap: 22px;
       align-items: start;
     }
 
@@ -92,39 +312,72 @@
       display: flex;
       flex-direction: column;
       gap: 18px;
+      align-self: stretch;
+      /* 任务记录限高跟随视口 */
+      max-height: calc(100vh - 160px);
     }
+    .rail .panel { display: flex; flex-direction: column; min-height: 0; }
+    /* 第一个 panel（模块列表）保持原高，第二个（任务记录）拉伸对齐底部 */
+    .rail .panel:first-child { flex-shrink: 0; }
+    .rail .panel:last-child { flex: 1; min-height: 220px; max-height: 100%; }
 
+    /* 主面板：真·玻璃感（半透 + 模糊 + 饱和度提升 + 加宽内边光 + 极柔扩散阴影） */
     .panel {
-      border-radius: 18px;
-      border: 1px solid var(--panel-border);
-      background: var(--panel);
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      position: relative;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      border-radius: var(--r-card);
+      box-shadow: var(--glass-shadow);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+      backdrop-filter: blur(14px) saturate(150%);
+    }
+    /* 内边光：顶部 2px 宽高光带 + 底部 1px 微暗线，模拟真实玻璃厚度 */
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow:
+        inset 0 2px 0 var(--glass-inner-top),
+        inset 0 -1px 0 var(--glass-inner-bottom),
+        inset 1px 0 0 rgba(255, 255, 255, 0.5),
+        inset -1px 0 0 rgba(255, 255, 255, 0.5);
     }
     .panel + .panel { margin-top: 0; }
+    /* 侧栏 panel 用同色但略深的玻璃（更"实在"） */
+    .rail .panel { background: var(--glass-bg-soft); }
 
     .panel-header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 18px 18px 4px;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid rgba(212, 221, 230, 0.5);
+      background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 100%);
+      border-radius: var(--r-card) var(--r-card) 0 0;
     }
     .panel-header h2 {
       margin: 0;
-      font-size: 16px;
-      font-weight: 650;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--zh-font);
+      color: var(--ink);
     }
     .panel-header p {
       margin: 4px 0 0;
-      font-size: 13px;
-      color: var(--subtle);
+      font-size: 12px;
+      color: var(--faint);
+      font-family: var(--zh-font);
     }
+    .panel-header > div:first-child { flex: 1; }
 
     .module-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      padding: 14px;
+      padding: 16px;
     }
     .module-btn {
       display: flex;
@@ -132,40 +385,71 @@
       gap: 12px;
       width: 100%;
       text-align: left;
-      border-radius: 16px;
-      border: 1px solid transparent;
-      background: rgba(255, 255, 255, 0.62);
-      padding: 12px 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 13px 14px;
       cursor: pointer;
-      color: #4b5563;
+      color: var(--ink-soft);
+      transition: all 0.15s;
+      border-radius: 6px;
     }
     .module-btn:hover {
-      border-color: #e5e7eb;
-      background: #ffffff;
-    }
-    .module-btn.active {
-      border-style: solid;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      border-color: var(--border-strong);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--ink);
     }
     .module-icon {
       display: grid;
       place-items: center;
-      width: 28px;
-      height: 28px;
-      font-size: 16px;
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+      font-family: var(--en-font);
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 5px;
     }
     .module-text { display: flex; flex-direction: column; gap: 2px; }
-    .module-name { font-size: 14px; font-weight: 600; }
-    .module-desc { font-size: 12px; color: var(--subtle); }
+    .module-name { font-size: 14px; font-weight: 700; color: var(--ink); font-family: var(--zh-font); }
+    .module-desc { font-size: 12px; color: var(--faint); font-family: var(--zh-font); }
     .module-tag {
       margin-left: auto;
       font-size: 11px;
-      color: #9ca3af;
+      color: var(--faint);
+      font-family: var(--en-font);
     }
+    .module-btn.active {
+      border-color: var(--gold);
+      background: var(--gold-soft);
+      box-shadow: none;
+    }
+    .module-btn.active .module-name { color: #a8893f; }
+    .module-btn.active .module-icon {
+      color: #fff;
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+    .module-btn.active .module-desc { color: var(--ink-soft); }
 
-    .task-history { padding: 14px; }
-    .task-history ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    /* 任务历史：自适应高度 + 滚动条 */
+    .task-history { padding: 14px 16px 16px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .task-history ul {
+      list-style: none;
+      margin: 10px 0 0;
+      padding: 0 4px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .task-history ul::-webkit-scrollbar { width: 6px; }
+    .task-history ul::-webkit-scrollbar-track { background: var(--bg-inset); border-radius: 3px; }
+    .task-history ul::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    .task-history ul::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     .task-item {
       display: flex;
       align-items: center;
@@ -173,194 +457,282 @@
       gap: 12px;
       width: 100%;
       text-align: left;
-      border-radius: 16px;
-      border: 1px solid #f3f4f6;
-      background: rgba(255, 255, 255, 0.72);
-      padding: 12px 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 11px 13px;
       cursor: pointer;
+      transition: all 0.15s;
+      border-radius: 5px;
     }
-    .task-item:hover { border-color: #bfdbfe; background: #eff6ff; }
-    .task-title { font-size: 13px; font-weight: 600; color: #111827; }
-    .task-meta { font-size: 12px; color: var(--subtle); margin-top: 2px; }
+    .task-item:hover {
+      border-color: var(--gold);
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .task-title { font-size: 13px; font-weight: 600; color: var(--ink); font-family: var(--zh-font); }
+    .task-meta { font-size: 11px; color: var(--faint); margin-top: 2px; font-family: var(--en-font); }
 
     .stage {
-      padding: 18px;
+      padding: 0;
       display: grid;
-      grid-template-columns: 1.45fr 1fr;
+      /* 主区更宽，监控面板更窄 */
+      grid-template-columns: 1.85fr 1fr;
       gap: 18px;
       align-items: start;
+      min-height: 600px;
     }
     .stage-form {
-      border-radius: 18px;
-      border: 1px solid var(--panel-border);
-      background: var(--panel);
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
-      padding: 24px;
+      position: relative;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      padding: 26px;
+      border-radius: var(--r-card);
+      box-shadow: var(--glass-shadow);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+      backdrop-filter: blur(14px) saturate(150%);
     }
-    .stage-form .grid-2 > div,
-    .stage-form .grid-3 > div {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 14px;
+    .stage-form::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow:
+        inset 0 2px 0 var(--glass-inner-top),
+        inset 0 -1px 0 var(--glass-inner-bottom),
+        inset 1px 0 0 rgba(255, 255, 255, 0.5),
+        inset -1px 0 0 rgba(255, 255, 255, 0.5);
     }
     .stage-right {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
       position: sticky;
       top: 20px;
     }
 
-    .form-title { margin: 0 0 6px; font-size: 17px; font-weight: 650; }
-    .form-desc { margin: 0 0 14px; font-size: 13px; color: var(--subtle); }
+    .form-title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: var(--zh-font);
+    }
+    .form-desc {
+      margin: 0 0 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-soft);
+      font-size: 13px;
+      color: var(--faint);
+      font-family: var(--zh-font);
+      line-height: 1.7;
+    }
 
     label {
       display: block;
       font-size: 13px;
-      font-weight: 500;
-      color: #374151;
-      margin: 12px 0 6px;
+      font-weight: 700;
+      font-family: var(--zh-font);
+      color: var(--ink-soft);
+      margin: 18px 0 7px;
     }
     input[type="text"], input[type="number"], select, textarea {
       width: 100%;
       box-sizing: border-box;
-      border-radius: 14px;
-      border: 1px solid #d1d5db;
-      background: #ffffff;
-      padding: 10px 12px;
+      border: 1px solid rgba(184, 196, 210, 0.6);
+      background: rgba(255, 255, 255, 0.5);
+      color: var(--ink);
+      padding: 11px 13px;
       font-size: 14px;
+      font-family: var(--font-ui);
       outline: none;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      border-radius: var(--r-input);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
     }
-    #module-form {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 0 16px;
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 0 0 3px var(--gold-soft);
     }
-    #module-form > div {
-      padding: 0;
+    textarea { resize: vertical; font-family: var(--zh-font); }
+    input[type="file"] {
+      padding: 9px 13px;
+      color: var(--ink-soft);
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--border);
     }
-    #module-form > div > label {
-      display: block;
-      margin: 12px 0 6px;
+    /* file 类型的 ::file-selector-button 浏览器默认白底按钮，需要覆盖 */
+    input[type="file"]::file-selector-button {
+      background: var(--bg-card);
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      padding: 6px 14px;
+      margin-right: 12px;
+      border-radius: var(--r-tag);
+      cursor: pointer;
+      font-family: var(--zh-font);
+      font-size: 13px;
+      transition: all 0.15s;
     }
-    #module-form > div > textarea,
-    #module-form > div > input[type="text"],
-    #module-form > div > input[type="number"],
-    #module-form > div > input[type="file"],
-    #module-form > div > select {
-      width: 100%;
-      box-sizing: border-box;
+    input[type="file"]::file-selector-button:hover {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: var(--gold);
+      color: var(--gold);
     }
-    #module-form > textarea,
-    #module-form > input[type="text"],
-    #module-form > input[type="number"],
-    #module-form > input[type="file"],
-    #module-form > select {
-      width: calc(100% - 32px);
-      margin: 0 16px;
+    /* 拖拽上传区域 */
+    .file-drop-zone {
+      position: relative;
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--r-card);
+      background: var(--bg-inset);
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
     }
-    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
-    textarea { resize: vertical; }
-    input[type="file"] { padding: 8px 2px; }
+    .file-drop-zone:hover, .file-drop-zone.drag-over {
+      border-color: var(--gold);
+      background: var(--gold-soft);
+    }
+    .file-drop-zone.drag-over { box-shadow: 0 0 0 3px var(--gold-soft); }
+    .file-drop-icon { font-size: 28px; color: var(--subtle); margin-bottom: 8px; }
+    .file-drop-text { font-size: 13px; color: var(--ink-soft); }
+    .file-drop-hint { font-size: 11px; color: var(--faint); margin-top: 4px; }
+    .file-name-display { font-size: 13px; color: var(--gold); margin-top: 8px; font-weight: 600; }
+    .file-browse-link { color: var(--gold); text-decoration: underline; cursor: pointer; }
+    select { color-scheme: auto; }
+    ::placeholder { color: var(--faint); font-family: var(--zh-font); }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-    .grid-2 > div,
-    .grid-3 > div {
-      padding: 4px 0;
-    }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 
     .primary-btn {
-      margin-top: 16px;
-      align-self: flex-end;
-      border: 0;
-      border-radius: 14px;
-      padding: 12px 18px;
-      font-weight: 600;
+      display: inline-block;
+      margin: 0;
+      width: auto;
+      min-width: 160px;
+      text-align: center;
+      border: 1px solid transparent;
+      padding: 10px 22px;
+      font-weight: 700;
       font-size: 14px;
-      color: white;
+      font-family: var(--zh-font);
+      color: #fff;
       cursor: pointer;
+      transition: filter 0.15s, transform 0.1s, opacity 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.04em;
+      border-radius: var(--r-btn);
     }
-    .primary-btn.blue { background: var(--blue); }
-    .primary-btn.blue:hover { background: var(--blue-hover); }
-    .primary-btn.fuchsia { background: var(--fuchsia); }
-    .primary-btn.fuchsia:hover { background: var(--fuchsia-hover); }
-    .primary-btn.emerald { background: var(--emerald); }
-    .primary-btn.emerald:hover { background: var(--emerald-hover); }
-    .primary-btn.amber { background: var(--amber); }
-    .primary-btn.amber:hover { background: #b45309; }
+    .primary-btn { background: var(--gold); box-shadow: 0 2px 6px rgba(201, 169, 106, 0.3); }
+    .primary-btn:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(201, 169, 106, 0.4);
+    }
+    .primary-btn:active { transform: translateY(0); }
+    .primary-btn.blue { background: var(--blue); box-shadow: 0 2px 6px rgba(122, 158, 192, 0.3); }
+    .primary-btn.blue:hover { box-shadow: 0 6px 14px rgba(122, 158, 192, 0.4); }
+    .primary-btn.fuchsia { background: var(--violet); box-shadow: 0 2px 6px rgba(168, 156, 196, 0.3); }
+    .primary-btn.fuchsia:hover { box-shadow: 0 6px 14px rgba(168, 156, 196, 0.4); }
+    .primary-btn.emerald { background: var(--emerald); box-shadow: 0 2px 6px rgba(126, 181, 154, 0.3); }
+    .primary-btn.emerald:hover { box-shadow: 0 6px 14px rgba(126, 181, 154, 0.4); }
+    .primary-btn.amber { background: var(--gold); }
     .primary-btn.violet { background: var(--violet); }
-    .primary-btn.violet:hover { background: #6d28d9; }
-    .primary-btn:disabled { opacity: 0.72; cursor: not-allowed; }
+    .primary-btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; transform: none; box-shadow: none; }
+
+    /* 表单提交按钮行：上下都留充足间距，按钮居中 */
+    .form-submit-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 24px 0 12px;
+      margin-top: 16px;
+      border-top: 1px solid var(--border-soft);
+      text-align: center;
+    }
+    .form-submit-row .field-error { margin: 0; text-align: center; }
 
     .ghost-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border-radius: 12px;
       border: 1px solid var(--border);
-      background: #ffffff;
-      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 8px 13px;
       font-size: 13px;
-      color: #374151;
+      font-family: var(--zh-font);
+      color: var(--ink-soft);
       cursor: pointer;
       text-decoration: none;
+      transition: all 0.15s;
+      border-radius: var(--r-btn);
     }
-    .ghost-btn:hover { background: #f9fafb; }
-
-    .hint {
-      border-radius: 16px;
-      border-style: dashed;
-      padding: 16px;
-      font-size: 13px;
-    }
+    .ghost-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(255, 255, 255, 0.85); }
 
     .badge {
       display: inline-flex;
       align-items: center;
-      border-radius: 999px;
       padding: 4px 10px;
       font-size: 12px;
-      border: 1px solid rgba(0,0,0,0.04);
-      background: #f9fafb;
-      color: #374151;
+      font-family: var(--zh-font);
+      letter-spacing: 0.02em;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--ink-soft);
+      border-radius: var(--r-tag);
     }
-    .badge.ok { color: var(--ok); background: #f0fdf4; border-color: #bbf7d0; }
-    .badge.err { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
-    .badge.blue { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+    .badge.ok {
+      color: #4f8a6c;
+      background: var(--green-dim);
+      border-color: var(--green-border);
+    }
+    .badge.err {
+      color: #a86767;
+      background: var(--red-dim);
+      border-color: var(--red-border);
+    }
+    .badge.blue {
+      color: #4a6f8e;
+      background: var(--blue-dim);
+      border-color: rgba(122, 158, 192, 0.5);
+    }
 
     .monitor-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #111827;
-      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0 0 14px;
+      font-family: var(--zh-font);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-soft);
     }
-
-    .field-error { color: var(--danger); font-size: 12px; margin-top: 6px; }
-    .empty { color: var(--subtle); font-size: 13px; }
+    .field-error { color: #a86767; font-size: 12px; margin-top: 6px; font-family: var(--zh-font); }
+    .empty {
+      color: var(--faint);
+      font-size: 13px;
+      font-family: var(--zh-font);
+      padding: 16px;
+      text-align: center;
+    }
 
     .chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border-radius: 999px;
       border: 1px solid var(--border);
-      background: #ffffff;
-      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 6px 11px;
       font-size: 12px;
+      color: var(--ink-soft);
       cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--zh-font);
+      border-radius: var(--r-tag);
     }
-    .chip:hover { background: #f9fafb; }
+    .chip:hover { border-color: var(--gold); color: var(--gold); }
 
     .meta-row {
       display: flex;
@@ -368,59 +740,276 @@
       justify-content: space-between;
       gap: 10px;
       font-size: 12px;
-      color: #6b7280;
+      font-family: var(--mono);
+      color: var(--faint);
       margin-top: 10px;
     }
 
     .progress-track {
       height: 8px;
-      border-radius: 999px;
-      background: #e5e7eb;
+      background: var(--bg-inset);
+      border: 1px solid var(--border);
       overflow: hidden;
-      margin-top: 8px;
+      margin-top: 10px;
+      border-radius: 4px;
     }
     .progress-fill {
       height: 100%;
-      border-radius: inherit;
       width: 0%;
-      background: var(--blue);
+      background: linear-gradient(90deg, var(--gold), var(--green));
       transition: width 0.3s ease;
     }
 
-    .action-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     .info-row {
       display: flex;
       flex-direction: column;
       gap: 6px;
       margin-top: 14px;
       font-size: 13px;
-      color: #4b5563;
+      color: var(--ink-soft);
     }
 
     .footer {
       margin-top: auto;
-      border-top: 1px solid rgba(255, 255, 255, 0.7);
-      background: rgba(255, 255, 255, 0.68);
+      border-top: 1px solid var(--border);
+      background: rgba(228, 235, 242, 0.5);
       text-align: center;
       font-size: 12px;
-      color: var(--subtle);
-      padding: 16px;
+      color: var(--faint);
+      padding: 18px;
+      font-family: var(--zh-font);
     }
 
-    .placeholder-card {
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      padding: 16px;
-      font-size: 13px;
+    /* Checkbox toggle switch — 无外框版本（用于"添加金融数据分析"等复选项） */
+    .toggle-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
     }
-    .placeholder-card ul { margin: 10px 0 0; padding-left: 18px; color: #374151; }
-    .placeholder-card li + li { margin-top: 6px; }
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: var(--bg-inset);
+      border: 1px solid var(--border-strong);
+      transition: 0.2s;
+      border-radius: 11px;
+    }
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: var(--faint);
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--green-dim);
+      border-color: var(--green-border);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+      background-color: var(--green);
+    }
+    .toggle-label { font-size: 13px; color: var(--ink); font-family: var(--zh-font); }
+
+    /* File preview area */
+    .file-preview {
+      border: 1px dashed var(--border-strong);
+      background: rgba(255, 255, 255, 0.55);
+      padding: 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      border-radius: var(--r-input);
+    }
+    .file-preview:hover { border-color: var(--gold); background: rgba(255, 255, 255, 0.8); }
+    .file-preview.dragover { border-color: var(--green); background: var(--green-dim); }
+    .file-preview-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.7; }
+    .file-preview-text { font-size: 13px; color: var(--faint); font-family: var(--zh-font); }
+    .file-preview-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 8px; font-family: var(--en-font); }
+
+    /* Analysis result viewer */
+    .analysis-result {
+      position: relative;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      padding: 24px;
+      border-radius: var(--r-card);
+      box-shadow: var(--glass-shadow);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+      backdrop-filter: blur(14px) saturate(150%);
+    }
+    .analysis-result::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow:
+        inset 0 2px 0 var(--glass-inner-top),
+        inset 0 -1px 0 var(--glass-inner-bottom),
+        inset 1px 0 0 rgba(255, 255, 255, 0.5),
+        inset -1px 0 0 rgba(255, 255, 255, 0.5);
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .result-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: var(--zh-font);
+    }
+    .chart-container {
+      width: 100%;
+      min-height: 400px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.55);
+      margin: 16px 0;
+      padding: 16px;
+      border-radius: var(--r-input);
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .metric-card {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      padding: 18px;
+      text-align: center;
+      border-radius: var(--r-input);
+    }
+    .metric-value { font-size: 22px; font-weight: 700; font-family: var(--en-font); color: #4f8a6c; }
+    .metric-label { font-size: 11px; color: var(--faint); margin-top: 4px; font-family: var(--zh-font); }
+    .key-finding {
+      background: var(--gold-soft);
+      border-left: 3px solid var(--gold);
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-radius: 0 var(--r-input) var(--r-input) 0;
+    }
+    .key-finding-title { font-weight: 700; color: #a8893f; font-size: 13px; font-family: var(--zh-font); }
+    .key-finding-content { color: var(--ink-soft); font-size: 13px; margin-top: 4px; line-height: 1.7; font-family: var(--zh-font); }
+    .key-finding-evidence { color: var(--faint); font-size: 11px; margin-top: 6px; font-style: italic; font-family: var(--zh-font); }
+    .chart-title-label { padding: 12px 16px 0; font-weight: 700; color: #334155; font-size: 14px; font-family: var(--zh-font); }
+
+    /* 图表列表 */
+    .chart-list { display: flex; flex-direction: column; gap: 8px; }
+    .chart-list-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--r-input);
+    }
+    .chart-list-name { font-size: 13px; color: var(--ink); font-weight: 600; }
+    .chart-list-btn {
+      padding: 5px 16px; font-size: 12px; font-family: var(--zh-font);
+      background: var(--gold-soft); color: var(--gold);
+      border: 1px solid var(--gold); border-radius: var(--r-tag);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .chart-list-btn:hover { background: rgba(201, 169, 106, 0.25); }
+
+    /* 图表弹窗 */
+    #chart-modal {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+    }
+    .chart-modal-overlay { position: absolute; inset: 0; cursor: pointer; }
+    .chart-modal-box {
+      position: relative; background: #fff; border-radius: 14px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+      max-width: 960px; width: 95vw; max-height: 90vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .chart-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      background: #f8f7f4;
+    }
+    .chart-modal-title { font-weight: 700; font-size: 15px; color: var(--ink); font-family: var(--zh-font); }
+    .chart-modal-close {
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      color: var(--subtle); padding: 2px 6px; border-radius: 4px;
+    }
+    .chart-modal-close:hover { background: var(--hair); color: var(--ink); }
+    .chart-modal-body { padding: 20px; overflow: auto; flex: 1; min-height: 0; }
+    #chart-modal-dom { width: 100%; height: 70vh; min-height: 300px; }
+
+    /* Tabs for switching views */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .tab-btn {
+      padding: 9px 18px;
+      border: 1px solid transparent;
+      border-bottom: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--faint);
+      transition: all 0.15s;
+      font-family: var(--zh-font);
+    }
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.7);
+      border-color: var(--border);
+      color: var(--gold);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.78);
+      margin-bottom: -1px;
+      border-radius: var(--r-tag) var(--r-tag) 0 0;
+    }
+    .tab-btn:hover:not(.active) { color: var(--ink-soft); }
+
+    /* Section styles */
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 20px 0 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--gold);
+      display: inline-block;
+      font-family: var(--zh-font);
+    }
+    .info-card {
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin: 8px 0;
+      border-radius: var(--r-input);
+    }
+    .info-card-title { font-weight: 700; font-size: 13px; color: var(--ink); font-family: var(--zh-font); }
+    .info-card-content { font-size: 13px; color: var(--ink-soft); margin-top: 6px; line-height: 1.7; font-family: var(--zh-font); }
 
     @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
@@ -431,65 +1020,62 @@
 </head>
 <body>
   <div class="app">
+    <div class="ticker-rail">
+      <div class="ticker-track">
+        <span class="tk-up">S&amp;P 500 ▲ 0.42%</span>
+        <span class="tk-down">NASDAQ ▼ 0.18%</span>
+        <span class="tk-up">HSI ▲ 1.05%</span>
+        <span>USD/CNY 7.21</span>
+        <span class="tk-up">AAPL 213.40 ▲</span>
+        <span class="tk-down">TSLA 187.62 ▼</span>
+        <span>10Y YIELD 4.31%</span>
+        <span class="tk-up">SSE 3,142 ▲ 0.66%</span>
+        <span>BTC/USD 68,210</span>
+        <span class="tk-down">EUR/USD 1.082 ▼</span>
+        <span class="tk-up">GOLD 2,415 ▲</span>
+        <span>SMARTFIN AGENT · ONLINE</span>
+      </div>
+    </div>
     <header class="topbar">
       <div class="topbar-inner">
-        <div>
-          <h1>XunLong 可视化工作台</h1>
-          <p>基于现有 API 预留数据分析与 RAG 接口</p>
+        <div class="topbar-left">
+          <h1>
+            <span class="mark">SF</span>
+            <span class="brand-zh">Smart</span><span class="brand-fin">Fin</span>
+          </h1>
         </div>
-        <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">查看 API 文档</a>
+        <div class="topbar-center">
+          <div class="rag-toggle-group">
+            <span class="rag-label">RAG</span>
+            <div class="rag-toggle-item">
+              <input type="checkbox" id="rag-annual-report" />
+              <label for="rag-annual-report">年报</label>
+              <span id="rag-annual-dot" class="rag-status-dot on"></span>
+            </div>
+            <div class="rag-toggle-item">
+              <input type="checkbox" id="rag-yahoo" />
+              <label for="rag-yahoo">Yahoo</label>
+              <span id="rag-yahoo-dot" class="rag-status-dot off"></span>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">API 文档</a>
+        </div>
       </div>
     </header>
 
     <section class="layout">
       <aside class="rail">
         <div class="panel">
-          <div class="module-list" id="module-list">
-            <button class="module-btn active" data-module="report">
-              <span class="module-icon">📄</span>
-              <span class="module-text">
-                <span class="module-name">研究报告</span>
-                <span class="module-desc">生成商业/学术/技术报告</span>
-              </span>
-            </button>
-            <button class="module-btn" data-module="fiction">
-              <span class="module-icon">📚</span>
-              <span class="module-text">
-                <span class="module-name">小说创作</span>
-                <span class="module-desc">生成多风格多章节小说</span>
-              </span>
-            </button>
-            <button class="module-btn" data-module="ppt">
-              <span class="module-icon">🎬</span>
-              <span class="module-text">
-                <span class="module-name">演示文稿</span>
-                <span class="module-desc">生成可导出 PPTX 的演示文稿</span>
-              </span>
-            </button>
-            <button class="module-btn" data-module="analysis">
-              <span class="module-icon">📈</span>
-              <span class="module-text">
-                <span class="module-name">数据分析</span>
-                <span class="module-desc">数据分析 agent 占位模块</span>
-              </span>
-              <span class="module-tag">占位</span>
-            </button>
-            <button class="module-btn" data-module="rag">
-              <span class="module-icon">🧠</span>
-              <span class="module-text">
-                <span class="module-name">知识检索</span>
-                <span class="module-desc">RAG 检索模块占位入口</span>
-              </span>
-              <span class="module-tag">占位</span>
-            </button>
-          </div>
+          <div class="module-list" id="module-list"></div>
         </div>
 
         <div class="panel">
           <div class="panel-header">
             <div>
               <h2>任务记录</h2>
-              <p>查看最近创建的生成任务，点击可继续查看结果。</p>
+              <p>查看最近创建的生成任务</p>
             </div>
             <button class="ghost-btn" id="refresh-history">刷新</button>
           </div>
@@ -506,21 +1092,34 @@
       </main>
     </section>
 
-    <footer class="footer">前端原型已完成；数据分析 agent、RAG 检索与系统集成接口可在此基础上继续接入。</footer>
+    <footer class="footer">
+      SmartFin v1.0 · AI Financial Analysis Agent · 报告生成 / PPT 制作 / 数据分析
+    </footer>
   </div>
 
   <script>
+    // ============ 常量配置 ============
     const API_BASE = 'http://localhost:8000/api/v1';
     const $ = id => document.getElementById(id);
 
-    const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]);
+    // ============ 工具函数 ============
+    const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]);
+
+    function parseMarkdown(text) {
+      if (!text) return '';
+      const escaped = esc(text);
+      return escaped
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
+        .replace(/\n/g, '<br>');
+    }
 
     function arrayBufferToBase64(buffer) {
       let binary = '';
       const bytes = new Uint8Array(buffer);
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       return btoa(binary);
     }
 
@@ -537,6 +1136,11 @@
       return { filename: file.name, content };
     }
 
+    function getFileExtension(filename) {
+      const ext = filename.split('.').pop()?.toLowerCase();
+      return ext || 'txt';
+    }
+
     async function api(path, options = {}) {
       const res = await fetch(`${API_BASE}${path}`, {
         headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
@@ -545,6 +1149,15 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || data.message || res.statusText || '请求失败');
       return data;
+    }
+
+    async function apiRaw(path, options = {}) {
+      const res = await fetch(`${API_BASE}${path}`, options);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || res.statusText || '请求失败');
+      }
+      return res;
     }
 
     function statusLabel(status) {
@@ -557,24 +1170,25 @@
       return `<span class="badge ${cls}">${esc(statusLabel(status))}</span>`;
     }
 
-    const modules = {
+    // ============ 模块定义 ============
+    const MODULES = {
       report: {
         name: '研究报告',
-        color: '#2563eb',
-        accent: '#eff6ff',
-        hint: '输入研究主题，系统将自动检索并生成结构化报告。',
+        color: '#4ea1ff',
+        accent: '#122337',
+        hint: '输入研究主题，系统将自动检索并生成结构化报告。可选择是否添加金融数据分析。',
         form(container) {
           container.innerHTML = `
             <div class="panel-header">
               <div>
                 <h2 class="form-title">创建报告任务</h2>
-                <p class="form-desc">${esc(modules.report.hint)}</p>
+                <p class="form-desc">${esc(this.hint)}</p>
               </div>
             </div>
             <form id="module-form">
               <div style="padding:0 16px;">
                 <label>研究主题</label>
-                <textarea id="field-query" rows="3" placeholder="例如：2025年生成式 AI 行业趋势分析"></textarea>
+                <textarea id="field-query" rows="3" placeholder="例如：2026年生成式 AI 行业趋势分析"></textarea>
               </div>
 
               <div class="grid-2" style="padding:0 16px;">
@@ -592,7 +1206,7 @@
                   <select id="field-search_depth">
                     <option value="surface">浅层</option>
                     <option value="medium">标准</option>
-                    <option value="deep">深度</option>
+                    <option value="deep" selected>深度</option>
                   </select>
                 </div>
               </div>
@@ -612,98 +1226,27 @@
                 </div>
                 <div>
                   <label>HTML 模板</label>
-                  <input id="field-html_template" value="enhanced_professional" />
+                  <select id="field-html_template">
+                    <option value="enhanced_professional" selected>增强专业版（默认）</option>
+                    <option value="academic">学术风格</option>
+                    <option value="technical">技术文档</option>
+                  </select>
                 </div>
                 <div>
                   <label>主题</label>
                   <select id="field-html_theme">
-                    <option value="light">浅色</option>
+                    <option value="light" selected>浅色（默认）</option>
                     <option value="dark">深色</option>
                   </select>
                 </div>
               </div>
 
-              <div style="padding:0 16px;">
-                <label>上下文文档</label>
-                <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
-              </div>
-
-              <button type="submit" class="primary-btn blue" id="submit-btn">创建报告任务</button>
-            </form>
-          `;
-        },
-        submit() {
-          return {
-            path: '/tasks/report',
-            async body() {
-              const fileData = await readFileContent($('field-file'));
-              return {
-                query: ($('field-query').value || '').trim(),
-                report_type: $('field-report_type').value,
-                search_depth: $('field-search_depth').value,
-                max_results: Number($('field-max_results').value),
-                output_format: $('field-output_format').value,
-                html_template: $('field-html_template').value,
-                html_theme: $('field-html_theme').value,
-                ...(fileData ? { user_document: fileData } : {})
-              };
-            }
-          };
-        }
-      },
-      fiction: {
-        name: '小说创作',
-        color: '#db2777',
-        accent: '#fdf2f8',
-        hint: '提供核心创意和风格要求，系统将自动扩写为小说初稿。',
-        form(container) {
-          container.innerHTML = `
-            <div class="panel-header">
-              <div>
-                <h2 class="form-title">创建小说任务</h2>
-                <p class="form-desc">${esc(modules.fiction.hint)}</p>
-              </div>
-            </div>
-            <form id="module-form">
-              <div style="padding:0 16px;">
-                <label>故事创意</label>
-                <textarea id="field-query" rows="3" placeholder="例如：未来城市中一名AI维修员发现城市核心程序正在自我进化"></textarea>
-              </div>
-
-              <div class="grid-2" style="padding:0 16px;">
-                <div>
-                  <label>题材</label>
-                  <select id="field-genre">
-                    <option value="mystery">悬疑</option>
-                    <option value="scifi">科幻</option>
-                    <option value="fantasy">玄幻</option>
-                    <option value="horror">恐怖</option>
-                    <option value="romance">言情</option>
-                    <option value="wuxia">武侠</option>
-                  </select>
-                </div>
-                <div>
-                  <label>篇幅</label>
-                  <select id="field-length">
-                    <option value="short">短篇</option>
-                    <option value="medium">中篇</option>
-                    <option value="long">长篇</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style="padding:0 16px;">
-                <label>视角</label>
-                <select id="field-viewpoint">
-                  <option value="first">第一人称</option>
-                  <option value="third">第三人称</option>
-                  <option value="omniscient">全知视角</option>
-                </select>
-              </div>
-
-              <div style="padding:0 16px;">
-                <label>约束条件</label>
-                <textarea id="field-constraints" rows="3" placeholder="每行一个约束，例如：禁止使用超能力设定"></textarea>
+              <div class="toggle-row" style="padding:0 16px;">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="field-add_analysis" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">添加金融数据分析（自动搜索并提取相关金融数据）</span>
               </div>
 
               <div style="padding:0 16px;">
@@ -711,39 +1254,40 @@
                 <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
               </div>
 
-              <button type="submit" class="primary-btn fuchsia" id="submit-btn">创建小说任务</button>
+              <div class="form-submit-row">
+                <button type="submit" class="primary-btn blue" id="submit-btn">创建报告任务</button>
+              </div>
             </form>
           `;
         },
-        submit() {
+        async body() {
+          const fileData = await readFileContent($('field-file'));
           return {
-            path: '/tasks/fiction',
-            body() {
-              return {
-                query: ($('field-query').value || '').trim(),
-                genre: $('field-genre').value,
-                length: $('field-length').value,
-                viewpoint: $('field-viewpoint').value,
-                constraints: ($('field-constraints').value || '').split('\n').map(s => s.trim()).filter(Boolean),
-                output_format: $('field-output_format')?.value || 'html',
-                html_template: $('field-html_template')?.value || 'novel',
-                html_theme: $('field-html_theme')?.value || 'sepia'
-              };
-            }
+            query: ($('field-query').value || '').trim(),
+            report_type: $('field-report_type').value,
+            search_depth: $('field-search_depth').value,
+            max_results: Number($('field-max_results').value),
+            output_format: $('field-output_format').value,
+            html_template: $('field-html_template').value,
+            html_theme: $('field-html_theme').value,
+            add_data_analysis: $('field-add_analysis').checked,
+            rag_config: state.ragConfig,
+            ...(fileData ? { user_document: fileData } : {})
           };
         }
       },
+
       ppt: {
         name: '演示文稿',
-        color: '#059669',
-        accent: '#ecfdf5',
-        hint: '输入演讲主题与风格偏好，生成可导出为 PPTX 的演示文稿。',
+        color: '#00d17a',
+        accent: '#0a3d28',
+        hint: '输入演讲主题与风格偏好，生成可导出为 PPTX 的演示文稿。可选择是否添加金融数据分析。',
         form(container) {
           container.innerHTML = `
             <div class="panel-header">
               <div>
                 <h2 class="form-title">创建演示文稿</h2>
-                <p class="form-desc">${esc(modules.ppt.hint)}</p>
+                <p class="form-desc">${esc(this.hint)}</p>
               </div>
             </div>
             <form id="module-form">
@@ -771,8 +1315,9 @@
                 <div>
                   <label>风格</label>
                   <select id="field-style">
-                    <option value="business">商务</option>
+                    <option value="business" selected>商务</option>
                     <option value="academic">学术</option>
+                    <option value="ted">TED</option>
                     <option value="creative">创意</option>
                     <option value="simple">简约</option>
                   </select>
@@ -780,9 +1325,10 @@
                 <div>
                   <label>主题</label>
                   <select id="field-theme">
-                    <option value="corporate-blue">企业蓝</option>
                     <option value="default">默认</option>
+                    <option value="corporate-blue">企业蓝</option>
                     <option value="minimal">极简</option>
+                    <option value="nature">自然</option>
                   </select>
                 </div>
               </div>
@@ -792,171 +1338,182 @@
                 <textarea id="field-speech_notes" rows="2" placeholder="用于生成每页幻灯片的演讲稿"></textarea>
               </div>
 
+              <div class="toggle-row" style="padding:0 16px;">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="field-add_analysis" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">添加金融数据分析（自动搜索并提取相关金融数据）</span>
+              </div>
+
               <div style="padding:0 16px;">
                 <label>参考文档</label>
                 <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
               </div>
 
-              <button type="submit" class="primary-btn emerald" id="submit-btn">创建 PPT 任务</button>
-            </form>
-          `;
-        },
-        submit() {
-          return {
-            path: '/tasks/ppt',
-            async body() {
-              const fileData = await readFileContent($('field-file'));
-              return {
-                query: ($('field-query').value || '').trim(),
-                slides: Number($('field-slides').value),
-                style: $('field-style').value,
-                theme: $('field-theme').value,
-                depth: $('field-depth').value,
-                speech_notes: ($('field-speech_notes').value || '').trim(),
-                ...(fileData ? { user_document: fileData } : {})
-              };
-            }
-          };
-        }
-      },
-      analysis: {
-        name: '数据分析',
-        color: '#d97706',
-        accent: '#fffbeb',
-        hint: '后续将由组员接入数据分析 agent；当前界面先保留任务创建入口和状态监控。',
-        form(container) {
-          const samples = ['上传销售 Excel 后，自动生成月度分析摘要', '生成用户增长关键指标趋势', '对数据库查询结果进行异常检测'];
-          container.innerHTML = `
-            <div class="panel-header">
-              <div>
-                <h2 class="form-title">数据分析 Agent（占位）</h2>
-                <p class="form-desc">${esc(modules.analysis.hint)}</p>
-              </div>
-            </div>
-            <form id="module-form">
-              <div style="padding:0 16px;">
-                <label>分析目标</label>
-                <textarea id="field-query" rows="3" placeholder="描述希望从数据中分析出的结论"></textarea>
-              </div>
-              <div id="sample-chips" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;padding:0 16px;"></div>
-
-              <div style="padding:0 16px;">
-                <label>数据来源</label>
-                <select id="field-data_source">
-                  <option value="excel">Excel</option>
-                  <option value="database">数据库</option>
-                  <option value="upload">上传文件</option>
-                </select>
-              </div>
-
-              <div style="padding:0 16px;">
-                <label>上传数据文件</label>
-                <input id="field-file" type="file" accept=".csv,.xlsx,.xls,.json" />
-              </div>
-
-              <div style="padding:0 16px;">
-                <button type="submit" class="primary-btn amber" id="submit-btn">创建数据分析任务</button>
-                <p class="field-error" id="form-error"></p>
+              <div class="form-submit-row">
+                <button type="submit" class="primary-btn emerald" id="submit-btn">创建 PPT 任务</button>
               </div>
             </form>
           `;
-          const wrap = $('sample-chips');
-          samples.forEach(text => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'chip';
-            btn.textContent = text;
-            btn.addEventListener('click', () => { $('field-query').value = text; });
-            wrap.appendChild(btn);
-          });
         },
-        submit() {
+        async body() {
+          const fileData = await readFileContent($('field-file'));
           return {
-            path: '/tasks/analysis',
-            body() {
-              return {
-                query: ($('field-query').value || '').trim(),
-                data_source: $('field-data_source').value,
-                context: { analysis_mode: 'auto', visualization: true, rag_enabled: true }
-              };
-            }
+            query: ($('field-query').value || '').trim(),
+            slides: Number($('field-slides').value),
+            style: $('field-style').value,
+            theme: $('field-theme').value,
+            depth: $('field-depth').value,
+            speech_notes: ($('field-speech_notes').value || '').trim(),
+            add_data_analysis: $('field-add_analysis').checked,
+            rag_config: state.ragConfig,
+            ...(fileData ? { user_document: fileData } : {})
           };
         }
       },
-      rag: {
-        name: 'RAG 知识检索',
-        color: '#7c3aed',
-        accent: '#f5f3ff',
-        hint: '后续由组员接入 RAG 检索模块和系统集成；当前保留检索表单与结果占位展示。',
+
+      file_analysis: {
+        name: '文件分析',
+        color: '#c9a35c',
+        accent: '#3d3120',
+        hint: '上传 CSV 或文本文件，系统自动提取数据并生成统计摘要、关键发现与可视化图表。',
         form(container) {
           container.innerHTML = `
             <div class="panel-header">
               <div>
-                <h2 class="form-title">RAG 知识检索（占位）</h2>
-                <p class="form-desc">${esc(modules.rag.hint)}</p>
+                <h2 class="form-title">文件数据分析</h2>
+                <p class="form-desc">${esc(this.hint)}</p>
               </div>
             </div>
             <form id="module-form">
               <div style="padding:0 16px;">
-                <label>检索问题</label>
-                <textarea id="field-query" rows="3" placeholder="描述你想从知识库中检索的信息"></textarea>
+                <label>分析主题 <span style="color:var(--faint);font-weight:400;font-size:12px">（可选，用于备注文件用途）</span></label>
+                <input id="field-query" placeholder="例如：2024年Q3销售数据、用户行为日志分析" />
               </div>
 
-              <div class="grid-2" style="padding:0 16px;">
-                <div>
-                  <label>知识库</label>
-                  <select id="field-knowledge_base">
-                    <option value="default">默认知识库</option>
-                    <option value="internal">内部文档库</option>
-                    <option value="product">产品文档库</option>
-                  </select>
+              <div style="padding:12px 16px 0;">
+                <label>上传文件</label>
+                <div class="file-drop-zone" id="file-drop-zone">
+                  <div class="file-drop-icon">⬆</div>
+                  <div class="file-drop-text">拖拽文件到此处，或 <label class="file-browse-link" for="field-file">点击选择文件</label></div>
+                  <div class="file-drop-hint">支持 CSV、TXT（单文件最大 10MB）</div>
+                  <div class="file-name-display" id="file-name-display"></div>
                 </div>
-                <div>
-                  <label>Top-K</label>
-                  <input id="field-top_k" type="number" value="5" min="1" max="20" />
-                </div>
+                <input id="field-file" type="file" accept=".csv,.tsv,.txt" style="display:none" />
               </div>
 
-              <div style="padding:0 16px;">
-                <label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-                  <input id="field-enable_rerank" type="checkbox" checked />
-                  <span>启用重排序</span>
+              <div class="toggle-row" style="padding:8px 16px 0;">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="field-enable-llm" />
+                  <span class="toggle-slider"></span>
                 </label>
+                <span class="toggle-label">启用 AI 补充分析（需要 LLM 接口可用）</span>
               </div>
 
-              <div style="padding:0 16px;">
-                <button type="submit" class="primary-btn violet" id="submit-btn">发起检索</button>
+              <div class="form-submit-row">
+                <button type="submit" class="primary-btn amber" id="submit-btn">开始分析</button>
                 <p class="field-error" id="form-error"></p>
               </div>
             </form>
           `;
-        },
-        submit() {
-          return {
-            path: '/tasks/rag',
-            body() {
-              return {
-                query: ($('field-query').value || '').trim(),
-                filters: { knowledge_base: $('field-knowledge_base').value, top_k: Number($('field-top_k').value), enable_rerank: !!$('field-enable_rerank').checked },
-                context: { retrieval_mode: 'hybrid', enable_summarization: true, enable_system_integration: true }
-              };
+
+          // 文件拖拽交互
+          const dropZone = $('file-drop-zone');
+          const fileInput = $('field-file');
+          const nameDisplay = $('file-name-display');
+
+          if (dropZone && fileInput) {
+            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+            dropZone.addEventListener('drop', e => {
+              e.preventDefault();
+              dropZone.classList.remove('drag-over');
+              if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileName(e.dataTransfer.files[0]);
+              }
+            });
+            fileInput.addEventListener('change', () => {
+              if (fileInput.files[0]) updateFileName(fileInput.files[0]);
+            });
+          }
+
+          function updateFileName(file) {
+            if (nameDisplay) {
+              nameDisplay.textContent = '📄 ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
             }
+          }
+        },
+        async body() {
+          const fileData = await readFileContent($('field-file'));
+          if (!fileData) {
+            throw new Error('请先上传文件');
+          }
+          return {
+            query: ($('field-query').value || '').trim(),
+            file_name: fileData.filename,
+            file_content: fileData.content,
+            use_llm: !!$('field-enable-llm').checked,
           };
         }
       }
     };
 
+    // ============ 状态管理 ============
     const state = {
       activeModule: 'report',
       currentTaskId: null,
       monitorTimer: null,
-      monitorStatus: null
+      monitorStatus: null,
+      fileDataResult: null,
+      ragConfig: {
+        annual_report_rag_enabled: true,
+        yahoo_finance_rag_enabled: false,
+      }
     };
 
+    // ============ 模块按钮渲染 ============
+    function renderModuleButtons() {
+      const list = $('module-list');
+      list.innerHTML = '';
+      Object.entries(MODULES).forEach(([id, module]) => {
+        const btn = document.createElement('button');
+        btn.className = 'module-btn';
+        btn.dataset.module = id;
+        btn.innerHTML = `
+          <span class="module-icon">${getModuleIcon(id)}</span>
+          <span class="module-text">
+            <span class="module-name">${esc(module.name)}</span>
+            <span class="module-desc">${esc(module.hint.substring(0, 30))}...</span>
+          </span>
+        `;
+        if (id === state.activeModule) {
+          btn.classList.add('active');
+          btn.style.borderColor = module.color;
+          btn.style.background = 'rgba(201, 169, 106, 0.14)';
+          btn.style.boxShadow = 'none';
+        }
+        btn.addEventListener('click', () => setModule(id));
+        list.appendChild(btn);
+      });
+    }
+
+    function getModuleIcon(id) {
+      const icons = {
+        report: 'R',
+        ppt: 'P',
+        file_analysis: 'f'
+      };
+      return icons[id] || '·';
+    }
+
+    // ============ 模块切换 ============
     function setModule(module) {
-      if (!modules[module]) return;
+      if (!MODULES[module]) return;
       state.activeModule = module;
       stopMonitor();
+      state.fileDataResult = null;
       render();
     }
 
@@ -969,6 +1526,7 @@
       state.currentTaskId = null;
     }
 
+    // ============ 任务监控 ============
     function startMonitor(taskId) {
       state.currentTaskId = taskId;
       state.monitorStatus = null;
@@ -988,6 +1546,16 @@
         if (['completed', 'failed', 'cancelled'].includes(info.status)) {
           clearInterval(state.monitorTimer);
           state.monitorTimer = null;
+          // file_analysis 任务完成后获取结果并展示分析视图
+          if (info.status === 'completed' && info.task_type === 'file_analysis') {
+            try {
+              const resultData = await api(`/tasks/${encodeURIComponent(taskId)}/result`);
+              state.fileDataResult = resultData.result || resultData;
+              renderFileAnalysisResult(resultData.result || resultData);
+            } catch (e) {
+              console.error('获取文件分析结果失败:', e);
+            }
+          }
         }
       } catch (err) {
         state.monitorStatus = { task_id: taskId, status: 'error', error: err.message, progress: 0, current_step: '监听失败' };
@@ -997,59 +1565,241 @@
       }
     }
 
-    function renderModuleButtons() {
-      const list = $('module-list');
-      list.querySelectorAll('.module-btn').forEach(btn => {
-        const isActive = btn.dataset.module === state.activeModule;
-        btn.classList.toggle('active', isActive);
-        if (!isActive) {
-          btn.style.borderColor = 'transparent';
-          btn.style.background = 'rgba(255,255,255,0.62)';
-          btn.style.color = '#4b5563';
-          btn.style.boxShadow = 'none';
-        } else {
-          const module = modules[state.activeModule];
-          btn.style.borderColor = module.color;
-          btn.style.background = module.accent;
-          btn.style.color = '#111827';
-          btn.style.boxShadow = '0 10px 22px rgba(15,23,42,0.08)';
-        }
-      });
+    // ============ 渲染函数 ============
+    function renderForm() {
+      const module = MODULES[state.activeModule];
+      const container = $('stage-form');
+      module.form(container);
+
+      $('module-form').addEventListener('submit', handleSubmit);
     }
 
-    function renderForm() {
-      const module = modules[state.activeModule];
-      module.form($('stage-form'));
-      $('module-form').addEventListener('submit', async e => {
-        e.preventDefault();
-        const submit = module.submit();
-        const body = await submit.body();
-        const errorEl = $('form-error');
-        if (errorEl) errorEl.textContent = '';
-        const btn = $('submit-btn');
-        if (!btn) return;
-        if (!body.query && state.activeModule !== 'analysis' && state.activeModule !== 'rag') {
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const module = MODULES[state.activeModule];
+      const errorEl = $('form-error');
+      if (errorEl) errorEl.textContent = '';
+      const btn = $('submit-btn');
+      if (!btn) return;
+
+      try {
+        const body = await module.body();
+        if (!body.query && state.activeModule !== 'file_analysis') {
           if (errorEl) errorEl.textContent = '请填写必要内容后重试。';
           return;
         }
+
         btn.disabled = true;
-        const prev = btn.textContent;
-        btn.textContent = '创建中...';
-        try {
-          const res = await api(submit.path, { method: 'POST', body: JSON.stringify(body) });
-          startMonitor(res.task_id);
-        } catch (err) {
-          if (errorEl) errorEl.textContent = '创建失败：' + err.message;
-        } finally {
-          btn.disabled = false;
-          btn.textContent = prev;
-        }
-      });
+        btn.textContent = '处理中...';
+
+        const path = `/tasks/${state.activeModule}`;
+        const res = await api(path, { method: 'POST', body: JSON.stringify(body) });
+        startMonitor(res.task_id);
+      } catch (err) {
+        if (errorEl) errorEl.textContent = '操作失败：' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.originalText || '提交';
+      }
     }
 
+    function renderFileAnalysisResult(result) {
+      const right = $('stage-right');
+      const data = result.result || result;
+
+      right.innerHTML = `
+        <div class="analysis-result">
+          <div class="result-header">
+            <h3>📁 文件数据分析结果</h3>
+            ${(data.key_findings?.length) ? `<button class="ghost-btn" onclick="downloadFinancialHtml()">下载报告</button>` : ''}
+          </div>
+          ${renderMetrics(data.metrics)}
+          ${renderKeyFindings(data.key_findings)}
+          <div id="charts-container"></div>
+          ${data.analysis_conclusion || data.conclusion ? `
+            <div class="section-title">分析结论</div>
+            <div class="info-card">
+              <div class="info-card-content">${esc(data.analysis_conclusion || data.conclusion)}</div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      renderCharts(data.charts || []);
+    }
+
+    function renderMetrics(metrics) {
+      if (!metrics) return '';
+      return `
+        <div class="metrics-grid">
+          ${Object.entries(metrics).slice(0, 6).map(([k, v]) => `
+            <div class="metric-card">
+              <div class="metric-value">${esc(String(v))}</div>
+              <div class="metric-label">${esc(k)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderKeyFindings(findings) {
+      if (!findings || !findings.length) return '';
+      return `
+        <div class="section-title">关键发现</div>
+        ${findings.map(f => `
+          <div class="key-finding">
+            <div class="key-finding-title">${esc(f.title || f.label || '发现')}</div>
+            <div class="key-finding-content">${parseMarkdown(f.value || f.content || '')}</div>
+            ${f.evidence ? `<div class="key-finding-evidence">${esc(f.evidence)}</div>` : ''}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function renderCharts(charts) {
+      const container = $('charts-container');
+      if (!container) return;
+      if (!charts || !charts.length) {
+        container.innerHTML = '';
+        return;
+      }
+      container.innerHTML = `
+        <div class="section-title">📈 可视化图表</div>
+        <div class="chart-list">
+          ${charts.map((chart, i) => `
+            <div class="chart-list-item">
+              <span class="chart-list-name">${esc(chart.title || `图表 ${i + 1}`)}</span>
+              <button class="chart-list-btn" onclick="openChartModal(${i}, ${JSON.stringify(chart).replace(/"/g, '&quot;')})">查看</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function openChartModal(index, chart) {
+      let modal = document.getElementById('chart-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'chart-modal';
+        modal.innerHTML = `
+          <div class="chart-modal-overlay" onclick="closeChartModal()"></div>
+          <div class="chart-modal-box">
+            <div class="chart-modal-header">
+              <span class="chart-modal-title"></span>
+              <button class="chart-modal-close" onclick="closeChartModal()">✕</button>
+            </div>
+            <div class="chart-modal-body">
+              <div id="chart-modal-dom"></div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.querySelector('.chart-modal-title').textContent = chart.title || `图表 ${index + 1}`;
+      setTimeout(() => {
+        if (typeof echarts !== 'undefined') {
+          const dom = document.getElementById('chart-modal-dom');
+          const raw = chart.spec || chart.option || {};
+          const option = typeof raw === 'string'
+            ? (() => { try { return JSON.parse(raw); } catch { return {}; } })()
+            : raw;
+          const instance = echarts.init(dom);
+          instance.setOption(option);
+        }
+      }, 50);
+    }
+
+    window.closeChartModal = function() {
+      const modal = document.getElementById('chart-modal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.downloadFinancialHtml = function() {
+      // 优先用后端生成的 HTML（完整排版），回退到前端重建
+      const html = state.fileAnalysisHtml || buildFinancialAnalysisHtml(state.fileDataResult?.result || state.fileDataResult);
+      if (!html) return;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'financial_analysis_report.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    function buildFinancialAnalysisHtml(data) {
+      const metricsHtml = renderMetrics(data.metrics);
+      const findingsHtml = renderKeyFindings(data.key_findings);
+      const chartsDivs = (data.charts || []).map((c, i) => `<div class="chart" id="chart-${i}"></div>`).join('');
+      const chartsScript = (data.charts || []).map((chart, i) => {
+        const raw = chart.spec || chart.option || {};
+        const option = typeof raw === 'string'
+          ? (() => { try { return JSON.parse(raw); } catch { return {}; } })()
+          : raw;
+        return `\nvar chart${i} = echarts.init(document.getElementById('chart-${i}'));\nchart${i}.setOption(${JSON.stringify(option)});`;
+      }).join('');
+
+      return `<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartFin 金融分析报告</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #14181d; --subtle: #5d6672; --gold: #a9802f; --green: #0a8a52; --hair: #e4e1d8;
+      --mono: "IBM Plex Mono", ui-monospace, monospace; --sans: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: var(--sans); max-width: 1080px; margin: 0 auto; padding: 0 20px 60px; background: #faf9f6; color: var(--ink); }
+    .report-header { padding: 36px 0 20px; border-bottom: 2px solid var(--ink); margin-bottom: 28px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .report-header .brand { font-family: var(--mono); font-weight: 700; font-size: 14px; letter-spacing: 0.04em; color: var(--gold); }
+    .report-header .brand b { color: var(--green); }
+    .report-header .stamp { font-family: var(--mono); font-size: 11px; color: var(--subtle); }
+    h1 { font-size: 26px; font-weight: 800; margin: 8px 0 0; letter-spacing: -0.01em; }
+    .card { background: #ffffff; border: 1px solid var(--hair); border-radius: 10px; padding: 24px; margin: 16px 0; }
+    .card h2 { font-family: var(--mono); font-size: 13px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--subtle); margin: 0 0 16px; }
+    .card h2::before { content: "// "; color: var(--gold); }
+    .metric { display: inline-block; background: #f6f4ee; border: 1px solid var(--hair); padding: 12px 20px; border-radius: 8px; margin: 6px; text-align: center; min-width: 110px; }
+    .metric-value { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--green); }
+    .metric-label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.03em; color: var(--subtle); margin-top: 2px; }
+    .chart { height: 400px; margin: 20px 0; }
+    .finding { background: #fbf6ea; border-left: 3px solid var(--gold); padding: 14px 18px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="report-header">
+    <div>
+      <div class="brand">SMART<b>FIN</b> · AI 金融分析终端</div>
+      <h1>金融分析报告</h1>
+    </div>
+    <div class="stamp">GENERATED ${new Date().toISOString().slice(0,16).replace('T',' ')}</div>
+  </div>
+  <div class="card">
+    <h2>关键指标</h2>
+    ${metricsHtml}
+  </div>
+  <div class="card">
+    <h2>关键发现</h2>
+    ${findingsHtml}
+  </div>
+  <div class="card">
+    <h2>可视化图表</h2>
+    ${chartsDivs}
+  </div>
+  <script>
+    ${chartsScript}
+  <\/script>
+</body>
+</html>`;
+    }
+
+    // ============ 任务监控面板渲染 ============
     function renderMonitor() {
       const right = $('stage-right');
       const taskId = state.currentTaskId;
+
       if (!taskId) {
         right.innerHTML = `
           <div class="panel" style="padding:18px">
@@ -1059,6 +1809,7 @@
         `;
         return;
       }
+
       const info = state.monitorStatus;
       if (!info) {
         right.innerHTML = `
@@ -1069,18 +1820,26 @@
         `;
         return;
       }
+
       const progress = Math.max(0, Math.min(100, Number(info.progress || 0)));
+      const isPpt = info.task_type === 'ppt';
+      const isFileAnalysis = info.task_type === 'file_analysis';
       const actions = info.status === 'completed' ? `
-        <a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=html" target="_blank">${info.task_type === 'ppt' ? '下载 PPT' : '下载 HTML'}</a>
-        ${info.task_type !== 'ppt' ? `<a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=md" target="_blank">下载 Markdown</a>` : ''}
+        <a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=html" target="_blank">
+          ${isPpt ? '下载 PPT' : '下载 HTML'}
+        </a>
+        ${!isPpt ? `
+          <a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=md" target="_blank">下载 Markdown</a>
+        ` : ''}
       ` : '';
+
       right.innerHTML = `
         <div class="panel" style="padding:18px">
           <p class="monitor-title">任务监控</p>
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
             <div>
-              <p style="margin:0;font-size:12px;color:#6b7280;">任务 ID</p>
-              <p style="margin:2px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;color:#111827;">${esc(taskId)}</p>
+              <p style="margin:0;font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.04em;color:#5a6470;">任务 ID</p>
+              <p style="margin:2px 0 0;font-family:var(--mono);font-size:12px;color:#e9e7df;">${esc(taskId.substring(0, 20))}...</p>
             </div>
             ${statusBadge(info.status)}
           </div>
@@ -1099,44 +1858,53 @@
             ${info.error ? `<div style="color:var(--danger)">错误：${esc(info.error)}</div>` : ''}
           </div>
           <div class="action-row">
-            <button class="ghost-btn" id="cancel-task">取消任务</button>
+            ${info.status !== 'completed' && info.status !== 'failed' ? `<button class="ghost-btn" id="cancel-task">取消任务</button>` : ''}
             <button class="ghost-btn" id="show-detail">查看详情</button>
             ${actions}
           </div>
         </div>
       `;
-      $('cancel-task').addEventListener('click', async () => {
-        try {
-          await api(`/tasks/${encodeURIComponent(taskId)}`, { method: 'DELETE' });
-          clearInterval(state.monitorTimer);
-          state.monitorTimer = null;
-          state.monitorStatus = { ...(info || {}), status: 'cancelled', current_step: '任务已取消', progress: 100 };
-          renderMonitor();
-        } catch (err) {
-          alert('取消失败：' + err.message);
-        }
-      });
+
+      const cancelBtn = $('cancel-task');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', async () => {
+          try {
+            await api(`/tasks/${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+            clearInterval(state.monitorTimer);
+            state.monitorTimer = null;
+            state.monitorStatus = { ...info, status: 'cancelled', current_step: '任务已取消', progress: 100 };
+            renderMonitor();
+          } catch (err) {
+            alert('取消失败：' + err.message);
+          }
+        });
+      }
+
       $('show-detail').addEventListener('click', () => {
-        const taskNotReady = '该任务尚未完成，请等待执行结束后再查看详情。';
         api(`/tasks/${encodeURIComponent(taskId)}/result`).then(data => {
-          $('stage-right').innerHTML = `
+          right.innerHTML = `
             <div class="panel" style="padding:18px">
+              <button class="ghost-btn" style="margin-bottom:12px;" onclick="renderMonitor()">← 返回</button>
               <p class="monitor-title">任务详情</p>
-              <pre style="white-space:pre-wrap;word-break:break-all;">${esc(JSON.stringify(data, null, 2))}</pre>
+              <pre style="white-space:pre-wrap;word-break:break-all;font-size:11.5px;font-family:var(--mono);max-height:500px;overflow:auto;background:var(--bg-inset);border:1px solid var(--hair);border-radius:8px;padding:14px;color:#b9c3cc;">${esc(JSON.stringify(data, null, 2))}</pre>
             </div>
           `;
         }).catch(err => {
-          const fallback = err.message === '获取结果失败：Bad Request' ? taskNotReady : err.message;
-          alert('获取结果失败：' + fallback);
+          alert('获取结果失败：' + err.message);
         });
       });
     }
 
+    // 暴露给 window 以便 HTML 内部调用
+    window.renderMonitor = renderMonitor;
+
+    // ============ 历史记录 ============
     function renderHistory() {
       const list = $('history-list');
       const empty = $('history-empty');
       empty.style.display = '';
       list.innerHTML = '';
+
       api('/tasks?limit=20').then(res => {
         const tasks = res.tasks || [];
         if (!tasks.length) {
@@ -1152,11 +1920,12 @@
                 <span class="task-title">${esc(task.query || '未命名任务')}</span>
                 <span class="task-meta">${esc(task.task_type)} · ${esc(task.created_at)}</span>
               </span>
-              <span class="badge ${task.status === 'completed' ? 'ok' : task.status === 'failed' ? 'err' : 'blue'}">${esc(statusLabel(task.status))}</span>
+              ${statusBadge(task.status)}
             </button>
           `;
           li.querySelector('button').addEventListener('click', () => {
-            setModule(task.task_type === 'fiction' ? 'fiction' : task.task_type === 'ppt' ? 'ppt' : task.task_type === 'analysis' ? 'analysis' : task.task_type === 'rag' ? 'rag' : 'report');
+            const moduleMap = { report: 'report', ppt: 'ppt', file_analysis: 'file_analysis' };
+            setModule(moduleMap[task.task_type] || 'report');
             startMonitor(task.task_id);
           });
           list.appendChild(li);
@@ -1167,18 +1936,95 @@
       });
     }
 
+    // ============ 主渲染入口 ============
     function render() {
       renderModuleButtons();
       renderForm();
       renderMonitor();
     }
 
-    document.querySelectorAll('.module-btn').forEach(btn => btn.addEventListener('click', () => setModule(btn.dataset.module)));
+    // ============ 初始化 ============
+    document.querySelectorAll('.module-btn').forEach(btn => {
+      // 模块按钮通过 renderModuleButtons 动态生成，这里不需要额外绑定
+    });
     $('refresh-history').addEventListener('click', renderHistory);
-    render();
-    renderHistory();
 
-    window.addEventListener('DOMContentLoaded', () => setModule('report'));
+    // 保存按钮原始文字
+    document.addEventListener('DOMContentLoaded', async () => {
+      render();
+      renderHistory();
+      await loadRagConfig();
+      bindRagToggleEvents();
+      // 页面加载时自动检测是否有正在运行的任务
+      fetchRunningTask();
+    });
+
+    // 检测正在运行的任务并自动开始监控
+    async function fetchRunningTask() {
+      try {
+        const data = await api('/tasks?status=running&limit=1');
+        if (data.tasks && data.tasks.length > 0) {
+          startMonitor(data.tasks[0].task_id);
+        }
+      } catch {
+        // 静默失败，不影响页面加载
+      }
+    }
+    window.fetchRunningTask = fetchRunningTask;
+
+    // ============ RAG 配置 ============
+    async function loadRagConfig() {
+      try {
+        const cfg = await api('/config/rag');
+        state.ragConfig = {
+          annual_report_rag_enabled: cfg.annual_report_rag_enabled,
+          yahoo_finance_rag_enabled: cfg.yahoo_finance_rag_enabled,
+        };
+      } catch {
+        // 使用默认值
+      }
+      syncRagToggleUI();
+    }
+
+    function syncRagToggleUI() {
+      const annualInput = $('rag-annual-report');
+      const yahooInput = $('rag-yahoo');
+      const annualDot = $('rag-annual-dot');
+      const yahooDot = $('rag-yahoo-dot');
+      if (!annualInput || !yahooInput) return;
+      annualInput.checked = state.ragConfig.annual_report_rag_enabled;
+      yahooInput.checked = state.ragConfig.yahoo_finance_rag_enabled;
+      annualDot.className = 'rag-status-dot ' + (state.ragConfig.annual_report_rag_enabled ? 'on' : 'off');
+      yahooDot.className = 'rag-status-dot ' + (state.ragConfig.yahoo_finance_rag_enabled ? 'on' : 'off');
+    }
+
+    function bindRagToggleEvents() {
+      const annualInput = $('rag-annual-report');
+      const yahooInput = $('rag-yahoo');
+      if (!annualInput || !yahooInput) return;
+      const handler = async () => {
+        const newCfg = {
+          annual_report_rag_enabled: annualInput.checked,
+          yahoo_finance_rag_enabled: yahooInput.checked,
+        };
+        try {
+          await api('/config/rag', {
+            method: 'PUT',
+            body: JSON.stringify(newCfg),
+          });
+          state.ragConfig = newCfg;
+          syncRagToggleUI();
+        } catch (e) {
+          alert('更新 RAG 配置失败: ' + e.message);
+          syncRagToggleUI(); // 恢复 UI
+        }
+      };
+      annualInput.addEventListener('change', handler);
+      yahooInput.addEventListener('change', handler);
+    }
+
+    // 初始化后立即绑定（如果元素已存在）
+    if ($('rag-annual-report')) bindRagToggleEvents();
   </script>
 </body>
 </html>

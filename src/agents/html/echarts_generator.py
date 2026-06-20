@@ -39,7 +39,7 @@ class EChartsGenerator:
                 "text": title,
                 "subtext": subtitle,
                 "left": "center",
-                "textStyle": {"fontSize": 18, "fontWeight": "bold"}
+                "textStyle": {"fontSize": 18, "fontWeight": "bold", "color": "#ecf0f1"}
             },
             "grid": {
                 "left": "3%",
@@ -130,7 +130,7 @@ class EChartsGenerator:
                 "text": title,
                 "subtext": subtitle,
                 "left": "center",
-                "textStyle": {"fontSize": 18, "fontWeight": "bold"}
+                "textStyle": {"fontSize": 18, "fontWeight": "bold", "color": "#ecf0f1"}
             },
             "grid": {
                 "left": "3%",
@@ -182,7 +182,7 @@ class EChartsGenerator:
                 "text": title,
                 "subtext": subtitle,
                 "left": "center",
-                "textStyle": {"fontSize": 18, "fontWeight": "bold"}
+                "textStyle": {"fontSize": 18, "fontWeight": "bold", "color": "#ecf0f1"}
             },
             "tooltip": {
                 "trigger": "item",
@@ -252,7 +252,7 @@ class EChartsGenerator:
                 "text": title,
                 "subtext": subtitle,
                 "left": "center",
-                "textStyle": {"fontSize": 18, "fontWeight": "bold"}
+                "textStyle": {"fontSize": 18, "fontWeight": "bold", "color": "#ecf0f1"}
             },
             "legend": {
                 "data": [bar_name, line_name],
@@ -335,7 +335,7 @@ class EChartsGenerator:
                 "text": title,
                 "subtext": subtitle,
                 "left": "center",
-                "textStyle": {"fontSize": 18, "fontWeight": "bold"}
+                "textStyle": {"fontSize": 18, "fontWeight": "bold", "color": "#ecf0f1"}
             },
             "grid": {
                 "height": "60%",
@@ -411,7 +411,7 @@ class EChartsGenerator:
                 "text": title,
                 "subtext": subtitle,
                 "left": "center",
-                "textStyle": {"fontSize": 18, "fontWeight": "bold"}
+                "textStyle": {"fontSize": 18, "fontWeight": "bold", "color": "#ecf0f1"}
             },
             "series": [{
                 "type": "graph",

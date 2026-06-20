@@ -6,10 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 from ..html.echarts_generator import EChartsGenerator
 from .schemas import DataTable
 
-_NUMERIC_CELL_RE = re.compile(
-    r"(-?\d[\d,]*(?:\.\d+)?)\s*(%|\uff05|\u4e07\u4ebf|\u4ebf\u5143|\u4ebf|\u4e07\u5143|\u4e07|\u7f8e\u5143|\u7f8e\u91d1|\u5143|b|bn|billion)?",
-    re.IGNORECASE,
-)
+_NUMERIC_RE = re.compile(r"([-+]?\d[\d,]*(?:\.\d+)?)")
 
 
 
@@ -49,6 +46,22 @@ def build_chart_for_table(
     values = [_parse_metric_value(row[1]) for row in chart_rows]
     y_axis_name = _infer_y_axis_name(value_cells)
     if not any(v != 0 for v in values):
+        # 尝试其他数值列
+        for col_idx in range(1, len(table_obj.columns)):
+            col_cells = [str(row[col_idx]) for row in chart_rows]
+            col_kinds = {_value_unit_kind(c) for c in col_cells}
+            col_kinds.discard("plain")
+            if len(col_kinds) <= 1:
+                values = [_parse_metric_value(row[col_idx]) for row in chart_rows]
+                if any(v != 0 for v in values):
+                    spec = generator.add_bar_chart(
+                        chart_id=chart_id,
+                        title=table_obj.title,
+                        categories=categories,
+                        data=values,
+                        y_axis_name=_infer_y_axis_name(col_cells),
+                    )
+                    return {"type": "bar", "title": table_obj.title, "spec": spec}
         return None
     spec = generator.add_bar_chart(
         chart_id=chart_id,
@@ -92,29 +105,33 @@ def _to_float(value: Any) -> float:
 
 
 def _parse_metric_value(value: Any) -> float:
+    """从任意格式的数值字符串中提取数值并按单位换算（单位在数值之后）。"""
     if value is None or value == "" or value == "-":
         return 0.0
     if isinstance(value, (int, float)):
         return float(value)
 
-    text = str(value).strip().replace(",", "").replace("，", "")
-    match = _NUMERIC_CELL_RE.search(text)
+    text = str(value).strip()
+    match = _NUMERIC_RE.match(text)
     if not match:
         return 0.0
 
     number = float(match.group(1).replace(",", ""))
-    unit = (match.group(2) or "").strip()
-    unit_lower = unit.lower()
+    suffix = text[match.end() :].strip().lower()
 
-    if unit in ("%", "％"):
+    if "%" in suffix:
         return number
-    if unit == "万亿":
+    if "万亿" in suffix:
         return number * 10000
-    if unit in ("亿", "亿元"):
+    if "亿" in suffix:
         return number
-    if unit in ("万", "万元"):
+    if "万" in suffix and "亿" not in suffix:
         return number / 10000
-    if unit_lower in ("b", "bn", "billion"):
+    if suffix.startswith(("$", "美元", "美金", "usd")):
+        return number
+    if suffix.startswith(("b", "bn")) and "billion" not in suffix:
+        return number * 10
+    if "billion" in suffix:
         return number * 10
     return number
 
@@ -142,8 +159,8 @@ def _value_unit_kind(cell: str) -> str:
     if re.search(r"\d\s*b\b", lowered):
         return "amount"
 
-    match = _NUMERIC_CELL_RE.search(str(cell))
-    if match and not (match.group(2) or "").strip():
+    match = _NUMERIC_RE.search(str(cell))
+    if match:
         try:
             if abs(float(match.group(1).replace(",", ""))) >= 1000:
                 return "amount"

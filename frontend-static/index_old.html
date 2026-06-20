@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XunLong 可视化工作台</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg-start: #eef2ff;
+      --bg-end: #fff1f2;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.7);
+      --ink: #1f2933;
+      --subtle: #6b7280;
+      --border: #e5e7eb;
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --fuchsia: #db2777;
+      --fuchsia-hover: #be185d;
+      --emerald: #059669;
+      --emerald-hover: #047857;
+      --amber: #d97706;
+      --amber-hover: #b45309;
+      --violet: #7c3aed;
+      --violet-hover: #6d28d9;
+      --danger: #dc2626;
+      --ok: #16a34a;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg-start), #ffffff, var(--bg-end));
+      color: var(--ink);
+    }
+
+    .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .topbar {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner {
+      max-width: 90rem;
+      margin: 0 auto;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .topbar h1 { margin: 0; font-size: 20px; font-weight: 700; }
+    .topbar p { margin: 4px 0 0; font-size: 13px; color: var(--subtle); }
+    .topbar a {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #374151;
+      text-decoration: none;
+    }
+    .topbar a:hover { background: #f9fafb; }
+
+    .rag-toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .rag-toggle-group span { font-weight: 600; white-space: nowrap; }
+    .rag-toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rag-toggle-item input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #2563eb; }
+    .rag-toggle-item label { cursor: pointer; }
+    .rag-status-dot {
+      width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+    }
+    .rag-status-dot.on { background: #16a34a; }
+    .rag-status-dot.off { background: #d1d5db; }
+
+    .layout {
+      max-width: 90rem;
+      margin: 0 auto;
+      width: 100%;
+      padding: 28px 24px 34px;
+      display: grid;
+      grid-template-columns: 18rem 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    .rail { display: flex; flex-direction: column; gap: 18px; }
+
+    .panel {
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    }
+    .panel + .panel { margin-top: 0; }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 4px;
+    }
+    .panel-header h2 { margin: 0; font-size: 16px; font-weight: 650; }
+    .panel-header p { margin: 4px 0 0; font-size: 13px; color: var(--subtle); }
+
+    .module-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+    }
+    .module-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.62);
+      padding: 12px 14px;
+      cursor: pointer;
+      color: #4b5563;
+      transition: all 0.2s;
+    }
+    .module-btn:hover {
+      border-color: #e5e7eb;
+      background: #ffffff;
+    }
+    .module-icon {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+    .module-text { display: flex; flex-direction: column; gap: 2px; }
+    .module-name { font-size: 14px; font-weight: 600; }
+    .module-desc { font-size: 12px; color: var(--subtle); }
+    .module-tag {
+      margin-left: auto;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .task-history { padding: 14px; }
+    .task-history ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      border-radius: 16px;
+      border: 1px solid #f3f4f6;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .task-item:hover { border-color: #bfdbfe; background: #eff6ff; }
+    .task-title { font-size: 13px; font-weight: 600; color: #111827; }
+    .task-meta { font-size: 12px; color: var(--subtle); margin-top: 2px; }
+
+    .stage {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .stage-form {
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      padding: 24px;
+    }
+    .stage-right {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: sticky;
+      top: 20px;
+    }
+
+    .form-title { margin: 0 0 6px; font-size: 17px; font-weight: 650; }
+    .form-desc { margin: 0 0 14px; font-size: 13px; color: var(--subtle); }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      margin: 12px 0 6px;
+    }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 14px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+    textarea { resize: vertical; }
+    input[type="file"] { padding: 8px 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+    .primary-btn {
+      margin-top: 16px;
+      align-self: flex-end;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 14px;
+      color: white;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .primary-btn:hover { opacity: 0.9; }
+    .primary-btn.blue { background: var(--blue); }
+    .primary-btn.fuchsia { background: var(--fuchsia); }
+    .primary-btn.emerald { background: var(--emerald); }
+    .primary-btn.amber { background: var(--amber); }
+    .primary-btn.violet { background: var(--violet); }
+    .primary-btn:disabled { opacity: 0.72; cursor: not-allowed; }
+
+    .ghost-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374151;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .ghost-btn:hover { background: #f9fafb; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid rgba(0,0,0,0.04);
+      background: #f9fafb;
+      color: #374151;
+    }
+    .badge.ok { color: var(--ok); background: #f0fdf4; border-color: #bbf7d0; }
+    .badge.err { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
+    .badge.blue { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+
+    .monitor-title { font-size: 14px; font-weight: 600; color: #111827; margin: 0 0 10px; }
+    .field-error { color: var(--danger); font-size: 12px; margin-top: 6px; }
+    .empty { color: var(--subtle); font-size: 13px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .chip:hover { background: #f9fafb; }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 10px;
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      width: 0%;
+      background: var(--blue);
+      transition: width 0.3s ease;
+    }
+
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.68);
+      text-align: center;
+      font-size: 12px;
+      color: var(--subtle);
+      padding: 16px;
+    }
+
+    /* Checkbox toggle switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #ccc;
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background-color: var(--amber); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+    .toggle-label { font-size: 13px; color: #374151; }
+
+    /* File preview area */
+    .file-preview {
+      border: 2px dashed #d1d5db;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-preview:hover { border-color: var(--blue); background: #f8fafc; }
+    .file-preview.dragover { border-color: var(--blue); background: #eff6ff; }
+    .file-preview-icon { font-size: 32px; margin-bottom: 8px; }
+    .file-preview-text { font-size: 13px; color: var(--subtle); }
+    .file-preview-name { font-size: 14px; font-weight: 600; color: #111827; margin-top: 8px; }
+
+    /* Analysis result viewer */
+    .analysis-result {
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      padding: 24px;
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .result-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+    .chart-container {
+      width: 100%;
+      min-height: 400px;
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      margin: 16px 0;
+      padding: 16px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .metric-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+    .metric-value { font-size: 24px; font-weight: 700; color: #111827; }
+    .metric-label { font-size: 12px; color: var(--subtle); margin-top: 4px; }
+    .key-finding {
+      background: #fffbeb;
+      border-left: 4px solid var(--amber);
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .key-finding-title { font-weight: 600; color: #92400e; font-size: 13px; }
+    .key-finding-content { color: #78350f; font-size: 13px; margin-top: 4px; }
+
+    /* Tabs for switching views */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .tab-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--subtle);
+      transition: all 0.2s;
+    }
+    .tab-btn.active { background: var(--blue); color: white; }
+    .tab-btn:hover:not(.active) { background: #f3f4f6; }
+
+    /* Section styles */
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111827;
+      margin: 20px 0 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--blue);
+      display: inline-block;
+    }
+    .info-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 8px 0;
+    }
+    .info-card-title { font-weight: 600; font-size: 14px; color: #374151; }
+    .info-card-content { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .stage { grid-template-columns: 1fr; }
+      .stage-right { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div>
+          <h1>XunLong 可视化工作台</h1>
+          <p>智能分析与报告生成平台</p>
+        </div>
+        <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">查看 API 文档</a>
+        <div class="rag-toggle-group">
+          <span>RAG 开关</span>
+          <div class="rag-toggle-item">
+            <input type="checkbox" id="rag-annual-report" />
+            <label for="rag-annual-report">年报</label>
+            <span id="rag-annual-dot" class="rag-status-dot on"></span>
+          </div>
+          <div class="rag-toggle-item">
+            <input type="checkbox" id="rag-yahoo" />
+            <label for="rag-yahoo">Yahoo</label>
+            <span id="rag-yahoo-dot" class="rag-status-dot off"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="rail">
+        <div class="panel">
+          <div class="module-list" id="module-list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>任务记录</h2>
+              <p>查看最近创建的生成任务</p>
+            </div>
+            <button class="ghost-btn" id="refresh-history">刷新</button>
+          </div>
+          <div class="task-history">
+            <div class="empty" id="history-empty">暂无任务记录。</div>
+            <ul id="history-list"></ul>
+          </div>
+        </div>
+      </aside>
+
+      <main id="stage" class="stage">
+        <section id="stage-form" class="panel"></section>
+        <aside class="stage-right" id="stage-right"></aside>
+      </main>
+    </section>
+
+    <footer class="footer">
+      XunLong 可视化工作台 · 支持报告生成、PPT制作、数据分析等多种功能
+    </footer>
+  </div>
+
+  <script>
+    // ============ 常量配置 ============
+    const API_BASE = 'http://localhost:8000/api/v1';
+    const $ = id => document.getElementById(id);
+
+    // ============ 工具函数 ============
+    const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]);
+
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+
+    async function readFileContent(fileInput) {
+      if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+      const file = fileInput.files[0];
+      let content;
+      if (file.name.endsWith('.pdf')) {
+        const buf = await file.arrayBuffer();
+        content = '[PDF_BASE64]' + arrayBufferToBase64(buf);
+      } else {
+        content = await file.text();
+      }
+      return { filename: file.name, content };
+    }
+
+    function getFileExtension(filename) {
+      const ext = filename.split('.').pop()?.toLowerCase();
+      return ext || 'txt';
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(`${API_BASE}${path}`, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || data.message || res.statusText || '请求失败');
+      return data;
+    }
+
+    async function apiRaw(path, options = {}) {
+      const res = await fetch(`${API_BASE}${path}`, options);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || res.statusText || '请求失败');
+      }
+      return res;
+    }
+
+    function statusLabel(status) {
+      const map = { pending: '等待中', running: '执行中', completed: '已完成', failed: '失败', cancelled: '已取消' };
+      return map[status] || status || '-';
+    }
+
+    function statusBadge(status) {
+      const cls = status === 'completed' ? 'ok' : status === 'failed' ? 'err' : 'blue';
+      return `<span class="badge ${cls}">${esc(statusLabel(status))}</span>`;
+    }
+
+    // ============ 模块定义 ============
+    const MODULES = {
+      report: {
+        name: '研究报告',
+        color: '#2563eb',
+        accent: '#eff6ff',
+        hint: '输入研究主题，系统将自动检索并生成结构化报告。可选择是否添加金融数据分析。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">创建报告任务</h2>
+                <p class="form-desc">${esc(this.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>研究主题</label>
+                <textarea id="field-query" rows="3" placeholder="例如：2026年生成式 AI 行业趋势分析"></textarea>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>报告类型</label>
+                  <select id="field-report_type">
+                    <option value="comprehensive">综合报告</option>
+                    <option value="daily">日报</option>
+                    <option value="analysis">分析报告</option>
+                    <option value="research">研究报告</option>
+                  </select>
+                </div>
+                <div>
+                  <label>检索深度</label>
+                  <select id="field-search_depth">
+                    <option value="surface">浅层</option>
+                    <option value="medium">标准</option>
+                    <option value="deep" selected>深度</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>最大检索数量</label>
+                <input id="field-max_results" type="number" value="20" min="1" max="100" />
+              </div>
+
+              <div class="grid-3" style="padding:0 16px;">
+                <div>
+                  <label>输出格式</label>
+                  <select id="field-output_format">
+                    <option value="html">HTML</option>
+                    <option value="md">Markdown</option>
+                  </select>
+                </div>
+                <div>
+                  <label>HTML 模板</label>
+                  <input id="field-html_template" value="enhanced_professional" />
+                </div>
+                <div>
+                  <label>主题</label>
+                  <select id="field-html_theme">
+                    <option value="light">浅色</option>
+                    <option value="dark">深色</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="toggle-row" style="padding:0 16px;">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="field-add_analysis" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">添加金融数据分析（自动搜索并提取相关金融数据）</span>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>上下文文档</label>
+                <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
+              </div>
+
+              <button type="submit" class="primary-btn blue" id="submit-btn">创建报告任务</button>
+            </form>
+          `;
+        },
+        async body() {
+          const fileData = await readFileContent($('field-file'));
+          return {
+            query: ($('field-query').value || '').trim(),
+            report_type: $('field-report_type').value,
+            search_depth: $('field-search_depth').value,
+            max_results: Number($('field-max_results').value),
+            output_format: $('field-output_format').value,
+            html_template: $('field-html_template').value,
+            html_theme: $('field-html_theme').value,
+            add_data_analysis: $('field-add_analysis').checked,
+            rag_config: state.ragConfig,
+            ...(fileData ? { user_document: fileData } : {})
+          };
+        }
+      },
+
+      ppt: {
+        name: '演示文稿',
+        color: '#059669',
+        accent: '#ecfdf5',
+        hint: '输入演讲主题与风格偏好，生成可导出为 PPTX 的演示文稿。可选择是否添加金融数据分析。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">创建演示文稿</h2>
+                <p class="form-desc">${esc(this.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>演示主题</label>
+                <input id="field-query" placeholder="例如：2026年市场进入策略汇报" />
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>页数</label>
+                  <input id="field-slides" type="number" value="12" min="1" max="100" />
+                </div>
+                <div>
+                  <label>深度</label>
+                  <select id="field-depth">
+                    <option value="surface">概览</option>
+                    <option value="medium">标准</option>
+                    <option value="deep">深度</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>风格</label>
+                  <select id="field-style">
+                    <option value="business" selected>商务</option>
+                    <option value="academic">学术</option>
+                    <option value="ted">TED</option>
+                    <option value="creative">创意</option>
+                    <option value="simple">简约</option>
+                  </select>
+                </div>
+                <div>
+                  <label>主题</label>
+                  <select id="field-theme">
+                    <option value="default">默认</option>
+                    <option value="corporate-blue">企业蓝</option>
+                    <option value="minimal">极简</option>
+                    <option value="nature">自然</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>演说稿说明</label>
+                <textarea id="field-speech_notes" rows="2" placeholder="用于生成每页幻灯片的演讲稿"></textarea>
+              </div>
+
+              <div class="toggle-row" style="padding:0 16px;">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="field-add_analysis" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">添加金融数据分析（自动搜索并提取相关金融数据）</span>
+              </div>
+
+              <div style="padding:0 16px;">
+                <label>参考文档</label>
+                <input id="field-file" type="file" accept=".txt,.pdf,.docx" />
+              </div>
+
+              <button type="submit" class="primary-btn emerald" id="submit-btn">创建 PPT 任务</button>
+            </form>
+          `;
+        },
+        async body() {
+          const fileData = await readFileContent($('field-file'));
+          return {
+            query: ($('field-query').value || '').trim(),
+            slides: Number($('field-slides').value),
+            style: $('field-style').value,
+            theme: $('field-theme').value,
+            depth: $('field-depth').value,
+            speech_notes: ($('field-speech_notes').value || '').trim(),
+            add_data_analysis: $('field-add_analysis').checked,
+            rag_config: state.ragConfig,
+            ...(fileData ? { user_document: fileData } : {})
+          };
+        }
+      },
+
+      financial_analysis: {
+        name: '金融分析',
+        color: '#7c3aed',
+        accent: '#f5f3ff',
+        hint: '输入分析主题，系统自动搜索网页并提取金融数据，生成独立的分析报告（HTML）和可视化图表。',
+        form(container) {
+          container.innerHTML = `
+            <div class="panel-header">
+              <div>
+                <h2 class="form-title">金融数据分析</h2>
+                <p class="form-desc">${esc(this.hint)}</p>
+              </div>
+            </div>
+            <form id="module-form">
+              <div style="padding:0 16px;">
+                <label>分析主题</label>
+                <textarea id="field-query" rows="3" placeholder="例如：分析华为2024年营收趋势和市场份额"></textarea>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>检索深度</label>
+                  <select id="field-search_depth">
+                    <option value="surface">浅层（快速）</option>
+                    <option value="medium" selected>标准</option>
+                    <option value="deep">深度（详细）</option>
+                  </select>
+                </div>
+                <div>
+                  <label>最大结果数</label>
+                  <input id="field-max_results" type="number" value="20" min="5" max="50" />
+                </div>
+              </div>
+
+              <div class="grid-2" style="padding:0 16px;">
+                <div>
+                  <label>交付物类型</label>
+                  <select id="field-deliverable">
+                    <option value="analysis_html">分析报告（HTML）</option>
+                    <option value="analysis_json">仅数据（JSON）</option>
+                  </select>
+                </div>
+                <div>
+                  <label>使用 Mock 数据</label>
+                  <select id="field-use_mock">
+                    <option value="false">否（真实搜索）</option>
+                    <option value="true">是（离线测试）</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:0 16px;margin-top:12px;">
+                <div class="info-card">
+                  <div class="info-card-title">📊 分析内容</div>
+                  <div class="info-card-content">
+                    系统将从网页中自动提取：营收数据、利润指标、市场份额、增长率、行业排名等金融指标，并生成可视化图表。
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" class="primary-btn violet" id="submit-btn">开始金融分析</button>
+              <p class="field-error" id="form-error" style="padding:0 16px;"></p>
+            </form>
+          `;
+        },
+        async body() {
+          return {
+            query: ($('field-query').value || '').trim(),
+            search_depth: $('field-search_depth').value,
+            max_results: Number($('field-max_results').value),
+            deliverable: $('field-deliverable').value,
+            use_mock: $('field-use_mock').value === 'true',
+            rag_config: state.ragConfig
+          };
+        },
+        path: '/data_analysis/charts'
+      }
+    };
+
+    // ============ 状态管理 ============
+    const state = {
+      activeModule: 'report',
+      currentTaskId: null,
+      monitorTimer: null,
+      monitorStatus: null,
+      fileAnalysisResult: null,
+      ragConfig: {
+        annual_report_rag_enabled: true,
+        yahoo_finance_rag_enabled: false,
+      }
+    };
+
+    // ============ 模块按钮渲染 ============
+    function renderModuleButtons() {
+      const list = $('module-list');
+      list.innerHTML = '';
+      Object.entries(MODULES).forEach(([id, module]) => {
+        const btn = document.createElement('button');
+        btn.className = 'module-btn';
+        btn.dataset.module = id;
+        btn.innerHTML = `
+          <span class="module-icon">${getModuleIcon(id)}</span>
+          <span class="module-text">
+            <span class="module-name">${esc(module.name)}</span>
+            <span class="module-desc">${esc(module.hint.substring(0, 30))}...</span>
+          </span>
+        `;
+        if (id === state.activeModule) {
+          btn.style.borderColor = module.color;
+          btn.style.background = module.accent;
+          btn.style.boxShadow = '0 10px 22px rgba(15,23,42,0.08)';
+        }
+        btn.addEventListener('click', () => setModule(id));
+        list.appendChild(btn);
+      });
+    }
+
+    function getModuleIcon(id) {
+      const icons = {
+        report: '📄',
+        ppt: '🎬',
+        financial_analysis: '💹'
+      };
+      return icons[id] || '📝';
+    }
+
+    // ============ 模块切换 ============
+    function setModule(module) {
+      if (!MODULES[module]) return;
+      state.activeModule = module;
+      stopMonitor();
+      state.fileAnalysisResult = null;
+      render();
+    }
+
+    function stopMonitor() {
+      if (state.monitorTimer) {
+        clearInterval(state.monitorTimer);
+        state.monitorTimer = null;
+      }
+      state.monitorStatus = null;
+      state.currentTaskId = null;
+    }
+
+    // ============ 任务监控 ============
+    function startMonitor(taskId) {
+      state.currentTaskId = taskId;
+      state.monitorStatus = null;
+      renderMonitor();
+      if (state.monitorTimer) clearInterval(state.monitorTimer);
+      state.monitorTimer = setInterval(pollMonitor, 1500);
+      pollMonitor();
+    }
+
+    async function pollMonitor() {
+      const taskId = state.currentTaskId;
+      if (!taskId) return;
+      try {
+        const info = await api(`/tasks/${encodeURIComponent(taskId)}`);
+        state.monitorStatus = info;
+        renderMonitor();
+        if (['completed', 'failed', 'cancelled'].includes(info.status)) {
+          clearInterval(state.monitorTimer);
+          state.monitorTimer = null;
+        }
+      } catch (err) {
+        state.monitorStatus = { task_id: taskId, status: 'error', error: err.message, progress: 0, current_step: '监听失败' };
+        renderMonitor();
+        clearInterval(state.monitorTimer);
+        state.monitorTimer = null;
+      }
+    }
+
+    // ============ 渲染函数 ============
+    function renderForm() {
+      const module = MODULES[state.activeModule];
+      const container = $('stage-form');
+      module.form(container);
+
+      $('module-form').addEventListener('submit', handleSubmit);
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const module = MODULES[state.activeModule];
+      const errorEl = $('form-error');
+      if (errorEl) errorEl.textContent = '';
+      const btn = $('submit-btn');
+      if (!btn) return;
+
+      try {
+        const body = await module.body();
+        if (!body.query) {
+          if (errorEl) errorEl.textContent = '请填写必要内容后重试。';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '处理中...';
+
+        if (state.activeModule === 'financial_analysis') {
+          // 金融分析：调用 charts API
+          const result = await api('/data_analysis/charts', { method: 'POST', body: JSON.stringify(body) });
+          state.fileAnalysisResult = result;
+          renderFinancialAnalysisResult(result);
+        } else {
+          // 报告/PPT：创建异步任务
+          const path = `/tasks/${state.activeModule}`;
+          const res = await api(path, { method: 'POST', body: JSON.stringify(body) });
+          startMonitor(res.task_id);
+        }
+      } catch (err) {
+        if (errorEl) errorEl.textContent = '操作失败：' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.originalText || '提交';
+      }
+    }
+
+    function renderFinancialAnalysisResult(result) {
+      const right = $('stage-right');
+      const data = result.result || result;
+
+      right.innerHTML = `
+        <div class="analysis-result">
+          <div class="result-header">
+            <h3>💹 金融分析结果</h3>
+            ${data.conclusion ? `<button class="ghost-btn" onclick="downloadFinancialHtml()">下载报告</button>` : ''}
+          </div>
+          ${renderMetrics(data.metrics)}
+          ${renderKeyFindings(data.key_findings)}
+          <div id="charts-container"></div>
+          ${data.conclusion ? `
+            <div class="section-title">分析结论</div>
+            <div class="info-card">
+              <div class="info-card-content">${esc(data.conclusion)}</div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      renderCharts(data.charts || []);
+    }
+
+    function renderMetrics(metrics) {
+      if (!metrics) return '';
+      return `
+        <div class="metrics-grid">
+          ${Object.entries(metrics).slice(0, 6).map(([k, v]) => `
+            <div class="metric-card">
+              <div class="metric-value">${esc(String(v))}</div>
+              <div class="metric-label">${esc(k)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderKeyFindings(findings) {
+      if (!findings || !findings.length) return '';
+      return `
+        <div class="section-title">关键发现</div>
+        ${findings.map(f => `
+          <div class="key-finding">
+            <div class="key-finding-title">${esc(f.title || f.label || '发现')}</div>
+            <div class="key-finding-content">${esc(f.content || f.description || JSON.stringify(f))}</div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function renderCharts(charts) {
+      if (!charts || !charts.length) return;
+      const container = $('charts-container');
+      if (!container) return;
+
+      container.innerHTML = `<div class="section-title">📈 可视化图表</div>`;
+      charts.forEach((chart, i) => {
+        const div = document.createElement('div');
+        div.className = 'chart-container';
+        div.id = `chart-${i}`;
+        div.style.minHeight = '360px';
+        container.appendChild(div);
+
+        // 等待 DOM 更新后初始化 ECharts
+        setTimeout(() => {
+          const dom = document.getElementById(`chart-${i}`);
+          if (dom && typeof echarts !== 'undefined') {
+            const myChart = echarts.init(dom);
+            let option = chart.option || chart;
+            if (typeof option === 'string') {
+              try { option = JSON.parse(option); } catch (e) { option = {}; }
+            }
+            myChart.setOption(option);
+          }
+        }, 100);
+      });
+    }
+
+    window.downloadFinancialHtml = function() {
+      const result = state.fileAnalysisResult;
+      if (!result) return;
+      const html = buildFinancialAnalysisHtml(result.result || result);
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'financial_analysis_report.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    function buildFinancialAnalysisHtml(data) {
+      const metricsHtml = renderMetrics(data.metrics);
+      const findingsHtml = renderKeyFindings(data.key_findings);
+      const chartsDivs = (data.charts || []).map((c, i) => `<div class="chart" id="chart-${i}"></div>`).join('');
+      const chartsScript = (data.charts || []).map((chart, i) => `
+      var chart${i} = echarts.init(document.getElementById('chart-${i}'));
+      chart${i}.setOption(${JSON.stringify(chart.option || chart)});`).join('\n');
+
+      return `<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>金融分析报告</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"><\/script>
+  <style>
+    body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; max-width: 1200px; margin: 0 auto; padding: 40px 20px; background: #f5f7fa; }
+    .card { background: white; border-radius: 16px; padding: 24px; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1 { color: #1f2937; }
+    .metric { display: inline-block; background: #eff6ff; padding: 12px 20px; border-radius: 12px; margin: 8px; text-align: center; }
+    .metric-value { font-size: 24px; font-weight: bold; color: #2563eb; }
+    .metric-label { font-size: 12px; color: #6b7280; }
+    .chart { height: 400px; margin: 20px 0; }
+    .finding { background: #fffbeb; border-left: 4px solid #d97706; padding: 16px; margin: 12px 0; border-radius: 0 12px 12px 0; }
+  </style>
+</head>
+<body>
+  <h1>金融分析报告</h1>
+  <div class="card">
+    <h2>关键指标</h2>
+    ${metricsHtml}
+  </div>
+  <div class="card">
+    <h2>关键发现</h2>
+    ${findingsHtml}
+  </div>
+  <div class="card">
+    <h2>可视化图表</h2>
+    ${chartsDivs}
+  </div>
+  <script>
+    ${chartsScript}
+  <\/script>
+</body>
+</html>`;
+    }
+
+    // ============ 任务监控面板渲染 ============
+    function renderMonitor() {
+      const right = $('stage-right');
+      const taskId = state.currentTaskId;
+
+      if (!taskId) {
+        right.innerHTML = `
+          <div class="panel" style="padding:18px">
+            <p class="monitor-title">任务监控</p>
+            <p class="empty">暂无运行中的任务。</p>
+          </div>
+        `;
+        return;
+      }
+
+      const info = state.monitorStatus;
+      if (!info) {
+        right.innerHTML = `
+          <div class="panel" style="padding:18px">
+            <p class="monitor-title">任务监控</p>
+            <p class="empty">正在读取任务状态...</p>
+          </div>
+        `;
+        return;
+      }
+
+      const progress = Math.max(0, Math.min(100, Number(info.progress || 0)));
+      const actions = info.status === 'completed' ? `
+        <a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=html" target="_blank">
+          ${info.task_type === 'ppt' ? '下载 PPT' : '下载 HTML'}
+        </a>
+        ${info.task_type !== 'ppt' ? `
+          <a class="ghost-btn" href="${API_BASE}/tasks/${encodeURIComponent(taskId)}/download?file_type=md" target="_blank">下载 Markdown</a>
+        ` : ''}
+      ` : '';
+
+      right.innerHTML = `
+        <div class="panel" style="padding:18px">
+          <p class="monitor-title">任务监控</p>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div>
+              <p style="margin:0;font-size:12px;color:#6b7280;">任务 ID</p>
+              <p style="margin:2px 0 0;font-family:ui-monospace,monospace;font-size:12px;color:#111827;">${esc(taskId.substring(0, 20))}...</p>
+            </div>
+            ${statusBadge(info.status)}
+          </div>
+          <div class="meta-row">
+            <span>${esc(info.current_step || '处理中')}</span>
+            <span>${progress}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${progress}%"></div>
+          </div>
+          <div class="info-row">
+            <div>类型：${esc(info.task_type || '-')}</div>
+            <div>创建时间：${esc(info.created_at || '-')}</div>
+            ${info.started_at ? `<div>开始时间：${esc(info.started_at)}</div>` : ''}
+            ${info.completed_at ? `<div>完成时间：${esc(info.completed_at)}</div>` : ''}
+            ${info.error ? `<div style="color:var(--danger)">错误：${esc(info.error)}</div>` : ''}
+          </div>
+          <div class="action-row">
+            ${info.status !== 'completed' && info.status !== 'failed' ? `<button class="ghost-btn" id="cancel-task">取消任务</button>` : ''}
+            <button class="ghost-btn" id="show-detail">查看详情</button>
+            ${actions}
+          </div>
+        </div>
+      `;
+
+      const cancelBtn = $('cancel-task');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', async () => {
+          try {
+            await api(`/tasks/${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+            clearInterval(state.monitorTimer);
+            state.monitorTimer = null;
+            state.monitorStatus = { ...info, status: 'cancelled', current_step: '任务已取消', progress: 100 };
+            renderMonitor();
+          } catch (err) {
+            alert('取消失败：' + err.message);
+          }
+        });
+      }
+
+      $('show-detail').addEventListener('click', () => {
+        api(`/tasks/${encodeURIComponent(taskId)}/result`).then(data => {
+          right.innerHTML = `
+            <div class="panel" style="padding:18px">
+              <button class="ghost-btn" style="margin-bottom:12px;" onclick="renderMonitor()">← 返回</button>
+              <p class="monitor-title">任务详情</p>
+              <pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:500px;overflow:auto;">${esc(JSON.stringify(data, null, 2))}</pre>
+            </div>
+          `;
+        }).catch(err => {
+          alert('获取结果失败：' + err.message);
+        });
+      });
+    }
+
+    // 暴露给 window 以便 HTML 内部调用
+    window.renderMonitor = renderMonitor;
+
+    // ============ 历史记录 ============
+    function renderHistory() {
+      const list = $('history-list');
+      const empty = $('history-empty');
+      empty.style.display = '';
+      list.innerHTML = '';
+
+      api('/tasks?limit=20').then(res => {
+        const tasks = res.tasks || [];
+        if (!tasks.length) {
+          empty.style.display = '';
+          return;
+        }
+        empty.style.display = 'none';
+        tasks.forEach(task => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <button class="task-item">
+              <span>
+                <span class="task-title">${esc(task.query || '未命名任务')}</span>
+                <span class="task-meta">${esc(task.task_type)} · ${esc(task.created_at)}</span>
+              </span>
+              ${statusBadge(task.status)}
+            </button>
+          `;
+          li.querySelector('button').addEventListener('click', () => {
+            const moduleMap = { report: 'report', ppt: 'ppt', financial_analysis: 'financial_analysis' };
+            setModule(moduleMap[task.task_type] || 'report');
+            startMonitor(task.task_id);
+          });
+          list.appendChild(li);
+        });
+      }).catch(() => {
+        empty.style.display = '';
+        empty.textContent = '加载任务记录失败。';
+      });
+    }
+
+    // ============ 主渲染入口 ============
+    function render() {
+      renderModuleButtons();
+      renderForm();
+      renderMonitor();
+    }
+
+    // ============ 初始化 ============
+    document.querySelectorAll('.module-btn').forEach(btn => {
+      // 模块按钮通过 renderModuleButtons 动态生成，这里不需要额外绑定
+    });
+    $('refresh-history').addEventListener('click', renderHistory);
+
+    // 保存按钮原始文字
+    document.addEventListener('DOMContentLoaded', async () => {
+      render();
+      renderHistory();
+      await loadRagConfig();
+      bindRagToggleEvents();
+    });
+
+    // ============ RAG 配置 ============
+    async function loadRagConfig() {
+      try {
+        const cfg = await api('/config/rag');
+        state.ragConfig = {
+          annual_report_rag_enabled: cfg.annual_report_rag_enabled,
+          yahoo_finance_rag_enabled: cfg.yahoo_finance_rag_enabled,
+        };
+      } catch {
+        // 使用默认值
+      }
+      syncRagToggleUI();
+    }
+
+    function syncRagToggleUI() {
+      const annualInput = $('rag-annual-report');
+      const yahooInput = $('rag-yahoo');
+      const annualDot = $('rag-annual-dot');
+      const yahooDot = $('rag-yahoo-dot');
+      if (!annualInput || !yahooInput) return;
+      annualInput.checked = state.ragConfig.annual_report_rag_enabled;
+      yahooInput.checked = state.ragConfig.yahoo_finance_rag_enabled;
+      annualDot.className = 'rag-status-dot ' + (state.ragConfig.annual_report_rag_enabled ? 'on' : 'off');
+      yahooDot.className = 'rag-status-dot ' + (state.ragConfig.yahoo_finance_rag_enabled ? 'on' : 'off');
+    }
+
+    function bindRagToggleEvents() {
+      const annualInput = $('rag-annual-report');
+      const yahooInput = $('rag-yahoo');
+      if (!annualInput || !yahooInput) return;
+      const handler = async () => {
+        const newCfg = {
+          annual_report_rag_enabled: annualInput.checked,
+          yahoo_finance_rag_enabled: yahooInput.checked,
+        };
+        try {
+          await api('/config/rag', {
+            method: 'PUT',
+            body: JSON.stringify(newCfg),
+          });
+          state.ragConfig = newCfg;
+          syncRagToggleUI();
+        } catch (e) {
+          alert('更新 RAG 配置失败: ' + e.message);
+          syncRagToggleUI(); // 恢复 UI
+        }
+      };
+      annualInput.addEventListener('change', handler);
+      yahooInput.addEventListener('change', handler);
+    }
+
+    // 初始化后立即绑定（如果元素已存在）
+    if ($('rag-annual-report')) bindRagToggleEvents();
+  </script>
+</body>
+</html>
