@@ -268,6 +268,25 @@ class TestChartBuilder:
         assert values[0] == 8621.0
         assert values[1] == 626.0
 
+    def test_mixed_percent_and_absolute_rows_use_percent_only(self):
+        from src.agents.data_analysis.chart_builder import build_chart_for_table
+        from src.agents.data_analysis.schemas import DataTable
+
+        table = DataTable(
+            title="贵州茅台指标",
+            columns=["指标", "数值", "期间", "来源", "原文依据"],
+            rows=[
+                ["主营业务收入增长率", "6.538%", "2024", "[W1]", "x"],
+                ["主营业务利润(元)", "40161115859.23", "2024", "[W1]", "y"],
+            ],
+        )
+        chart = build_chart_for_table(table, chart_id="chart_moutai")
+        assert chart is not None
+        option_raw = chart["spec"]["option"]
+        option = json.loads(option_raw) if isinstance(option_raw, str) else option_raw
+        assert len(option["xAxis"]["data"]) == 1
+        assert option["series"][0]["data"][0]["value"] == 6.538
+
 
 class TestDataAnalysisAgent:
     @staticmethod

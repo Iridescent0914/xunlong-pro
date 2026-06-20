@@ -26,13 +26,15 @@ def build_chart_for_table(
     if not table_obj.rows or not table_obj.columns or len(table_obj.columns) < 2:
         return None
 
-    generator = EChartsGenerator()
-    categories = [str(row[0]) for row in table_obj.rows[:12]]
-    if not categories:
+    chart_rows, value_cells = _select_chart_rows(table_obj)
+    if not chart_rows:
         return None
 
+    generator = EChartsGenerator()
+    categories = [str(row[0]) for row in chart_rows]
+
     if "季度" in "".join(table_obj.columns) or any("Q" in c for c in categories):
-        values = [_to_float(row[1]) for row in table_obj.rows[:12]]
+        values = [_to_float(row[1]) for row in chart_rows]
         if any(v != 0 for v in values):
             spec = generator.add_line_chart(
                 chart_id=chart_id,
@@ -44,14 +46,8 @@ def build_chart_for_table(
             )
             return {"type": "line", "title": table_obj.title, "spec": spec}
 
-    cells = [str(row[1]) for row in table_obj.rows[:12]]
-    unit_kinds = {_value_unit_kind(cell) for cell in cells}
-    unit_kinds.discard("plain")
-    if len(unit_kinds) > 1:
-        return None
-
-    values = [_parse_metric_value(row[1]) for row in table_obj.rows[:12]]
-    y_axis_name = _infer_y_axis_name(cells)
+    values = [_parse_metric_value(row[1]) for row in chart_rows]
+    y_axis_name = _infer_y_axis_name(value_cells)
     if not any(v != 0 for v in values):
         return None
     spec = generator.add_bar_chart(
@@ -62,6 +58,30 @@ def build_chart_for_table(
         y_axis_name=y_axis_name,
     )
     return {"type": "bar", "title": table_obj.title, "spec": spec}
+
+
+def _select_chart_rows(table_obj: DataTable) -> tuple[List[List[Any]], List[str]]:
+    """选取单位一致的行用于绘图；百分比与绝对值混排时优先保留百分比行。"""
+    rows = list(table_obj.rows[:12])
+    if not rows:
+        return [], []
+
+    value_cells = [str(row[1]) for row in rows if len(row) > 1]
+    kinds = [_value_unit_kind(cell) for cell in value_cells]
+    if not kinds:
+        return rows, value_cells
+
+    if "percent" in kinds and "amount" in kinds:
+        filtered = [row for row in rows if len(row) > 1 and _value_unit_kind(str(row[1])) == "percent"]
+        if filtered:
+            return filtered, [str(row[1]) for row in filtered]
+        return [], []
+
+    unit_kinds = set(kinds)
+    unit_kinds.discard("plain")
+    if len(unit_kinds) > 1:
+        return [], []
+    return rows, value_cells
 
 
 def _to_float(value: Any) -> float:
@@ -117,8 +137,18 @@ def _value_unit_kind(cell: str) -> str:
     )
     if any(token in lowered for token in amount_tokens):
         return "amount"
+    if "元" in lowered and "%" not in lowered and "％" not in lowered:
+        return "amount"
     if re.search(r"\d\s*b\b", lowered):
         return "amount"
+
+    match = _NUMERIC_CELL_RE.search(str(cell))
+    if match and not (match.group(2) or "").strip():
+        try:
+            if abs(float(match.group(1).replace(",", ""))) >= 1000:
+                return "amount"
+        except ValueError:
+            pass
     return "plain"
 
 

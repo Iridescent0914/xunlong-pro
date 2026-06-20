@@ -98,6 +98,7 @@ class DocumentHTMLAgent(BaseHTMLAgent):
             stats = self._calculate_stats(aggregate_content)
 
         # Auto-detect and generate charts from data
+        # Auto-detect charts from section text (skip data analysis module)
         charts = []
         if metadata.get('enable_charts', True):
             charts = [
@@ -105,9 +106,11 @@ class DocumentHTMLAgent(BaseHTMLAgent):
                 for c in self.detect_and_visualize_data(sections)
             ]
 
+        da_charts = []
         for chart in metadata.get('data_analysis_charts', []):
             if chart.get('id') and chart.get('option') is not None:
-                charts.append(self._normalize_chart_option(chart))
+                da_charts.append(self._normalize_chart_option(chart))
+        charts = self._merge_chart_configs(charts, da_charts)
 
         # Extract references from metadata
         references = metadata.get('references', [])
@@ -360,6 +363,8 @@ class DocumentHTMLAgent(BaseHTMLAgent):
         self.chart_generator.clear()
 
         for i, section in enumerate(sections):
+            if section.get("is_data_analysis"):
+                continue
             content = section.get('content', '')
 
             # Detect tables that can be visualized
@@ -382,6 +387,23 @@ class DocumentHTMLAgent(BaseHTMLAgent):
         elif option is None:
             normalized["option"] = {}
         return normalized
+
+    @staticmethod
+    def _merge_chart_configs(
+        auto_charts: List[Dict[str, Any]],
+        data_analysis_charts: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """合并图表配置；同 id 时优先保留金融数据分析模块的 spec。"""
+        merged: Dict[str, Dict[str, Any]] = {}
+        for chart in auto_charts:
+            chart_id = chart.get("id")
+            if chart_id:
+                merged[chart_id] = chart
+        for chart in data_analysis_charts:
+            chart_id = chart.get("id")
+            if chart_id:
+                merged[chart_id] = chart
+        return list(merged.values())
 
     def _extract_tables(self, content: str) -> List[Dict[str, Any]]:
         """

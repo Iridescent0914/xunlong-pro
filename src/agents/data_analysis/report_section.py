@@ -25,7 +25,12 @@ def build_data_analysis_section(
 
     source_blocks = data.get("source_blocks") or []
     charts = _collect_charts(data, source_blocks, section_index)
-    markdown = _build_markdown(data, main_sections=main_sections or [], section_index=section_index)
+    markdown = _build_markdown(
+        data,
+        main_sections=main_sections or [],
+        section_index=section_index,
+        charts=charts,
+    )
     content_html = _render_html(markdown)
     cited_refs = _cited_search_refs(data)
 
@@ -64,11 +69,14 @@ def _render_unified_analysis_result(
     table: Dict[str, Any],
     conclusion: str,
     section_index: int,
+    *,
+    charts: Optional[List[Dict[str, Any]]] = None,
 ) -> List[str]:
     parts = ["### 分析结果\n"]
     parts.extend(_render_table(table))
-    parts.append(f'<div class="chart-wrapper" id="chart_{section_index}_0"></div>\n')
-    parts.append(f"*图表：{table.get('title', '数值可视化')}*\n")
+    if charts:
+        parts.append(f'<div class="chart-wrapper" id="chart_{section_index}_0"></div>\n')
+        parts.append(f"*图表：{table.get('title', '数值可视化')}*\n")
     parts.append("**结论**\n")
     parts.append(conclusion or "暂无结论。")
     parts.append("")
@@ -79,6 +87,7 @@ def _build_markdown(
     data: Dict[str, Any],
     main_sections: Optional[List[Dict[str, Any]]] = None,
     section_index: int = 0,
+    charts: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
     parts: List[str] = []
 
@@ -95,7 +104,10 @@ def _build_markdown(
 
     if analysis_table and analysis_table.get("rows"):
         parts.extend(_render_unified_analysis_result(
-            analysis_table, analysis_conclusion, section_index
+            analysis_table,
+            analysis_conclusion,
+            section_index,
+            charts=charts,
         ))
     elif data.get("source_blocks"):
         parts.extend(_render_analysis_charts_section(
@@ -379,10 +391,6 @@ def _normalize_charts(charts: List[Dict[str, Any]], section_index: int) -> List[
             "option": option,
             "type": chart.get("type", "bar"),
         })
-        if spec:
-            spec_copy = dict(spec)
-            spec_copy["id"] = chart_id
-            normalized[-1]["spec"] = spec_copy
     return normalized
 
 
