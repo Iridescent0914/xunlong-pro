@@ -20,7 +20,7 @@
 ### Before Organization
 
 ```
-XunLong/
+SmartFin/
 ├── *.md (13 documentation files)
 ├── test_*.py (5 test files)
 ├── check_*.py (4 check scripts)
@@ -38,7 +38,7 @@ XunLong/
 ### After Organization
 
 ```
-XunLong/
+SmartFin/
 ├── 📄 README.md                    # Main documentation (English)
 ├── 📄 main_agent.py                # Primary entry point
 ├── 📄 run_api.py                   # API server

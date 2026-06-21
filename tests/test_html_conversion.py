@@ -11,7 +11,6 @@ sys.path.insert(0, str(project_root))
 
 from src.agents.html import (
     DocumentHTMLAgent,
-    FictionHTMLAgent,
     PPTHTMLAgent,
     get_template_registry
 )
@@ -43,32 +42,6 @@ def test_document_agent():
     assert '' in html
     print(" ")
 
-
-def test_fiction_agent():
-    """TODO: Add docstring."""
-    agent = FictionHTMLAgent()
-    content = """
-# 
-
-##  
-
-...
-
-##  
-
-...
-"""
-
-    html = agent.convert_to_html(
-        content=content,
-        metadata={'title': '', 'author': ''},
-        template='novel',
-        theme='sepia'
-    )
-
-    assert '<h1' in html or '<h2' in html
-    assert '' in html
-    print(" ")
 
 
 def test_ppt_agent():

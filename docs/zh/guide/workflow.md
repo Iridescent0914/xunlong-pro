@@ -1,6 +1,6 @@
 # 工作流程
 
-理解XunLong的工作流程有助于您优化内容生成过程并有效排查问题。
+理解SmartFin的工作流程有助于您优化内容生成过程并有效排查问题。
 
 ## 高层级工作流
 
@@ -448,10 +448,10 @@ sequenceDiagram
 
 ### 实时进度
 
-执行期间，XunLong显示：
+执行期间，SmartFin显示：
 
 ```
-🐉 XunLong - 内容生成
+🐉 SmartFin - 内容生成
 
 📋 任务分析
 ✅ 已识别: 报告生成
@@ -522,7 +522,7 @@ intermediate/
 如果生成失败，您可以恢复：
 
 ```bash
-python xunlong.py resume 20251005_143022
+python SmartFin.py resume 20251005_143022
 ```
 
 ## 最佳实践
@@ -540,7 +540,7 @@ python xunlong.py resume 20251005_143022
 ### 3. 监控Token使用
 ```bash
 # 检查token消耗
-python xunlong.py stats 20251005_143022
+python SmartFin.py stats 20251005_143022
 ```
 
 ### 4. 增量迭代

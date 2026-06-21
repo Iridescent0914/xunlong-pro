@@ -106,7 +106,7 @@ class QueryOptimizerAgent(BaseAgent):
             try:
                 result = json.loads(response)
             except json.JSONDecodeError:
-                # 尝试从响应中提取 JSON
+                # 从响应中提取 JSON
                 json_match = re.search(r'\{[\s\S]*\}', response)
                 if json_match:
                     result = json.loads(json_match.group())

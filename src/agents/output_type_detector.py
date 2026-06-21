@@ -43,45 +43,40 @@ class OutputTypeDetector:
         query_lower = query.lower()
 
         # 
-        fiction_keywords = [
-            "", "", "", "", "", "",
-            "fiction", "story", "novel", "narrative",
-            "", "", "", "", ""
+        financial_keywords = [
+            "financial", "finance", "investment", "market", "stock", "earnings",
+            "financial analysis", "financial report", "market analysis", "valuation",
+            "portfolio", "risk assessment", "macroeconomic"
         ]
 
         # 
         report_keywords = [
-            "", "", "", "", "",
-            "report", "analysis", "summary", "review",
-            "", "", "", ""
+            "report", "analysis", "summary", "review", "insights",
+            "research", "evaluation", "trends", "benchmark"
         ]
 
         # PPT
         ppt_keywords = [
-            "ppt", "", "", "slide", "presentation",
-            "", ""
+            "ppt", "slide", "presentation", "deck", "slide deck"
         ]
 
         # 
-        fiction_score = sum(1 for kw in fiction_keywords if kw in query_lower)
+        financial_score = sum(1 for kw in financial_keywords if kw in query_lower)
         report_score = sum(1 for kw in report_keywords if kw in query_lower)
         ppt_score = sum(1 for kw in ppt_keywords if kw in query_lower)
 
         # 
-        # 1. "XX" 
-        if re.search(r'.*?|.*?|.*?', query):
-            fiction_score += 5
-
-        # 2. "XX" 
-        if re.search(r'\d+.*?|.*?', query):
-            report_score += 5
-
-        # 3. "PPT" 
-        if re.search(r'.*?ppt|.*?', query_lower):
+        if re.search(r'\b(ppt|presentation|slide)\b', query_lower):
             ppt_score += 5
 
+        if re.search(r'\b(report|analysis|summary|review)\b', query_lower):
+            report_score += 3
+
+        if re.search(r'\b(financial|finance|investment|market|risk|portfolio)\b', query_lower):
+            financial_score += 4
+
         # 
-        max_score = max(fiction_score, report_score, ppt_score)
+        max_score = max(financial_score, report_score, ppt_score)
 
         if max_score == 0:
             # 
@@ -93,12 +88,12 @@ class OutputTypeDetector:
             }
 
         # 
-        total_score = fiction_score + report_score + ppt_score
+        total_score = financial_score + report_score + ppt_score
         confidence = max_score / total_score if total_score > 0 else 0.5
 
-        if fiction_score == max_score:
-            output_type = "fiction"
-            reason = f" (: {fiction_score})"
+        if financial_score == max_score:
+            output_type = "financial_analysis"
+            reason = f"financial_analysis (: {financial_score})"
         elif ppt_score == max_score:
             output_type = "ppt"
             reason = f"PPT (: {ppt_score})"
@@ -108,11 +103,11 @@ class OutputTypeDetector:
 
         return {
             "output_type": output_type,
-            "confidence": min(confidence, 0.95),  # 0.95
+            "confidence": min(confidence, 0.95),
             "reason": reason,
             "detection_method": "rule_based",
             "scores": {
-                "fiction": fiction_score,
+                "financial_analysis": financial_score,
                 "report": report_score,
                 "ppt": ppt_score
             }
@@ -145,10 +140,10 @@ class OutputTypeDetector:
    - 需要数据支撑和专业分析
    - 示例: "AI大模型市场分析报告"、"竞品对比报告"
 
-### 2. 小说类 (fiction/创作)
-   - 故事创作、情节构思、人物塑造
-   - 需要叙事性和创意性
-   - 示例: "写一个科幻故事"、"创作一段爱情小说"
+### 2. 财务分析类 (financial_analysis)
+   - 金融数据研究、投资分析、市场趋势判断
+   - 需要金融指标、行业洞察和结论建议
+   - 示例: "上市公司财务分析"、"行业趋势投资机会分析"
 
 ### 3. PPT类 (ppt)
    - 演示文稿、幻灯片制作
@@ -165,7 +160,7 @@ class OutputTypeDetector:
 
 ```json
 {
-  "output_type": "report | fiction | ppt",
+  "output_type": "report | financial_analysis | ppt",
   "confidence": 0.95,
   "reason": "判断依据说明",
   "sub_type": "具体子类型（如适用）"
@@ -174,7 +169,7 @@ class OutputTypeDetector:
 
 ## 注意事项
 
-- output_type 只允许 "report"、"fiction"、"ppt" 三种值
+- output_type 只允许 "report"、"financial_analysis"、"ppt" 三种值
 - confidence 取值范围 0.0-1.0
 - reason 简要说明判断依据
 
@@ -194,7 +189,7 @@ class OutputTypeDetector:
                 result = json.loads(json_match.group())
 
                 # 
-                if "output_type" in result and result["output_type"] in ["report", "fiction", "ppt"]:
+                if "output_type" in result and result["output_type"] in ["report", "financial_analysis", "ppt"]:
                     result["detection_method"] = "llm_based"
                     logger.info(
                         f"[{self.name}] LLM: {result['output_type']} "
@@ -220,57 +215,3 @@ class OutputTypeDetector:
                 "detection_method": "error_fallback"
             }
 
-    def extract_fiction_requirements(self, query: str) -> Dict[str, Any]:
-        """Extract fiction-specific requirements from the query."""
-
-        requirements = {
-            "genre": None,      # 
-            "length": None,     # 
-            "theme": None,      # 
-            "style": None,      # 
-            "constraints": []   # 
-        }
-
-        query_lower = query.lower()
-
-        # 
-        genre_patterns = {
-            "": ["", "", "", "mystery", "detective"],
-            "": ["", "sci-fi", ""],
-            "": ["", "", "fantasy"],
-            "": ["", "", "romance"],
-            "": ["", "", "horror"],
-            "": ["", "", ""]
-        }
-
-        for genre, keywords in genre_patterns.items():
-            if any(kw in query_lower for kw in keywords):
-                requirements["genre"] = genre
-                break
-
-        # 
-        if "" in query or "short" in query_lower:
-            requirements["length"] = "short"  # 5000
-        elif "" in query or "medium" in query_lower:
-            requirements["length"] = "medium"  # 5000-30000
-        elif "" in query or "long" in query_lower:
-            requirements["length"] = "long"  # 30000
-        else:
-            requirements["length"] = "short"  # 
-
-        # 
-        special_patterns = [
-            ("", ""),
-            ("", ""),
-            ("", ""),
-            ("", ""),
-            ("time loop", ""),
-            ("", ""),
-            ("", "")
-        ]
-
-        for pattern, constraint in special_patterns:
-            if pattern in query_lower:
-                requirements["constraints"].append(constraint)
-
-        return requirements

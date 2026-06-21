@@ -132,32 +132,6 @@ class ReportRequest(BaseModel):
     rag_config: Optional[Dict[str, bool]] = Field(None, description="RAG开关配置: {annual_report_rag_enabled, yahoo_finance_rag_enabled}")
 
 
-class FictionRequest(BaseModel):
-    """TODO: Add docstring."""
-    query: str = Field(..., description="")
-    genre: str = Field("mystery", description=": mystery/scifi/fantasy/horror/romance/wuxia")
-    length: str = Field("short", description=": short/medium/long")
-    viewpoint: str = Field("first", description=": first/third/omniscient")
-    constraints: List[str] = Field(default_factory=list, description="")
-    output_format: str = Field("html", description=": html/md")
-    html_template: str = Field("novel", description="HTML")
-    html_theme: str = Field("sepia", description="HTML")
-    user_document: Optional[Dict[str, Any]] = Field(None, description="上传的上下文文档: {filename, content}")
-
-
-class PPTRequest(BaseModel):
-    """PPT演示文稿请求"""
-    query: str = Field(..., description="演示主题")
-    slides: int = Field(15, description="幻灯片页数")
-    style: str = Field("business", description="风格: business/creative/minimal/educational/ted")
-    theme: str = Field("default", description="主题: default/corporate-blue/minimal/nature")
-    depth: str = Field("medium", description="深度: surface/medium/deep")
-    speech_notes: Optional[str] = Field("", description="演说稿说明")
-    add_data_analysis: bool = Field(False, description="是否添加金融数据分析")
-    user_document: Optional[Dict[str, Any]] = Field(None, description="上传的上下文文档: {filename, content}")
-    rag_config: Optional[Dict[str, bool]] = Field(None, description="RAG开关配置: {annual_report_rag_enabled, yahoo_finance_rag_enabled}")
-
-
 class FileAnalysisRequest(BaseModel):
     """文件数据分析请求"""
     query: Optional[str] = Field("", description="分析主题或业务问题")
@@ -165,6 +139,19 @@ class FileAnalysisRequest(BaseModel):
     file_type: Optional[str] = Field(None, description="文件类型提示，如 csv/text")
     file_content: str = Field(..., description="文件内容文本，CSV 或纯文本")
     use_llm: bool = Field(False, description="是否启用 LLM 补充分析")
+
+
+class PPTRequest(BaseModel):
+    """PPT 任务请求"""
+    query: str = Field(..., description="演示主题")
+    slides: int = Field(12, description="幻灯片页数")
+    depth: str = Field("deep", description="检索深度: surface/medium/deep")
+    style: str = Field("business", description="PPT 风格")
+    theme: str = Field("default", description="PPT 主题")
+    speech_notes: Optional[str] = Field("", description="演说稿说明")
+    add_data_analysis: bool = Field(False, description="是否添加金融数据分析")
+    user_document: Optional[Dict[str, Any]] = Field(None, description="参考文档: {filename, content}")
+    rag_config: Optional[Dict[str, bool]] = Field(None, description="RAG 开关配置: {annual_report_rag_enabled, yahoo_finance_rag_enabled}")
 
 
 class TaskResponse(BaseModel):
@@ -190,8 +177,8 @@ class TaskStatusResponse(BaseModel):
 
 # FastAPI
 app = FastAPI(
-    title="XunLong API",
-    description="AIAPI - PPT",
+    title="SmartFin API",
+    description="SmartFin 核心数据分析与报告 API",
     version="1.0.0"
 )
 
@@ -238,22 +225,22 @@ async def root():
             media_type="text/html; charset=utf-8"
         )
     return {
-        "name": "XunLong API",
+        "name": "SmartFin API",
         "version": "1.0.0",
-        "description": "AIAPI",
-        "features": ["", "", "PPT"],
+        "description": "核心数据分析与报告 API",
+        "features": ["search", "report", "financial_analysis", "ppt", "file_analysis"],
         "endpoints": {
             "async_tasks": {
                 "create_report": "POST /api/v1/tasks/report",
-                "create_fiction": "POST /api/v1/tasks/fiction",
                 "create_ppt": "POST /api/v1/tasks/ppt",
+                "create_file_analysis": "POST /api/v1/tasks/file_analysis",
                 "get_status": "GET /api/v1/tasks/{task_id}",
                 "get_result": "GET /api/v1/tasks/{task_id}/result",
                 "download_file": "GET /api/v1/tasks/{task_id}/download",
                 "cancel_task": "DELETE /api/v1/tasks/{task_id}",
                 "list_tasks": "GET /api/v1/tasks"
             },
-            "legacy": {
+            "search": {
                 "search": "GET /search"
             }
         }
@@ -587,13 +574,8 @@ async def data_analysis_file(request: FileDataAnalysisRequest):
 
 @app.post("/api/v1/tasks/report", response_model=TaskResponse)
 async def create_report_task(request: ReportRequest):
-    """
-    
-
-    IDID
-    """
+    """创建报告生成任务"""
     try:
-        # 构建 context
         context = {
             'output_type': 'report',
             'report_type': request.report_type,
@@ -607,14 +589,13 @@ async def create_report_task(request: ReportRequest):
             'rag_config': request.rag_config or {},
         }
 
-        # 
         task_id = task_manager.create_task(
             task_type=TaskType.REPORT,
             query=request.query,
             context=context
         )
 
-        logger.info(f": {task_id}")
+        logger.info(f"报告任务已创建: {task_id}")
 
         return TaskResponse(
             task_id=task_id,
@@ -623,91 +604,7 @@ async def create_report_task(request: ReportRequest):
         )
 
     except Exception as e:
-        logger.error(f": {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/tasks/fiction", response_model=TaskResponse)
-async def create_fiction_task(request: FictionRequest):
-    """
-    
-
-    IDID
-    """
-    try:
-        # 
-        context = {
-            'output_type': 'fiction',
-            'genre': request.genre,
-            'length': request.length,
-            'viewpoint': request.viewpoint,
-            'constraints': request.constraints,
-            'output_format': request.output_format,
-            'html_template': request.html_template,
-            'html_theme': request.html_theme,
-            'user_document': request.user_document
-        }
-
-        # 
-        task_id = task_manager.create_task(
-            task_type=TaskType.FICTION,
-            query=request.query,
-            context=context
-        )
-
-        logger.info(f": {task_id}")
-
-        return TaskResponse(
-            task_id=task_id,
-            status="pending",
-            message=f"ID: {task_id}"
-        )
-
-    except Exception as e:
-        logger.error(f": {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/tasks/ppt", response_model=TaskResponse)
-async def create_ppt_task(request: PPTRequest):
-    """
-    PPT
-
-    IDID
-    """
-    try:
-        # 构建 context
-        context = {
-            'output_type': 'ppt',
-            'ppt_config': {
-                'slides': request.slides,
-                'style': request.style,
-                'theme': request.theme,
-                'depth': request.depth,
-                'speech_notes': request.speech_notes,
-            },
-            'add_data_analysis': request.add_data_analysis,
-            'user_document': request.user_document,
-            'rag_config': request.rag_config or {},
-        }
-
-        # 
-        task_id = task_manager.create_task(
-            task_type=TaskType.PPT,
-            query=request.query,
-            context=context
-        )
-
-        logger.info(f"PPT: {task_id}")
-
-        return TaskResponse(
-            task_id=task_id,
-            status="pending",
-            message=f"PPTID: {task_id}"
-        )
-
-    except Exception as e:
-        logger.error(f"PPT: {e}")
+        logger.error(f"create_report_task: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -742,6 +639,43 @@ async def create_file_analysis_task(request: FileAnalysisRequest):
 
     except Exception as e:
         logger.error(f"文件分析任务: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/tasks/ppt", response_model=TaskResponse)
+async def create_ppt_task(request: PPTRequest):
+    """创建 PPT 生成任务"""
+    try:
+        context = {
+            'output_type': 'ppt',
+            'search_depth': request.depth,
+            'ppt_config': {
+                'slides': request.slides,
+                'style': request.style,
+                'theme': request.theme,
+                'speech_notes': request.speech_notes,
+            },
+            'add_data_analysis': request.add_data_analysis,
+            'user_document': request.user_document,
+            'rag_config': request.rag_config or {},
+        }
+
+        task_id = task_manager.create_task(
+            task_type=TaskType.PPT,
+            query=request.query,
+            context=context
+        )
+
+        logger.info(f"PPT任务已创建: {task_id}")
+
+        return TaskResponse(
+            task_id=task_id,
+            status="pending",
+            message=f"PPT 任务已创建: {task_id}"
+        )
+
+    except Exception as e:
+        logger.error(f"create_ppt_task: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -824,29 +758,7 @@ async def download_task_file(
     output_dir = Path(task_info.output_dir)
 
     if file_type == "html":
-        # PPT 任务返回 zip 压缩包（包含所有 slide 文件），普通报告返回单个 HTML
-        if task_info.task_type == TaskType.PPT:
-            ppt_dir = output_dir / "ppt"
-            if not ppt_dir.exists():
-                raise HTTPException(status_code=404, detail="PPT 目录不存在")
-            # 打包成 zip 放到 output_dir，文件名加时间戳避免覆盖
-            import time as _time
-            zip_name = f"ppt_{int(_time.time())}.zip"
-            zip_path = output_dir / zip_name
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                for file_path in ppt_dir.rglob("*"):
-                    if file_path.is_file():
-                        # 保持 ppt/ 前缀，让解压后路径完整
-                        arcname = file_path.relative_to(ppt_dir)
-                        zf.write(file_path, arcname)
-            return FileResponse(
-                path=zip_path,
-                media_type="application/zip",
-                filename="ppt.zip",
-                headers={"Content-Disposition": "attachment; filename*=UTF-8''ppt.zip"}
-            )
-        else:
-            file_path = output_dir / "reports" / "FINAL_REPORT.html"
+        file_path = output_dir / "reports" / "FINAL_REPORT.html"
         media_type = "text/html; charset=utf-8"
     elif file_type == "md":
         file_path = output_dir / "reports" / "FINAL_REPORT.md"

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class TemplateInfo:
     """TODO: Add docstring."""
     name: str
-    agent_type: str  # document, fiction, ppt
+    agent_type: str  # document, ppt
     file_path: str
     description: str
     framework: Optional[str] = None  # PPT
@@ -137,22 +137,6 @@ class TemplateRegistry:
                 tags=['technical', 'documentation']
             ),
             # 
-            TemplateInfo(
-                name="novel",
-                agent_type="fiction",
-                file_path="novel.html",
-                description="",
-                supports_themes=['light', 'dark', 'sepia'],
-                tags=['fiction', 'reading', 'novel']
-            ),
-            TemplateInfo(
-                name="ebook",
-                agent_type="fiction",
-                file_path="ebook.html",
-                description="Kindle",
-                supports_themes=['light', 'dark', 'sepia'],
-                tags=['fiction', 'ebook']
-            ),
             # PPT
             TemplateInfo(
                 name="default",
@@ -193,7 +177,7 @@ class TemplateRegistry:
                     "--primary-color": "#2c3e50",
                     "--secondary-color": "#3498db"
                 },
-                applies_to=['document', 'fiction']
+                applies_to=['document']
             ),
             ThemeInfo(
                 name="dark",
@@ -205,7 +189,7 @@ class TemplateRegistry:
                     "--primary-color": "#f39c12",
                     "--secondary-color": "#3498db"
                 },
-                applies_to=['document', 'fiction']
+                applies_to=['document']
             ),
             ThemeInfo(
                 name="sepia",
@@ -217,7 +201,7 @@ class TemplateRegistry:
                     "--primary-color": "#8b4513",
                     "--secondary-color": "#cd853f"
                 },
-                applies_to=['fiction']
+                applies_to=['document']
             ),
         ]
 
@@ -313,10 +297,6 @@ class TemplateRegistry:
             if any(keyword in content.lower() for keyword in ['abstract', 'references', 'citation', '', '']):
                 return "academic"
             return "technical"
-
-        elif agent_type == 'fiction':
-            # novel
-            return "novel"
 
         elif agent_type == 'ppt':
             # business

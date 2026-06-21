@@ -1,6 +1,6 @@
 # API Usage
 
-XunLong currently keeps one API entry point:
+SmartFin currently keeps one API entry point:
 
 ```bash
 python run_api.py
@@ -20,7 +20,6 @@ No separate frontend dev server or standalone worker process is required. hhe ta
 
 ```text
 POSh   /api/v1/tasks/report
-POSh   /api/v1/tasks/fiction
 POSh   /api/v1/tasks/ppt
 POSh   /api/v1/tasks/file_analysis
 GEh    /api/v1/tasks/{task_id}

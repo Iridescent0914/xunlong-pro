@@ -125,7 +125,7 @@ run_pdf_rag_pipeline()
 建议使用项目虚拟环境：
 
 ```powershell
-conda activate xunlong
+conda activate SmartFin
 ```
 
 年报 RAG 的索引构建和查询复用：
@@ -312,19 +312,19 @@ metadata.page_start / metadata.page_end / metadata.local_pdf / metadata.language
 命令行入口：
 
 ```powershell
-python xunlong.py analyze "AAPL 2024 Form 10-K net sales gross margin risk factors financial analysis" --depth deep -m 8 -o html -v
+python SmartFin.py analyze "AAPL 2024 Form 10-K net sales gross margin risk factors financial analysis" --depth deep -m 8 -o html -v
 ```
 
 中文 query：
 
 ```powershell
-python xunlong.py analyze "分析 Apple 2024 年报中的收入、毛利率和风险因素，并结合网页资料给出金融数据分析报告" --depth deep -m 8 -o html -v
+python SmartFin.py analyze "分析 Apple 2024 年报中的收入、毛利率和风险因素，并结合网页资料给出金融数据分析报告" --depth deep -m 8 -o html -v
 ```
 
 运行链路：
 
 ```text
-xunlong.py analyze
+SmartFin.py analyze
   -> DeepSearchCoordinator financial_analysis
   -> DeepSearcher 获取网页搜索结果
   -> DataAnalysisAgent
@@ -371,7 +371,7 @@ python RAG/scripts/query_pack.py "AAPL 2024 annual report revenue gross margin" 
 通常说明网页结果没有通过相关性筛选，或者网页正文没有明确财务数值。可以使用更明确的英文 query：
 
 ```powershell
-python xunlong.py analyze "AAPL 2024 Form 10-K net sales gross margin risk factors financial analysis" --depth deep -m 8 -o html -v
+python SmartFin.py analyze "AAPL 2024 Form 10-K net sales gross margin risk factors financial analysis" --depth deep -m 8 -o html -v
 ```
 
 ### 10.3 出现 mock RAG 证据
@@ -389,7 +389,7 @@ DATA_ANALYSIS_RAG_MOCK=false
 当前静态前端中的数据分析模块请求 `/api/v1/tasks/analysis`，但后端任务接口暂未实现该路由。完整链路建议先使用：
 
 ```powershell
-python xunlong.py analyze ...
+python SmartFin.py analyze ...
 ```
 
 `/api/v1/data_analysis/charts` 只消费传入的 `search_results` 并查询 RAG，本身不会自动发起网页搜索。

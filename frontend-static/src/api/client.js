@@ -24,7 +24,6 @@ const request = async (path, options = {}) => {
 export const api = {
   // ========== 报告相关 ==========
   createReport: payload => request('/tasks/report', { method: 'POST', body: JSON.stringify(payload) }),
-  createFiction: payload => request('/tasks/fiction', { method: 'POST', body: JSON.stringify(payload) }),
   createPPT: payload => request('/tasks/ppt', { method: 'POST', body: JSON.stringify(payload) }),
   getTaskStatus: taskId => request(`/tasks/${encodeURIComponent(taskId)}`),
   getTaskResult: taskId => request(`/tasks/${encodeURIComponent(taskId)}/result`),
@@ -60,7 +59,6 @@ export const api = {
 // 任务类型常量
 export const TASK_TYPES = {
   REPORT: 'report',
-  FICTION: 'fiction',
   PPT: 'ppt',
   ANALYSIS: 'analysis',
   RAG: 'rag',
@@ -84,14 +82,6 @@ export const SYSTEM_MODULES = [
     defaultTaskType: 'report',
     color: '#2563eb',
     accent: '#eff6ff',
-  },
-  {
-    id: 'fiction',
-    name: '小说创作',
-    description: '生成多风格多章节小说',
-    defaultTaskType: 'fiction',
-    color: '#db2777',
-    accent: '#fdf2f8',
   },
   {
     id: 'ppt',

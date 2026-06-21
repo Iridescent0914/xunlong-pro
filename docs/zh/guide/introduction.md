@@ -1,6 +1,6 @@
-# 什么是XunLong？
+# 什么是SmartFin？
 
-**XunLong**（寻龙）是一个AI驱动的多模态内容生成系统，能够自动创建研究报告、创意小说和专业演示文稿。
+**SmartFin**（寻龙）是一个AI驱动的多模态内容生成系统，能够自动创建研究报告、创意小说和专业演示文稿。
 
 ## 愿景
 
@@ -11,13 +11,13 @@
 - 🎨 **格式排版** - 设计布局并确保视觉吸引力
 - 🔄 **反复修改** - 修订和完善直到满意
 
-**XunLong自动化了整个工作流程**，让你能够在几分钟而不是几小时内生成专业品质的内容。
+**SmartFin自动化了整个工作流程**，让你能够在几分钟而不是几小时内生成专业品质的内容。
 
-## XunLong的独特之处
+## SmartFin的独特之处
 
 ### 1. 多模态生成
 
-与单一用途的AI工具不同，XunLong支持**三种不同的内容类型**：
+与单一用途的AI工具不同，SmartFin支持**三种不同的内容类型**：
 
 | 模式 | 用途 | 输出格式 |
 |------|------|----------|
@@ -27,7 +27,7 @@
 
 ### 2. 多智能体架构的智能
 
-XunLong不依赖单一的AI提示。相反，它编排**多个专业智能体**协同工作：
+SmartFin不依赖单一的AI提示。相反，它编排**多个专业智能体**协同工作：
 
 ```mermaid
 graph LR
@@ -52,18 +52,18 @@ graph LR
 
 ### 3. 真实网络搜索
 
-XunLong不会凭空捏造事实。它使用Playwright和Perplexity执行**真实的网络搜索**，在生成内容前收集当前的事实信息。
+SmartFin不会凭空捏造事实。它使用Playwright和Perplexity执行**真实的网络搜索**，在生成内容前收集当前的事实信息。
 
 ### 4. 迭代优化
 
-对初始输出不满意？XunLong支持**智能迭代**：
+对初始输出不满意？SmartFin支持**智能迭代**：
 
 ```bash
 # 初始生成
-python xunlong.py report "2025年AI行业"
+python SmartFin.py report "2025年AI行业"
 
 # 迭代优化
-python xunlong.py iterate <项目ID> "在第3章添加更多案例研究"
+python SmartFin.py iterate <项目ID> "在第3章添加更多案例研究"
 ```
 
 系统理解上下文并进行针对性修改，而无需重新生成所有内容。
@@ -84,7 +84,7 @@ python xunlong.py iterate <项目ID> "在第3章添加更多案例研究"
 
 **示例：**
 ```bash
-python xunlong.py report "量子计算在金融领域的应用" \
+python SmartFin.py report "量子计算在金融领域的应用" \
   --style academic \
   --depth comprehensive
 ```
@@ -99,7 +99,7 @@ python xunlong.py report "量子计算在金融领域的应用" \
 
 **示例：**
 ```bash
-python xunlong.py fiction "一个发生在赛博朋克东京的侦探故事" \
+python SmartFin.py fiction "一个发生在赛博朋克东京的侦探故事" \
   --style mystery \
   --chapters 15
 ```
@@ -114,7 +114,7 @@ python xunlong.py fiction "一个发生在赛博朋克东京的侦探故事" \
 
 **示例：**
 ```bash
-python xunlong.py ppt "2025年Q4销售回顾" \
+python SmartFin.py ppt "2025年Q4销售回顾" \
   --slides 20 \
   --style business \
   --speech-notes "高管演讲"
@@ -126,10 +126,10 @@ python xunlong.py ppt "2025年Q4销售回顾" \
 
 1. **输入你的请求**
    ```bash
-   python xunlong.py report "你的主题"
+   python SmartFin.py report "你的主题"
    ```
 
-2. **让XunLong工作**
+2. **让SmartFin工作**
    - 分析你的请求
    - 搜索信息
    - 生成结构化内容
@@ -163,7 +163,7 @@ sequenceDiagram
 
 ## 技术栈
 
-XunLong基于经过验证的行业标准技术构建：
+SmartFin基于经过验证的行业标准技术构建：
 
 - **LangGraph** - 工作流编排
 - **LangChain** - LLM集成框架
@@ -206,7 +206,7 @@ XunLong基于经过验证的行业标准技术构建：
 
 ## 对比
 
-| 功能 | XunLong | ChatGPT | 传统工具 |
+| 功能 | SmartFin | ChatGPT | 传统工具 |
 |------|---------|---------|----------|
 | 多模态 | ✅ 报告、小说、PPT | ❌ 仅文本 | ❌ 专门化 |
 | 真实搜索 | ✅ 实时网络搜索 | ⚠️ 有限 | ❌ 手动 |
@@ -218,7 +218,7 @@ XunLong基于经过验证的行业标准技术构建：
 
 ## 局限性
 
-**XunLong专为内容生成设计，而不是：**
+**SmartFin专为内容生成设计，而不是：**
 - ❌ 实时聊天界面
 - ❌ 代码执行环境
 - ❌ 数据分析平台
@@ -232,7 +232,7 @@ XunLong基于经过验证的行业标准技术构建：
 
 ## 设计理念
 
-XunLong遵循这些核心原则：
+SmartFin遵循这些核心原则：
 
 1. **质量优于速度** - 花时间正确地研究和生成
 2. **透明性** - 每个步骤都可见和可追踪
@@ -244,18 +244,18 @@ XunLong遵循这些核心原则：
 
 准备好开始了吗？
 
-- 📦 [安装XunLong](/zh/guide/installation)
+- 📦 [安装SmartFin](/zh/guide/installation)
 - 🚀 [快速开始指南](/zh/guide/getting-started)
 - 🏗️ [理解架构](/zh/guide/architecture)
 - 📚 [探索功能](/zh/guide/features/report)
 
 ## 社区与支持
 
-- 🐛 [报告问题](https://github.com/jaguarliuu/xunlong/issues)
-- 💬 [讨论区](https://github.com/jaguarliuu/xunlong/discussions)
+- 🐛 [报告问题](https://github.com/jaguarliuu/SmartFin/issues)
+- 💬 [讨论区](https://github.com/jaguarliuu/SmartFin/discussions)
 - 📖 [贡献指南](/zh/community/contributing)
 - 📰 [更新日志](/zh/community/changelog)
 
 ---
 
-**XunLong** - 用AI赋能内容创作者
+**SmartFin** - 用AI赋能内容创作者

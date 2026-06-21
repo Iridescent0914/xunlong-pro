@@ -1,7 +1,7 @@
 {
-  "name": "xunlong-docs",
+  "name": "SmartFin-docs",
   "version": "1.0.0",
-  "description": "XunLong Documentation Site",
+  "description": "SmartFin Documentation Site",
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",

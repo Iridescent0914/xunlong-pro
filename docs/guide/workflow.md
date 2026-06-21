@@ -1,6 +1,6 @@
 # Workflow
 
-Understanding XunLong's workflow helps you optimize your content generation process and troubleshoot issues effectively.
+Understanding SmartFin's workflow helps you optimize your content generation process and troubleshoot issues effectively.
 
 ## High-Level Workflow
 
@@ -34,7 +34,7 @@ graph LR
 
 **Activities:**
 1. Parse command-line arguments
-2. Identify content type (report/fiction/ppt)
+2. Identify content type (report/ppt)
 3. Extract parameters (style, depth, chapters, etc.)
 4. Validate configuration
 5. Initialize project structure
@@ -61,7 +61,6 @@ graph LR
 graph TD
     A[User Query] --> B{Content Type?}
     B -->|Report| C[Decompose Report Tasks]
-    B -->|Fiction| D[Decompose Fiction Tasks]
     B -->|PPT| E[Decompose PPT Tasks]
     
     C --> C1[Identify Topics]
@@ -102,28 +101,6 @@ graph TD
         "Applications",
         "Future Outlook"
       ]
-    }
-  ]
-}
-```
-
-== Fiction
-```json
-{
-  "tasks": [
-    {
-      "type": "plot",
-      "structure": "three_act"
-    },
-    {
-      "type": "characters",
-      "count": 5,
-      "depth": "detailed"
-    },
-    {
-      "type": "chapters",
-      "count": 12,
-      "style": "mystery"
     }
   ]
 }
@@ -240,18 +217,12 @@ graph TD
     D --> E[Add Citations]
     E --> F[Create Tables/Charts]
     
-    B -->|Fiction| G[Develop Plot]
-    G --> H[Create Characters]
-    H --> I[Write Chapters]
-    I --> J[Ensure Consistency]
-    
     B -->|PPT| K[Design Layout]
     K --> L[Allocate Content]
     L --> M[Add Visuals]
     M --> N[Generate Notes]
     
     F --> O[Combine Results]
-    J --> O
     N --> O
 ```
 
@@ -448,10 +419,10 @@ sequenceDiagram
 
 ### Real-Time Progress
 
-During execution, XunLong displays:
+During execution, SmartFin displays:
 
 ```
-🐉 XunLong - Content Generation
+🐉 SmartFin - Content Generation
 
 📋 Task Analysis
 ✅ Identified: Report Generation
@@ -522,7 +493,7 @@ intermediate/
 If generation fails, you can resume:
 
 ```bash
-python xunlong.py resume 20251005_143022
+python SmartFin.py resume 20251005_143022
 ```
 
 ## Best Practices
@@ -540,7 +511,7 @@ python xunlong.py resume 20251005_143022
 ### 3. Monitor Token Usage
 ```bash
 # Check token consumption
-python xunlong.py stats 20251005_143022
+python SmartFin.py stats 20251005_143022
 ```
 
 ### 4. Iterate Incrementally
@@ -551,6 +522,5 @@ python xunlong.py stats 20251005_143022
 ## Next Steps
 
 - Learn about [Report Generation](/guide/features/report)
-- Explore [Fiction Writing](/guide/features/fiction)
 - Try [PPT Creation](/guide/features/ppt)
 - Understand [Iteration](/guide/features/iteration)

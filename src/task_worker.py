@@ -52,8 +52,6 @@ class TaskWorker:
             # 
             if task_info.task_type == TaskType.REPORT:
                 result = await self._execute_report_task(task_id, task_info)
-            elif task_info.task_type == TaskType.FICTION:
-                result = await self._execute_fiction_task(task_id, task_info)
             elif task_info.task_type == TaskType.PPT:
                 result = await self._execute_ppt_task(task_id, task_info)
             elif task_info.task_type == TaskType.FILE_ANALYSIS:
@@ -94,21 +92,16 @@ class TaskWorker:
         logger.info(f": {query}")
 
         try:
-            # 
-            self.task_manager.update_task_progress(task_id, 10, "")
+            self.task_manager.update_task_progress(task_id, 10, "初始化报告生成")
 
-            # 
             agent = DeepSearchAgent()
 
-            # 
-            self.task_manager.update_task_progress(task_id, 20, "")
+            self.task_manager.update_task_progress(task_id, 30, "开始搜索与分析")
 
-            # 
             # : DeepSearchAgent
             result = await agent.search(query, context=context)
 
-            # 
-            self.task_manager.update_task_progress(task_id, 90, "")
+            self.task_manager.update_task_progress(task_id, 80, "生成报告结果")
 
             # 
             return {
@@ -116,49 +109,6 @@ class TaskWorker:
                 'project_id': result.get('project_id', ''),
                 'output_dir': result.get('output_dir', ''),
                 'output_format': context.get('output_format', 'html'),
-                'files': result.get('files', []),
-                'stats': result.get('stats', {})
-            }
-
-        except Exception as e:
-            logger.error(f": {e}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-    async def _execute_fiction_task(
-        self,
-        task_id: str,
-        task_info
-    ) -> Dict[str, Any]:
-        """TODO: Add docstring."""
-        query = task_info.query
-        context = task_info.context
-
-        logger.info(f": {query}")
-
-        try:
-            # 
-            self.task_manager.update_task_progress(task_id, 10, "")
-
-            # 
-            agent = DeepSearchAgent()
-
-            # 
-            self.task_manager.update_task_progress(task_id, 20, "")
-
-            # 
-            result = await agent.search(query, context=context)
-
-            # 
-            self.task_manager.update_task_progress(task_id, 90, "")
-
-            return {
-                'success': True,
-                'project_id': result.get('project_id', ''),
-                'output_dir': result.get('output_dir', ''),
-                'chapters': result.get('chapters', 0),
                 'files': result.get('files', []),
                 'stats': result.get('stats', {})
             }
@@ -182,20 +132,26 @@ class TaskWorker:
         logger.info(f"PPT: {query}")
 
         try:
-            # 
-            self.task_manager.update_task_progress(task_id, 10, "PPT")
+            self.task_manager.update_task_progress(task_id, 10, "初始化 PPT 生成")
 
-            # 
             agent = DeepSearchAgent()
 
-            # 
-            self.task_manager.update_task_progress(task_id, 20, "")
+            self.task_manager.update_task_progress(task_id, 30, "正在执行搜索与内容生成，可能需要几分钟")
 
-            # 
-            result = await agent.search(query, context=context)
+            try:
+                result = await asyncio.wait_for(
+                    agent.search(query, context=context),
+                    timeout=600
+                )
+            except asyncio.TimeoutError:
+                error_msg = "PPT 生成超时，请稍后重试。"
+                logger.error(f"PPT timeout: {task_id}")
+                return {
+                    'success': False,
+                    'error': error_msg
+                }
 
-            # 
-            self.task_manager.update_task_progress(task_id, 90, "")
+            self.task_manager.update_task_progress(task_id, 80, "PPT 内容生成完成，正在整理结果")
 
             return {
                 'success': True,
@@ -436,7 +392,7 @@ class TaskWorker:
 async def main():
     """ - """
     logger.info("=" * 50)
-    logger.info("XunLong ")
+    logger.info("SmartFin")
     logger.info("=" * 50)
 
     worker = TaskWorker()

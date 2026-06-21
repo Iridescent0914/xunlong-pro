@@ -1,6 +1,6 @@
-# XunLong Documentation
+# SmartFin Documentation
 
-This directory contains the VitePress documentation site for XunLong.
+This directory contains the VitePress documentation site for SmartFin.
 
 ## Development
 

@@ -64,7 +64,7 @@ async def test_2_simple_request():
                 base_url,
                 headers={
                     "Accept": "text/event-stream",
-                    "User-Agent": "XunLong MCP Client/1.0"
+                    "User-Agent": "SmartFin MCP Client/1.0"
                 }
             )
 
@@ -117,7 +117,7 @@ async def test_3_sse_with_query():
                 search_url,
                 headers={
                     "Accept": "text/event-stream",
-                    "User-Agent": "XunLong MCP Client/1.0"
+                    "User-Agent": "SmartFin MCP Client/1.0"
                 }
             ) as response:
                 print(f" : {response.status_code}")

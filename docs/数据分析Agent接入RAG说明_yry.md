@@ -19,7 +19,7 @@ src/agents/data_analysis/ppt_section.py
 
 ```text
 用户 query
-  -> xunlong.py analyze
+  -> SmartFin.py analyze
   -> DeepSearchCoordinator 进入 financial_analysis 模式
   -> DeepSearcher 获取网页搜索结果 search_results
   -> DataAnalysisAgent.process()
@@ -301,7 +301,7 @@ src/agents/data_analysis/ppt_section.py
 运行：
 
 ```powershell
-python xunlong.py analyze "分析 Apple 2024 年报中的收入、毛利率和风险因素" -o html -v
+python SmartFin.py analyze "分析 Apple 2024 年报中的收入、毛利率和风险因素" -o html -v
 ```
 
 重点查看：
@@ -333,7 +333,7 @@ python RAG/scripts/query_pack.py "AAPL 2024 annual report revenue gross margin r
 测试主链路：
 
 ```powershell
-python xunlong.py analyze "分析 Apple 2024 年报中的收入、毛利率和风险因素，并结合网页资料" --depth deep -m 8 -o html -v
+python SmartFin.py analyze "分析 Apple 2024 年报中的收入、毛利率和风险因素，并结合网页资料" --depth deep -m 8 -o html -v
 ```
 
 ## 11. 当前限制

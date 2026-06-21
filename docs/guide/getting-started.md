@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide will help you get started with XunLong in minutes.
+This guide will help you get started with SmartFin in minutes.
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ Before you begin, ensure you have:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/jaguarliuu/xunlong.git
-cd XunLong
+git clone https://github.com/jaguarliuu/SmartFin.git
+cd SmartFin
 ```
 
 ### 2. Create Virtual Environment
@@ -83,7 +83,7 @@ DEEPSEEK_API_KEY=your_key_here
 ### Generate a Report
 
 ```bash
-python xunlong.py report "AI Industry Overview 2025"
+python SmartFin.py report "AI Industry Overview 2025"
 ```
 
 This will:
@@ -106,7 +106,6 @@ cat storage/20251005_*/reports/FINAL_REPORT.md
 
 ::: tip What's Next?
 - Learn about [Report Generation](/guide/features/report)
-- Explore [Fiction Writing](/guide/features/fiction)
 - Try [PPT Creation](/guide/features/ppt)
 - Understand the [Architecture](/guide/architecture)
 :::
@@ -116,5 +115,5 @@ cat storage/20251005_*/reports/FINAL_REPORT.md
 If you encounter any issues:
 
 - Check the [FAQ](/guide/faq)
-- Search [GitHub Issues](https://github.com/jaguarliuu/xunlong/issues)
+- Search [GitHub Issues](https://github.com/jaguarliuu/SmartFin/issues)
 - Join our community discussions

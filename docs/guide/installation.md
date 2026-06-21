@@ -1,6 +1,6 @@
 # Installation
 
-This guide provides detailed installation instructions for XunLong on different operating systems.
+This guide provides detailed installation instructions for SmartFin on different operating systems.
 
 ## System Requirements
 
@@ -84,12 +84,12 @@ python --version
 
 ```bash
 # Using HTTPS
-git clone https://github.com/jaguarliuu/xunlong.git
-cd XunLong
+git clone https://github.com/jaguarliuu/SmartFin.git
+cd SmartFin
 
 # Or using SSH
-git clone git@github.com:jaguarliuu/xunlong.git
-cd XunLong
+git clone git@github.com:jaguarliuu/SmartFin.git
+cd SmartFin
 ```
 
 ::: tip No Git?
@@ -141,7 +141,7 @@ venv\Scripts\activate.bat
 :::
 
 ::: warning Keep Virtual Environment Activated
-Always activate the virtual environment before running XunLong. You'll see `(venv)` in your terminal prompt when activated.
+Always activate the virtual environment before running SmartFin. You'll see `(venv)` in your terminal prompt when activated.
 :::
 
 ### 4. Install Python Dependencies
@@ -354,7 +354,7 @@ print('Installation check complete!')
 Generate your first report:
 
 ```bash
-python xunlong.py report "Test Report" --verbose
+python SmartFin.py report "Test Report" --verbose
 ```
 
 If successful, you should see:
@@ -364,7 +364,7 @@ If successful, you should see:
 
 ## Post-Installation
 
-### Update XunLong
+### Update SmartFin
 
 ```bash
 # Pull latest changes
@@ -421,7 +421,7 @@ brew reinstall pango gdk-pixbuf libffi
 export DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH
 
 # Try again
-python xunlong.py export <project_id> pdf
+python SmartFin.py export <project_id> pdf
 ```
 
 #### Issue: Playwright browser not found
@@ -440,10 +440,10 @@ playwright install chromium --with-deps
 **Solution:**
 ```bash
 # Make script executable
-chmod +x xunlong.py
+chmod +x SmartFin.py
 
 # Or run with python
-python xunlong.py report "Test"
+python SmartFin.py report "Test"
 ```
 
 #### Issue: API key not found
@@ -459,7 +459,7 @@ python xunlong.py report "Test"
 If you're still having issues:
 
 1. Check the [FAQ](/guide/faq)
-2. Search [GitHub Issues](https://github.com/jaguarliuu/xunlong/issues)
+2. Search [GitHub Issues](https://github.com/jaguarliuu/SmartFin/issues)
 3. Create a new issue with:
    - Your OS and Python version
    - Full error message
@@ -467,10 +467,10 @@ If you're still having issues:
 
 ## Next Steps
 
-Now that XunLong is installed:
+Now that SmartFin is installed:
 
 - 📖 Read the [Getting Started Guide](/guide/getting-started)
 - 🏗️ Understand the [Architecture](/guide/architecture)
 - 📊 Try [Report Generation](/guide/features/report)
-- 📖 Explore [Fiction Writing](/guide/features/fiction)
+
 - 🎨 Create [PPT Presentations](/guide/features/ppt)

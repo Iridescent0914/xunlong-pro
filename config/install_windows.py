@@ -124,7 +124,7 @@ def main():
         
         print("\n :")
         print("1. : python minimal_test.py")
-        print("2. CLI: python xunlong.py status")
+        print("2. CLI: python SmartFin.py status")
         print("3. Web: python run_api.py，然后访问 http://localhost:8000")
         
         print("\n :")

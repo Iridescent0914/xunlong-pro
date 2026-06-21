@@ -7,21 +7,21 @@
 ## 1. 基本用法
 
 ```bash
-python xunlong.py analyze "你的分析主题"
+python SmartFin.py analyze "你的分析主题"
 ```
 
 等价于：
 
 ```bash
-python xunlong.py analyze "你的分析主题" --deliverable report
+python SmartFin.py analyze "你的分析主题" --deliverable report
 ```
 
 **示例：**
 
 ```bash
-python xunlong.py analyze "分析2024至2026年华为公司营收趋势"
-python xunlong.py analyze "分析2024年银行业营收趋势" --depth deep -v
-python xunlong.py analyze "测试分析" --mock-search -v
+python SmartFin.py analyze "分析2024至2026年华为公司营收趋势"
+python SmartFin.py analyze "分析2024年银行业营收趋势" --depth deep -v
+python SmartFin.py analyze "测试分析" --mock-search -v
 ```
 
 ---
@@ -36,13 +36,13 @@ python xunlong.py analyze "测试分析" --mock-search -v
 
 ```bash
 # 默认：分析报告
-python xunlong.py analyze "分析华为营收"
+python SmartFin.py analyze "分析华为营收"
 
 # 生成 PPT
-python xunlong.py analyze "分析华为营收" --deliverable ppt
+python SmartFin.py analyze "分析华为营收" --deliverable ppt
 
 # 只要分析 JSON，不要报告/PPT
-python xunlong.py analyze "分析华为营收" --deliverable none
+python SmartFin.py analyze "分析华为营收" --deliverable none
 ```
 
 **工作流说明：**
@@ -91,30 +91,30 @@ python xunlong.py analyze "分析华为营收" --deliverable none
 ### 4.1 生成 HTML 分析报告（默认）
 
 ```bash
-python xunlong.py analyze "分析2024年银行业营收趋势" -v
-python xunlong.py analyze "分析华为营收" --deliverable report -o html
-python xunlong.py analyze "分析华为营收" -o md
+python SmartFin.py analyze "分析2024年银行业营收趋势" -v
+python SmartFin.py analyze "分析华为营收" --deliverable report -o html
+python SmartFin.py analyze "分析华为营收" -o md
 ```
 
 ### 4.2 生成 PPT
 
 ```bash
-python xunlong.py analyze "分析华为营收" --deliverable ppt
-python xunlong.py analyze "分析华为营收" -D ppt -s business -n 12 -v
-python xunlong.py analyze "分析华为营收" -D ppt --ppt-theme blue
+python SmartFin.py analyze "分析华为营收" --deliverable ppt
+python SmartFin.py analyze "分析华为营收" -D ppt -s business -n 12 -v
+python SmartFin.py analyze "分析华为营收" -D ppt --ppt-theme blue
 ```
 
 ### 4.3 仅金融分析
 
 ```bash
-python xunlong.py analyze "分析华为营收" --deliverable none -v
+python SmartFin.py analyze "分析华为营收" --deliverable none -v
 ```
 
 ### 4.4 离线测试（Mock 搜索）
 
 ```bash
-python xunlong.py analyze "分析2024年银行业营收趋势" --mock-search -v
-python xunlong.py analyze "测试" --mock-search --deliverable none
+python SmartFin.py analyze "分析2024年银行业营收趋势" --mock-search -v
+python SmartFin.py analyze "测试" --mock-search --deliverable none
 ```
 
 ---

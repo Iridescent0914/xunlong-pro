@@ -4,7 +4,7 @@ import { withMermaid } from "vitepress-plugin-mermaid";
 // https://vitepress.dev/reference/site-config
 export default withMermaid(
   defineConfig({
-    title: "XunLong",
+    title: "SmartFin",
     description: "AI-Powered Multi-Modal Content Generation System",
 
     // 多语言配置
@@ -25,7 +25,7 @@ export default withMermaid(
               {
                 text: "Introduction",
                 items: [
-                  { text: "What is XunLong?", link: "/guide/introduction" },
+                  { text: "What is SmartFin?", link: "/guide/introduction" },
                   { text: "Getting Started", link: "/guide/getting-started" },
                   { text: "Installation", link: "/guide/installation" },
                 ],
@@ -42,7 +42,6 @@ export default withMermaid(
                 text: "Features",
                 items: [
                   { text: "Report Generation", link: "/guide/features/report" },
-                  { text: "Fiction Writing", link: "/guide/features/fiction" },
                   { text: "PPT Creation", link: "/guide/features/ppt" },
                   {
                     text: "Content Iteration",
@@ -78,7 +77,6 @@ export default withMermaid(
                 text: "Examples",
                 items: [
                   { text: "Report Generation", link: "/examples/report" },
-                  { text: "Fiction Writing", link: "/examples/fiction" },
                   { text: "PPT Creation", link: "/examples/ppt" },
                   { text: "Iteration", link: "/examples/iteration" },
                 ],
@@ -86,11 +84,11 @@ export default withMermaid(
             ],
           },
           socialLinks: [
-            { icon: "github", link: "https://github.com/jaguarliuu/xunlong" },
+            { icon: "github", link: "https://github.com/jaguarliuu/SmartFin" },
           ],
           footer: {
             message: "Released under the MIT License.",
-            copyright: "Copyright © 2025-present XunLong Team",
+            copyright: "Copyright © 2025-present SmartFin Team",
           },
         },
       },
@@ -111,7 +109,7 @@ export default withMermaid(
               {
                 text: "介绍",
                 items: [
-                  { text: "什么是XunLong？", link: "/zh/guide/introduction" },
+                  { text: "什么是SmartFin？", link: "/zh/guide/introduction" },
                   { text: "快速开始", link: "/zh/guide/getting-started" },
                   { text: "安装", link: "/zh/guide/installation" },
                 ],
@@ -128,7 +126,6 @@ export default withMermaid(
                 text: "功能特性",
                 items: [
                   { text: "报告生成", link: "/zh/guide/features/report" },
-                  { text: "小说创作", link: "/zh/guide/features/fiction" },
                   { text: "PPT制作", link: "/zh/guide/features/ppt" },
                   { text: "内容迭代", link: "/zh/guide/features/iteration" },
                   { text: "导出格式", link: "/zh/guide/features/export" },
@@ -161,7 +158,6 @@ export default withMermaid(
                 text: "示例",
                 items: [
                   { text: "报告生成", link: "/zh/examples/report" },
-                  { text: "小说创作", link: "/zh/examples/fiction" },
                   { text: "PPT制作", link: "/zh/examples/ppt" },
                   { text: "内容迭代", link: "/zh/examples/iteration" },
                 ],
@@ -169,11 +165,11 @@ export default withMermaid(
             ],
           },
           socialLinks: [
-            { icon: "github", link: "https://github.com/jaguarliuu/xunlong" },
+            { icon: "github", link: "https://github.com/jaguarliuu/SmartFin" },
           ],
           footer: {
             message: "基于MIT许可证发布",
-            copyright: "Copyright © 2025-present XunLong Team",
+            copyright: "Copyright © 2025-present SmartFin Team",
           },
           docFooter: {
             prev: "上一页",
@@ -215,7 +211,7 @@ export default withMermaid(
     },
 
     // 构建配置
-    base: "/xunlong/", // GitHub Pages部署时需要，改为你的仓库名
+    base: "/SmartFin/", // GitHub Pages部署时需要，改为你的仓库名
     lastUpdated: true,
     cleanUrls: true,
     ignoreDeadLinks: true, // 忽略死链接检查

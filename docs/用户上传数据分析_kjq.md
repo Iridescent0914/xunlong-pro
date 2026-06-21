@@ -32,7 +32,6 @@ python run_file_analysis.py
 ```
 
 3. 打开生成的 HTML
-
 - 默认生成文件：`file_analysis_report.html` 与 `file_analysis_report.md`，直接在浏览器打开 `file_analysis_report.html` 即可查看样式与交互。
 
 ## 依赖与注意事项

@@ -1,6 +1,6 @@
 # PPT Creation
 
-XunLong automatically generates professional PowerPoint presentations from your topic or content.
+SmartFin automatically generates professional PowerPoint presentations from your topic or content.
 
 ## Overview
 
@@ -14,17 +14,17 @@ The PPT Creation feature:
 ## Quick Start
 
 ```bash
-python xunlong.py ppt "Product Launch Strategy" --slides 15
+python SmartFin.py ppt "Product Launch Strategy" --slides 15
 ```
 
-XunLong will create a complete, ready-to-present deck.
+SmartFin will create a complete, ready-to-present deck.
 
 ### Start from Existing Documents
 
-Pass any `.txt`, `.pdf`, or `.docx` file with `--input-file` to let XunLong digest your source material before outlining slides.
+Pass any `.txt`, `.pdf`, or `.docx` file with `--input-file` to let SmartFin digest your source material before outlining slides.
 
 ```bash
-python xunlong.py ppt "Board Strategy Update" \
+python SmartFin.py ppt "Board Strategy Update" \
   --style business \
   --input-file ./docs/strategy_brief.docx \
   --speech-notes "Quarterly board meeting"
@@ -47,7 +47,7 @@ python xunlong.py ppt "Board Strategy Update" \
 
 **Example:**
 ```bash
-python xunlong.py ppt "Q4 Sales Performance Review" \
+python SmartFin.py ppt "Q4 Sales Performance Review" \
   --style business \
   --slides 20 \
   --theme corporate
@@ -75,7 +75,7 @@ python xunlong.py ppt "Q4 Sales Performance Review" \
 
 **Example:**
 ```bash
-python xunlong.py ppt "New Brand Identity Proposal" \
+python SmartFin.py ppt "New Brand Identity Proposal" \
   --style creative \
   --slides 18 \
   --theme vibrant
@@ -102,7 +102,7 @@ python xunlong.py ppt "New Brand Identity Proposal" \
 
 **Example:**
 ```bash
-python xunlong.py ppt "Introduction to Machine Learning" \
+python SmartFin.py ppt "Introduction to Machine Learning" \
   --style minimal \
   --slides 25 \
   --theme clean
@@ -128,7 +128,7 @@ python xunlong.py ppt "Introduction to Machine Learning" \
 
 **Example:**
 ```bash
-python xunlong.py ppt "Python Programming Basics" \
+python SmartFin.py ppt "Python Programming Basics" \
   --style educational \
   --slides 30 \
   --include-exercises
@@ -167,7 +167,7 @@ graph LR
 Define your own slide sequence:
 
 ```bash
-python xunlong.py ppt "Marketing Plan 2025" \
+python SmartFin.py ppt "Marketing Plan 2025" \
   --structure "Title,Agenda,Situation Analysis,Target Audience,Strategy,Tactics,Budget,Timeline,Metrics,Q&A"
 ```
 
@@ -178,7 +178,7 @@ python xunlong.py ppt "Marketing Plan 2025" \
 Include charts and graphs:
 
 ```bash
-python xunlong.py ppt "Sales Performance Q3" \
+python SmartFin.py ppt "Sales Performance Q3" \
   --data sales_data.csv \
   --charts "line,bar,pie"
 ```
@@ -195,7 +195,7 @@ python xunlong.py ppt "Sales Performance Q3" \
 Generate detailed speaker notes:
 
 ```bash
-python xunlong.py ppt "Product Demo" \
+python SmartFin.py ppt "Product Demo" \
   --slides 12 \
   --speaker-notes detailed
 ```
@@ -212,7 +212,7 @@ python xunlong.py ppt "Product Demo" \
 Get AI-suggested images for each slide:
 
 ```bash
-python xunlong.py ppt "Travel Destination Marketing" \
+python SmartFin.py ppt "Travel Destination Marketing" \
   --slides 15 \
   --suggest-images \
   --image-style photography
@@ -228,7 +228,7 @@ python xunlong.py ppt "Travel Destination Marketing" \
 ### Animations and Transitions
 
 ```bash
-python xunlong.py ppt "Product Launch" \
+python SmartFin.py ppt "Product Launch" \
   --animations subtle \
   --transitions fade
 ```
@@ -245,25 +245,25 @@ python xunlong.py ppt "Product Launch" \
 
 ```bash
 # Professional blue
-python xunlong.py ppt "Topic" --theme corporate-blue
+python SmartFin.py ppt "Topic" --theme corporate-blue
 
 # Modern gradient
-python xunlong.py ppt "Topic" --theme modern-gradient
+python SmartFin.py ppt "Topic" --theme modern-gradient
 
 # Minimalist monochrome
-python xunlong.py ppt "Topic" --theme minimal-mono
+python SmartFin.py ppt "Topic" --theme minimal-mono
 
 # Vibrant creative
-python xunlong.py ppt "Topic" --theme vibrant-creative
+python SmartFin.py ppt "Topic" --theme vibrant-creative
 
 # Nature-inspired
-python xunlong.py ppt "Topic" --theme nature-green
+python SmartFin.py ppt "Topic" --theme nature-green
 ```
 
 ### Custom Colors
 
 ```bash
-python xunlong.py ppt "Brand Presentation" \
+python SmartFin.py ppt "Brand Presentation" \
   --primary-color "#2E86AB" \
   --secondary-color "#A23B72" \
   --accent-color "#F18F01"
@@ -272,7 +272,7 @@ python xunlong.py ppt "Brand Presentation" \
 ### Font Selection
 
 ```bash
-python xunlong.py ppt "Tech Conference Talk" \
+python SmartFin.py ppt "Tech Conference Talk" \
   --heading-font "Montserrat" \
   --body-font "Open Sans"
 ```
@@ -282,33 +282,33 @@ python xunlong.py ppt "Tech Conference Talk" \
 ### From Scratch
 
 ```bash
-python xunlong.py ppt "Climate Change Solutions" \
+python SmartFin.py ppt "Climate Change Solutions" \
   --slides 18 \
   --research true
 ```
 
-XunLong researches and generates content automatically.
+SmartFin researches and generates content automatically.
 
 ### From Existing Report
 
 ```bash
-python xunlong.py ppt-from-report <report-project-id> \
+python SmartFin.py ppt-from-report <report-project-id> \
   --slides 15
 ```
 
-Converts your XunLong report into a presentation.
+Converts your SmartFin report into a presentation.
 
 ### From Markdown
 
 ```bash
-python xunlong.py ppt-from-markdown content.md \
+python SmartFin.py ppt-from-markdown content.md \
   --style business
 ```
 
 ### From Outline
 
 ```bash
-python xunlong.py ppt-from-outline outline.txt \
+python SmartFin.py ppt-from-outline outline.txt \
   --slides 20 \
   --expand-content
 ```
@@ -404,7 +404,7 @@ python xunlong.py ppt-from-outline outline.txt \
 ### 1. Generate Presentation
 
 ```bash
-python xunlong.py ppt "Digital Transformation Strategy" \
+python SmartFin.py ppt "Digital Transformation Strategy" \
   --style business \
   --slides 18 \
   --theme corporate-blue \
@@ -434,14 +434,14 @@ Open in PowerPoint, Keynote, or Google Slides.
 ### 3. Request Modifications
 
 ```bash
-python xunlong.py iterate 20251005_143022 \
+python SmartFin.py iterate 20251005_143022 \
   "Add a slide about implementation timeline and expand the budget section"
 ```
 
 ### 4. Regenerate Specific Slides
 
 ```bash
-python xunlong.py ppt-regenerate 20251005_143022 \
+python SmartFin.py ppt-regenerate 20251005_143022 \
   --slides 5,6,7 \
   --reason "Need more detailed data"
 ```
@@ -504,7 +504,7 @@ python xunlong.py ppt-regenerate 20251005_143022 \
 
 **Fast Generation (~3 min):**
 ```bash
-python xunlong.py ppt "Topic" \
+python SmartFin.py ppt "Topic" \
   --slides 10 \
   --style minimal \
   --no-research
@@ -512,7 +512,7 @@ python xunlong.py ppt "Topic" \
 
 **Balanced (~7 min):**
 ```bash
-python xunlong.py ppt "Topic" \
+python SmartFin.py ppt "Topic" \
   --slides 18 \
   --style business \
   --research true
@@ -520,7 +520,7 @@ python xunlong.py ppt "Topic" \
 
 **High Quality (~15 min):**
 ```bash
-python xunlong.py ppt "Topic" \
+python SmartFin.py ppt "Topic" \
   --slides 30 \
   --style business \
   --speaker-notes detailed \
@@ -551,7 +551,7 @@ python xunlong.py ppt "Topic" \
 **Solutions:**
 ```bash
 # Generate notes separately
-python xunlong.py ppt-add-notes <project-id> \
+python SmartFin.py ppt-add-notes <project-id> \
   --detail-level comprehensive
 ```
 
@@ -565,7 +565,7 @@ python xunlong.py ppt-add-notes <project-id> \
 ## API Reference
 
 ```bash
-python xunlong.py ppt <topic> [options]
+python SmartFin.py ppt <topic> [options]
 ```
 
 | Argument | Type | Default | Description |
@@ -588,7 +588,7 @@ python xunlong.py ppt <topic> [options]
 ### Investor Pitch
 
 ```bash
-python xunlong.py ppt "Startup Seed Round Pitch" \
+python SmartFin.py ppt "Startup Seed Round Pitch" \
   --style business \
   --slides 12 \
   --structure "Problem,Solution,Market,Product,Traction,Team,Financials,Ask" \
@@ -599,7 +599,7 @@ python xunlong.py ppt "Startup Seed Round Pitch" \
 ### Conference Talk
 
 ```bash
-python xunlong.py ppt "Building Scalable Microservices" \
+python SmartFin.py ppt "Building Scalable Microservices" \
   --style minimal \
   --slides 25 \
   --theme clean \
@@ -610,7 +610,7 @@ python xunlong.py ppt "Building Scalable Microservices" \
 ### Training Workshop
 
 ```bash
-python xunlong.py ppt "Excel Advanced Techniques" \
+python SmartFin.py ppt "Excel Advanced Techniques" \
   --style educational \
   --slides 40 \
   --include-exercises \
@@ -620,7 +620,7 @@ python xunlong.py ppt "Excel Advanced Techniques" \
 ### Marketing Presentation
 
 ```bash
-python xunlong.py ppt "New Product Launch Campaign" \
+python SmartFin.py ppt "New Product Launch Campaign" \
   --style creative \
   --slides 20 \
   --theme vibrant-creative \
@@ -631,7 +631,7 @@ python xunlong.py ppt "New Product Launch Campaign" \
 ### Convert Report to PPT
 
 ```bash
-python xunlong.py ppt-from-report <report-project-id> \
+python SmartFin.py ppt-from-report <report-project-id> \
   --slides 18 \
   --style business \
   --highlight-key-findings
@@ -640,6 +640,5 @@ python xunlong.py ppt-from-report <report-project-id> \
 ## Next Steps
 
 - Learn about [Report Generation](/guide/features/report)
-- Explore [Fiction Writing](/guide/features/fiction)
 - Understand [Content Iteration](/guide/features/iteration)
 - Check [Export Formats](/guide/features/export)

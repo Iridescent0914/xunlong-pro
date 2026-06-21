@@ -1,6 +1,6 @@
 # Report Generation
 
-XunLong excels at generating comprehensive, well-researched reports on any topic with minimal input.
+SmartFin excels at generating comprehensive, well-researched reports on any topic with minimal input.
 
 ## Overview
 
@@ -24,19 +24,19 @@ Recent pipeline upgrades deliver higher quality output with lower latency:
 ## Quick Start
 
 ```bash
-python xunlong.py report "AI Industry Trends 2025"
+python SmartFin.py report "AI Industry Trends 2025"
 
 # Bootstrap from an existing company brief
-python xunlong.py report "AI Startup Business Plan" \
+python SmartFin.py report "AI Startup Business Plan" \
   --type business \
   --input-file ./docs/company_overview.pdf
 ```
 
-That's it! XunLong handles the rest.
+That's it! SmartFin handles the rest.
 
 ## Report Styles
 
-XunLong supports three professional report styles:
+SmartFin supports three professional report styles:
 
 ### Business Style 💼
 
@@ -51,7 +51,7 @@ XunLong supports three professional report styles:
 
 **Example:**
 ```bash
-python xunlong.py report "Electric Vehicle Market Analysis" \
+python SmartFin.py report "Electric Vehicle Market Analysis" \
   --style business \
   --depth comprehensive
 ```
@@ -81,7 +81,7 @@ python xunlong.py report "Electric Vehicle Market Analysis" \
 
 **Example:**
 ```bash
-python xunlong.py report "Machine Learning in Healthcare" \
+python SmartFin.py report "Machine Learning in Healthcare" \
   --style academic \
   --depth comprehensive
 ```
@@ -111,7 +111,7 @@ python xunlong.py report "Machine Learning in Healthcare" \
 
 **Example:**
 ```bash
-python xunlong.py report "GraphQL vs REST APIs" \
+python SmartFin.py report "GraphQL vs REST APIs" \
   --style technical \
   --depth comprehensive
 ```
@@ -141,13 +141,13 @@ Control the level of detail with the `--depth` parameter:
 
 ```bash
 # Quick overview
-python xunlong.py report "Quantum Computing" --depth overview
+python SmartFin.py report "Quantum Computing" --depth overview
 
 # Balanced report (default)
-python xunlong.py report "Quantum Computing" --depth standard
+python SmartFin.py report "Quantum Computing" --depth standard
 
 # Deep dive
-python xunlong.py report "Quantum Computing" --depth comprehensive
+python SmartFin.py report "Quantum Computing" --depth comprehensive
 ```
 
 ## Advanced Features
@@ -167,7 +167,7 @@ Because every stage runs asynchronously the full report finishes noticeably fast
 Specify exactly what sections you want:
 
 ```bash
-python xunlong.py report "AI Ethics" \
+python SmartFin.py report "AI Ethics" \
   --sections "Introduction,Current Challenges,Case Studies,Future Outlook"
 ```
 
@@ -180,7 +180,7 @@ The search layer now applies automatic date filters:
 You can still force a manual window when needed:
 
 ```bash
-python xunlong.py report "COVID-19 Vaccines" \
+python SmartFin.py report "COVID-19 Vaccines" \
   --time-range "last-6-months"
 ```
 
@@ -189,8 +189,8 @@ python xunlong.py report "COVID-19 Vaccines" \
 Generate reports in multiple languages:
 
 ```bash
-python xunlong.py report "气候变化影响" --language zh-CN
-python xunlong.py report "Climate Change Impact" --language en-US
+python SmartFin.py report "气候变化影响" --language zh-CN
+python SmartFin.py report "Climate Change Impact" --language en-US
 ```
 
 ### Source Filtering
@@ -199,15 +199,15 @@ Control what sources are used:
 
 ```bash
 # Only academic sources
-python xunlong.py report "Dark Matter" \
+python SmartFin.py report "Dark Matter" \
   --sources academic
 
 # News sources only
-python xunlong.py report "Tech Industry Layoffs" \
+python SmartFin.py report "Tech Industry Layoffs" \
   --sources news
 
 # All sources (default)
-python xunlong.py report "AI Trends" \
+python SmartFin.py report "AI Trends" \
   --sources all
 ```
 
@@ -216,7 +216,7 @@ python xunlong.py report "AI Trends" \
 ### Markdown (Default)
 
 ```bash
-python xunlong.py report "Topic" --format md
+python SmartFin.py report "Topic" --format md
 ```
 
 **Features:**
@@ -228,7 +228,7 @@ python xunlong.py report "Topic" --format md
 ### HTML
 
 ```bash
-python xunlong.py report "Topic" --format html
+python SmartFin.py report "Topic" --format html
 ```
 
 **Features:**
@@ -240,7 +240,7 @@ python xunlong.py report "Topic" --format html
 ### PDF
 
 ```bash
-python xunlong.py report "Topic" --format pdf
+python SmartFin.py report "Topic" --format pdf
 ```
 
 **Features:**
@@ -252,7 +252,7 @@ python xunlong.py report "Topic" --format pdf
 ### DOCX
 
 ```bash
-python xunlong.py report "Topic" --format docx
+python SmartFin.py report "Topic" --format docx
 ```
 
 **Features:**
@@ -264,7 +264,7 @@ python xunlong.py report "Topic" --format docx
 ### Multiple Formats
 
 ```bash
-python xunlong.py report "Topic" --format md,html,pdf,docx
+python SmartFin.py report "Topic" --format md,html,pdf,docx
 ```
 
 All formats are generated simultaneously.
@@ -291,7 +291,7 @@ According to recent research, AI adoption has increased by 67% [1].
 
 ### Quality Metrics
 
-XunLong tracks:
+SmartFin tracks:
 - **Citation Coverage**: % of claims cited (target: >80%)
 - **Source Diversity**: Number of unique sources (target: >10)
 - **Readability Score**: Flesch reading ease (target: 60-70)
@@ -299,7 +299,7 @@ XunLong tracks:
 
 View metrics:
 ```bash
-python xunlong.py stats <project-id>
+python SmartFin.py stats <project-id>
 ```
 
 ### Fact-Checking
@@ -315,7 +315,7 @@ Reports undergo automatic fact-checking:
 ### 1. Generate Initial Report
 
 ```bash
-python xunlong.py report "Renewable Energy Trends 2025" \
+python SmartFin.py report "Renewable Energy Trends 2025" \
   --style business \
   --depth standard \
   --format md,pdf
@@ -347,14 +347,14 @@ cat storage/20251005_143022_renewable_energy/reports/FINAL_REPORT.md
 ### 3. Request Modifications
 
 ```bash
-python xunlong.py iterate 20251005_143022 \
+python SmartFin.py iterate 20251005_143022 \
   "Add a section on solar energy costs and expand the wind energy section"
 ```
 
 ### 4. Export Additional Formats
 
 ```bash
-python xunlong.py export 20251005_143022 --format docx,html
+python SmartFin.py export 20251005_143022 --format docx,html
 ```
 
 ## Best Practices
@@ -385,21 +385,21 @@ python xunlong.py export 20251005_143022 --format docx,html
 
 **Fast (~5 min):**
 ```bash
-python xunlong.py report "Topic" \
+python SmartFin.py report "Topic" \
   --depth overview \
   --model gpt-3.5-turbo
 ```
 
 **Balanced (~10 min):**
 ```bash
-python xunlong.py report "Topic" \
+python SmartFin.py report "Topic" \
   --depth standard \
   --model gpt-4o-mini
 ```
 
 **High Quality (~20 min):**
 ```bash
-python xunlong.py report "Topic" \
+python SmartFin.py report "Topic" \
   --depth comprehensive \
   --model gpt-4o
 ```
@@ -433,7 +433,7 @@ python xunlong.py report "Topic" \
 **Solutions:**
 ```bash
 # Resume from checkpoint
-python xunlong.py resume <project-id>
+python SmartFin.py resume <project-id>
 
 # Check error logs
 cat storage/<project-id>/logs/generation.log
@@ -444,7 +444,7 @@ cat storage/<project-id>/logs/generation.log
 ### Command Structure
 
 ```bash
-python xunlong.py report <query> [options]
+python SmartFin.py report <query> [options]
 ```
 
 ### Required Arguments
@@ -471,7 +471,7 @@ python xunlong.py report <query> [options]
 ### Market Research Report
 
 ```bash
-python xunlong.py report "Global Smartphone Market 2025" \
+python SmartFin.py report "Global Smartphone Market 2025" \
   --style business \
   --depth comprehensive \
   --sections "Market Size,Top Players,Trends,Forecast,Recommendations" \
@@ -481,7 +481,7 @@ python xunlong.py report "Global Smartphone Market 2025" \
 ### Academic Literature Review
 
 ```bash
-python xunlong.py report "Deep Learning in Medical Imaging" \
+python SmartFin.py report "Deep Learning in Medical Imaging" \
   --style academic \
   --depth comprehensive \
   --sources academic \
@@ -492,7 +492,7 @@ python xunlong.py report "Deep Learning in Medical Imaging" \
 ### Technical Documentation
 
 ```bash
-python xunlong.py report "Kubernetes Best Practices 2025" \
+python SmartFin.py report "Kubernetes Best Practices 2025" \
   --style technical \
   --depth standard \
   --format md,html
@@ -501,7 +501,7 @@ python xunlong.py report "Kubernetes Best Practices 2025" \
 ### Quick News Summary
 
 ```bash
-python xunlong.py report "Latest AI Developments" \
+python SmartFin.py report "Latest AI Developments" \
   --depth overview \
   --time-range last-week \
   --sources news \
@@ -510,7 +510,6 @@ python xunlong.py report "Latest AI Developments" \
 
 ## Next Steps
 
-- Learn about [Fiction Writing](/guide/features/fiction)
 - Explore [PPT Creation](/guide/features/ppt)
 - Understand [Content Iteration](/guide/features/iteration)
 - Check [Export Formats](/guide/features/export)

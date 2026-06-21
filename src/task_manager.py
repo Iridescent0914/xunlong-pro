@@ -23,7 +23,6 @@ class TaskStatus(str, Enum):
 class TaskType(str, Enum):
     """TODO: Add docstring."""
     REPORT = "report"
-    FICTION = "fiction"
     PPT = "ppt"
     FILE_ANALYSIS = "file_analysis"
 

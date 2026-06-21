@@ -172,7 +172,6 @@ class LLMManager:
             "search_analyzer",
             "content_synthesizer",
             "report_generator",
-            "fiction_writer",
             "slide_designer",
         ]:
             self.configs[config_name] = create_llm_config(

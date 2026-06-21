@@ -138,7 +138,7 @@ class ZhipuWebSearchClient(BaseMCPClient):
                     self.config.url,
                     headers={
                         "Accept": "text/event-stream",
-                        "User-Agent": "XunLong MCP Client/1.0"
+                        "User-Agent": "SmartFin MCP Client/1.0"
                     }
                 ) as response:
                     response.raise_for_status()

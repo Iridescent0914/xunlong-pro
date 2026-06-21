@@ -1,6 +1,6 @@
 # 导出格式
 
-XunLong支持多种导出格式，以适应不同的用例和平台。
+SmartFin支持多种导出格式，以适应不同的用例和平台。
 
 ## 概览
 
@@ -16,10 +16,10 @@ XunLong支持多种导出格式，以适应不同的用例和平台。
 
 ```bash
 # 导出为单一格式
-python xunlong.py export <project-id> --format pdf
+python SmartFin.py export <project-id> --format pdf
 
 # 导出为多种格式
-python xunlong.py export <project-id> --format md,html,pdf,docx
+python SmartFin.py export <project-id> --format md,html,pdf,docx
 ```
 
 ## Markdown导出
@@ -35,7 +35,7 @@ python xunlong.py export <project-id> --format md,html,pdf,docx
 ### 使用
 
 ```bash
-python xunlong.py export <project-id> --format md
+python SmartFin.py export <project-id> --format md
 ```
 
 ### 输出结构
@@ -61,12 +61,12 @@ python xunlong.py export <project-id> --format md
 
 ```bash
 # 包含目录
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format md \
   --include-toc
 
 # 添加元数据
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format md \
   --include-metadata
 ```
@@ -92,24 +92,24 @@ python xunlong.py export <project-id> \
 ### 使用
 
 ```bash
-python xunlong.py export <project-id> --format html
+python SmartFin.py export <project-id> --format html
 ```
 
 ### 模板
 
 ```bash
 # 学术模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template academic
 
 # 技术模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template technical
 
 # 小说模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template novel
 ```
@@ -118,17 +118,17 @@ python xunlong.py export <project-id> \
 
 ```bash
 # 浅色主题
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --theme light
 
 # 深色主题
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --theme dark
 
 # 复古主题（用于小说）
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --theme sepia
 ```
@@ -171,24 +171,24 @@ python xunlong.py export <project-id> \
 ### 使用
 
 ```bash
-python xunlong.py export <project-id> --format pdf
+python SmartFin.py export <project-id> --format pdf
 ```
 
 ### 页面设置
 
 ```bash
 # A4页面
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --page-size a4
 
 # Letter页面
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --page-size letter
 
 # 自定义尺寸
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --page-size custom \
   --width 6in \
@@ -198,7 +198,7 @@ python xunlong.py export <project-id> \
 ### 边距
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --margin-top 1in \
   --margin-bottom 1in \
@@ -209,7 +209,7 @@ python xunlong.py export <project-id> \
 ### 页眉和页脚
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --header "报告标题" \
   --footer "第{page}页，共{total}页" \
@@ -219,7 +219,7 @@ python xunlong.py export <project-id> \
 ### 目录
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --include-toc \
   --toc-depth 3
@@ -228,7 +228,7 @@ python xunlong.py export <project-id> \
 ### 书签
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --bookmarks  # 基于标题自动创建书签
 ```
@@ -254,19 +254,19 @@ python xunlong.py export <project-id> \
 ### 使用
 
 ```bash
-python xunlong.py export <project-id> --format docx
+python SmartFin.py export <project-id> --format docx
 ```
 
 ### 样式
 
 ```bash
 # 应用Word样式
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --style professional
 
 # 使用自定义模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --template custom-template.dotx
 ```
@@ -274,7 +274,7 @@ python xunlong.py export <project-id> \
 ### 字体
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --font-heading "Calibri" \
   --font-body "Arial" \
@@ -325,10 +325,10 @@ python xunlong.py export <project-id> \
 
 ```bash
 # 从报告/小说自动创建幻灯片
-python xunlong.py export <project-id> --format pptx
+python SmartFin.py export <project-id> --format pptx
 
 # 指定幻灯片数量
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --slides 15
 ```
@@ -336,7 +336,7 @@ python xunlong.py export <project-id> \
 ### 主题
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --ppt-theme corporate-blue
 ```
@@ -344,7 +344,7 @@ python xunlong.py export <project-id> \
 ### 内容分发
 
 **自动分发：**
-XunLong智能地将长内容拆分为幻灯片：
+SmartFin智能地将长内容拆分为幻灯片：
 - 每个主要部分一张幻灯片
 - 要点用于关键信息
 - 引用幻灯片用于引文
@@ -352,7 +352,7 @@ XunLong智能地将长内容拆分为幻灯片：
 
 **自定义分发：**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --sections-per-slide 2
 ```
@@ -360,7 +360,7 @@ python xunlong.py export <project-id> \
 ### 演讲备注
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --speaker-notes detailed
 ```
@@ -386,13 +386,13 @@ python xunlong.py export <project-id> \
 ### 使用
 
 ```bash
-python xunlong.py export <project-id> --format epub
+python SmartFin.py export <project-id> --format epub
 ```
 
 ### 元数据
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format epub \
   --title "我的小说" \
   --author "作者名" \
@@ -404,7 +404,7 @@ python xunlong.py export <project-id> \
 ### 封面
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format epub \
   --cover cover-image.jpg
 ```
@@ -412,7 +412,7 @@ python xunlong.py export <project-id> \
 ### 样式
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format epub \
   --epub-style modern  # modern, classic, minimal
 ```
@@ -450,7 +450,7 @@ python xunlong.py export <project-id> \
 ### 导出所有格式
 
 ```bash
-python xunlong.py export <project-id> --format all
+python SmartFin.py export <project-id> --format all
 ```
 
 生成：
@@ -463,19 +463,19 @@ python xunlong.py export <project-id> --format all
 
 ```bash
 # Web格式
-python xunlong.py export <project-id> --format html,pdf
+python SmartFin.py export <project-id> --format html,pdf
 
 # Office格式
-python xunlong.py export <project-id> --format docx,pptx
+python SmartFin.py export <project-id> --format docx,pptx
 
 # 发布格式
-python xunlong.py export <project-id> --format pdf,epub
+python SmartFin.py export <project-id> --format pdf,epub
 ```
 
 ### 输出目录
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format all \
   --output-dir ./exports
 ```
@@ -486,12 +486,12 @@ python xunlong.py export <project-id> \
 
 ```bash
 # 使用自定义HTML模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template ./templates/my-template.html
 
 # 使用自定义Word模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --template ./templates/company-template.dotx
 ```
@@ -499,7 +499,7 @@ python xunlong.py export <project-id> \
 ### CSS样式
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --custom-css ./styles/custom.css
 ```
@@ -508,7 +508,7 @@ python xunlong.py export <project-id> \
 
 ```bash
 # 导出后运行脚本
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --post-process <your-script-path>
 ```
@@ -519,13 +519,13 @@ python xunlong.py export <project-id> \
 
 ```bash
 # 高质量图像
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --image-quality high \
   --image-dpi 300
 
 # 压缩图像
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --compress-images \
   --image-quality medium
@@ -534,7 +534,7 @@ python xunlong.py export <project-id> \
 ### 字体嵌入
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --embed-fonts
 ```
@@ -543,12 +543,12 @@ python xunlong.py export <project-id> \
 
 ```bash
 # 针对Web优化
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --optimize-web
 
 # 针对打印优化
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --optimize-print
 ```
@@ -558,7 +558,7 @@ python xunlong.py export <project-id> \
 ### 包含生成信息
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format all \
   --include-metadata
 ```
@@ -567,13 +567,13 @@ python xunlong.py export <project-id> \
 - 生成日期
 - 项目ID
 - 版本号
-- XunLong版本
+- SmartFin版本
 - 导出设置
 
 ### 文档属性
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --title "报告标题" \
   --author "您的姓名" \
@@ -587,7 +587,7 @@ python xunlong.py export <project-id> \
 
 **解决方案：**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --embed-fonts \
   --fallback-font "Arial"
@@ -598,7 +598,7 @@ python xunlong.py export <project-id> \
 **解决方案：**
 ```bash
 # 嵌入图像为base64
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --embed-images
 ```
@@ -608,7 +608,7 @@ python xunlong.py export <project-id> \
 **解决方案：**
 ```bash
 # 使用标准模板
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --template standard \
   --compatibility-mode
@@ -618,7 +618,7 @@ python xunlong.py export <project-id> \
 
 **解决方案：**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --compress \
   --compress-images \
@@ -636,7 +636,7 @@ python xunlong.py export <project-id> \
 PROJECT_ID=$1
 
 # 导出所有格式
-python xunlong.py export $PROJECT_ID --format all
+python SmartFin.py export $PROJECT_ID --format all
 
 # 移到发布目录
 mv storage/$PROJECT_ID/exports/* ./publish/
@@ -651,14 +651,14 @@ zip -r ${PROJECT_ID}.zip *
 ```bash
 # 导出多个项目
 for project in project1 project2 project3; do
-  python xunlong.py export $project --format pdf,docx
+  python SmartFin.py export $project --format pdf,docx
 done
 ```
 
 ## API参考
 
 ```bash
-python xunlong.py export <project-id> [options]
+python SmartFin.py export <project-id> [options]
 ```
 
 | 参数 | 类型 | 默认值 | 描述 |
@@ -679,7 +679,7 @@ python xunlong.py export <project-id> [options]
 ### 专业报告包
 
 ```bash
-python xunlong.py export <report-id> \
+python SmartFin.py export <report-id> \
   --format pdf,docx \
   --template professional \
   --include-toc \
@@ -690,7 +690,7 @@ python xunlong.py export <report-id> \
 ### 电子书发布
 
 ```bash
-python xunlong.py export <fiction-id> \
+python SmartFin.py export <fiction-id> \
   --format epub \
   --title "我的小说" \
   --author "我的名字" \
@@ -701,7 +701,7 @@ python xunlong.py export <fiction-id> \
 ### Web发布
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template modern \
   --theme dark \
@@ -712,7 +712,7 @@ python xunlong.py export <project-id> \
 ### 印刷就绪
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --page-size 6x9 \
   --margin-top 0.75in \

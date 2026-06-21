@@ -1,6 +1,6 @@
 # Content Iteration
 
-XunLong's iteration system allows you to refine and modify generated content without starting from scratch.
+SmartFin's iteration system allows you to refine and modify generated content without starting from scratch.
 
 ## Overview
 
@@ -15,10 +15,10 @@ The Iteration feature:
 
 ```bash
 # Generate initial content
-python xunlong.py report "AI Trends" --depth standard
+python SmartFin.py report "AI Trends" --depth standard
 
 # Iterate on it
-python xunlong.py iterate <project-id> "Add more examples in the conclusion"
+python SmartFin.py iterate <project-id> "Add more examples in the conclusion"
 ```
 
 ## Modification Scopes
@@ -35,7 +35,7 @@ python xunlong.py iterate <project-id> "Add more examples in the conclusion"
 
 **Example:**
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Fix the typo in Chapter 3, paragraph 2"
 ```
 
@@ -62,7 +62,7 @@ graph LR
 
 **Example:**
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add three case studies to chapters 4, 5, and 6"
 ```
 
@@ -89,7 +89,7 @@ graph LR
 
 **Example:**
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Make the entire report more technical and add code examples throughout"
 ```
 
@@ -110,19 +110,19 @@ graph LR
 
 ```bash
 # Add new section
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add a new section on 'Future Trends' after the current conclusion"
 
 # Add examples
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add 2-3 real-world examples to the Implementation section"
 
 # Add data
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Include recent statistics and market data in Chapter 2"
 
 # Add citations
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add more academic citations to support claims in the Literature Review"
 ```
 
@@ -130,15 +130,15 @@ python xunlong.py iterate <project-id> \
 
 ```bash
 # Remove section
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Remove the Technical Details section as it's too in-depth"
 
 # Trim content
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Shorten Chapter 5 by about 30%, focusing on key points only"
 
 # Remove redundancy
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Remove redundant information between chapters 3 and 7"
 ```
 
@@ -146,19 +146,19 @@ python xunlong.py iterate <project-id> \
 
 ```bash
 # Change tone
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Make Chapter 4 more casual and conversational"
 
 # Improve clarity
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Simplify the technical explanations in the Methodology section"
 
 # Enhance detail
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Expand the character development in chapters 8-10"
 
 # Update information
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Update the market data with 2025 figures"
 ```
 
@@ -166,15 +166,15 @@ python xunlong.py iterate <project-id> \
 
 ```bash
 # Reorder sections
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Move the Case Studies section before the Analysis section"
 
 # Split sections
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Split Chapter 6 into two separate chapters"
 
 # Merge sections
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Combine chapters 2 and 3 into a single Overview chapter"
 ```
 
@@ -182,15 +182,15 @@ python xunlong.py iterate <project-id> \
 
 ```bash
 # Change writing style
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Convert the academic tone to a more business-friendly style"
 
 # Adjust formality
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Make the conclusion more formal and authoritative"
 
 # Change perspective
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Rewrite chapter 5 from first-person to third-person perspective"
 ```
 
@@ -214,7 +214,7 @@ storage/project_id/
 ### View Version History
 
 ```bash
-python xunlong.py versions <project-id>
+python SmartFin.py versions <project-id>
 ```
 
 **Output:**
@@ -240,7 +240,7 @@ v1 - 2025-10-05 14:30:22
 ### Compare Versions
 
 ```bash
-python xunlong.py diff <project-id> v2 v4
+python SmartFin.py diff <project-id> v2 v4
 ```
 
 Shows differences between versions.
@@ -248,7 +248,7 @@ Shows differences between versions.
 ### Rollback to Previous Version
 
 ```bash
-python xunlong.py rollback <project-id> v2
+python SmartFin.py rollback <project-id> v2
 ```
 
 Restores document to version 2.
@@ -258,7 +258,7 @@ Restores document to version 2.
 ### Targeted Search and Replace
 
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   --mode search-replace \
   --find "machine learning" \
   --replace "artificial intelligence" \
@@ -278,7 +278,7 @@ Update statistics throughout
 ```
 
 ```bash
-python xunlong.py iterate <project-id> --batch iterations.txt
+python SmartFin.py iterate <project-id> --batch iterations.txt
 ```
 
 ### Conditional Iterations
@@ -286,7 +286,7 @@ python xunlong.py iterate <project-id> --batch iterations.txt
 Only modify if condition is met:
 
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add COVID-19 context if discussing 2020-2025 trends"
 ```
 
@@ -295,7 +295,7 @@ python xunlong.py iterate <project-id> \
 Apply style from another document:
 
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   --apply-style-from reference_document.md
 ```
 
@@ -304,7 +304,7 @@ python xunlong.py iterate <project-id> \
 ### Interactive Mode
 
 ```bash
-python xunlong.py iterate <project-id> --interactive
+python SmartFin.py iterate <project-id> --interactive
 ```
 
 **Process:**
@@ -317,7 +317,7 @@ python xunlong.py iterate <project-id> --interactive
 ### Review Mode
 
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add examples" \
   --preview-only
 ```
@@ -327,7 +327,7 @@ Shows what would change without applying.
 ### Auto-approve Mode
 
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Fix grammar and spelling" \
   --auto-approve
 ```
@@ -338,7 +338,7 @@ Applies changes without confirmation.
 
 ### Coherence Checking
 
-After iteration, XunLong checks:
+After iteration, SmartFin checks:
 - Logical flow maintained
 - No contradictions introduced
 - Style consistency preserved
@@ -354,7 +354,7 @@ After iteration, XunLong checks:
 ### Validation
 
 ```bash
-python xunlong.py validate <project-id>
+python SmartFin.py validate <project-id>
 ```
 
 **Checks:**
@@ -378,7 +378,7 @@ python xunlong.py validate <project-id>
 
 ### Caching
 
-XunLong caches:
+SmartFin caches:
 - Document embeddings
 - Search results
 - Generated sections
@@ -390,7 +390,7 @@ Subsequent iterations are faster due to caching.
 For batch iterations:
 
 ```bash
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   --batch changes.txt \
   --parallel
 ```
@@ -417,19 +417,19 @@ Processes independent changes simultaneously.
 
 ```bash
 # Step 1: Generate base content
-python xunlong.py report "Topic"
+python SmartFin.py report "Topic"
 
 # Step 2: Review
 cat storage/<project-id>/reports/FINAL_REPORT.md
 
 # Step 3: First iteration (structure)
-python xunlong.py iterate <project-id> "Add section on challenges"
+python SmartFin.py iterate <project-id> "Add section on challenges"
 
 # Step 4: Second iteration (content)
-python xunlong.py iterate <project-id> "Expand examples in new section"
+python SmartFin.py iterate <project-id> "Expand examples in new section"
 
 # Step 5: Final polish
-python xunlong.py iterate <project-id> "Improve clarity and fix typos"
+python SmartFin.py iterate <project-id> "Improve clarity and fix typos"
 ```
 
 ### ⚡ Scope Management
@@ -456,11 +456,11 @@ python xunlong.py iterate <project-id> "Improve clarity and fix typos"
 **Solutions:**
 ```bash
 # Be more specific
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "In Chapter 3, Section 2, add a paragraph about market trends"
 
 # Preview first
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "..." \
   --preview-only
 ```
@@ -470,10 +470,10 @@ python xunlong.py iterate <project-id> \
 **Solutions:**
 ```bash
 # Rollback to previous version
-python xunlong.py rollback <project-id> v3
+python SmartFin.py rollback <project-id> v3
 
 # View version history
-python xunlong.py versions <project-id>
+python SmartFin.py versions <project-id>
 ```
 
 ### Issue: Iteration too slow
@@ -481,7 +481,7 @@ python xunlong.py versions <project-id>
 **Solutions:**
 ```bash
 # Use local scope
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Fix typo in paragraph 3" \
   --scope local
 
@@ -494,10 +494,10 @@ python xunlong.py iterate <project-id> \
 **Solutions:**
 ```bash
 # Run style harmonization
-python xunlong.py harmonize <project-id>
+python SmartFin.py harmonize <project-id>
 
 # Reset and regenerate
-python xunlong.py regenerate <project-id> \
+python SmartFin.py regenerate <project-id> \
   --preserve-content \
   --harmonize-style
 ```
@@ -505,7 +505,7 @@ python xunlong.py regenerate <project-id> \
 ## API Reference
 
 ```bash
-python xunlong.py iterate <project-id> <instruction> [options]
+python SmartFin.py iterate <project-id> <instruction> [options]
 ```
 
 | Argument | Type | Default | Description |
@@ -527,62 +527,42 @@ python xunlong.py iterate <project-id> <instruction> [options]
 
 ```bash
 # Initial generation
-python xunlong.py report "Cloud Computing Trends 2025"
+python SmartFin.py report "Cloud Computing Trends 2025"
 
 # Add content
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add a section on serverless computing trends"
 
 # Expand existing
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Expand the security section with specific examples"
 
 # Update data
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Update market size figures with latest 2025 data"
-```
-
-### Fiction Iteration
-
-```bash
-# Initial generation
-python xunlong.py fiction "Mystery novel" --chapters 20
-
-# Character development
-python xunlong.py iterate <project-id> \
-  "Make the protagonist more conflicted in chapters 5-8"
-
-# Plot enhancement
-python xunlong.py iterate <project-id> \
-  "Add foreshadowing for the twist in chapters 3, 7, and 11"
-
-# Pacing adjustment
-python xunlong.py iterate <project-id> \
-  "Slow down the pacing in chapter 15 to build more tension"
 ```
 
 ### PPT Iteration
 
 ```bash
 # Initial generation
-python xunlong.py ppt "Product Launch Strategy" --slides 18
+python SmartFin.py ppt "Product Launch Strategy" --slides 18
 
 # Add slides
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Add 2 slides on competitive analysis after slide 8"
 
 # Improve content
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Make slide 5 more visual with less text"
 
 # Reorder
-python xunlong.py iterate <project-id> \
+python SmartFin.py iterate <project-id> \
   "Move the pricing slide to come before the features slide"
 ```
 
 ## Next Steps
 
 - Learn about [Report Generation](/guide/features/report)
-- Explore [Fiction Writing](/guide/features/fiction)
 - Try [PPT Creation](/guide/features/ppt)
 - Check [Export Formats](/guide/features/export)

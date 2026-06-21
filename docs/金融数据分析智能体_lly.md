@@ -1,12 +1,12 @@
 # 金融数据分析智能体
 
-> 本文介绍 XunLong 项目中**金融数据分析智能体**的功能定位、工作流，以及 `src/agents/data_analysis/` 目录下各文件的作用。
+> 本文介绍 SmartFin 项目中**金融数据分析智能体**的功能定位、工作流，以及 `src/agents/data_analysis/` 目录下各文件的作用。
 
 ---
 
 ## 1. 功能概述
 
-金融数据分析智能体（`DataAnalysisAgent`）是 XunLong 多智能体系统中负责**结构化金融分析**的专用模块。它与通用搜索分析（`search_analyzer`）分离，专注于：
+金融数据分析智能体（`DataAnalysisAgent`）是 SmartFin 多智能体系统中负责**结构化金融分析**的专用模块。它与通用搜索分析（`search_analyzer`）分离，专注于：
 
 - 从**网页搜索结果**正文中抽取与用户 query 相关的**数值指标**
 - 整理为可追溯的**结构化数据表**（含来源 `[N]` 与原文依据）
@@ -25,10 +25,10 @@
 **CLI 入口：**
 
 ```bash
-python xunlong.py analyze "分析2024年华为公司营收趋势"
-python xunlong.py analyze "..." --deliverable ppt    # 生成 PPT（含分析模块）
-python xunlong.py analyze "..." --deliverable none   # 仅分析，不生成报告/PPT
-python xunlong.py analyze "..." --mock-search        # 离线联调
+python SmartFin.py analyze "分析2024年华为公司营收趋势"
+python SmartFin.py analyze "..." --deliverable ppt    # 生成 PPT（含分析模块）
+python SmartFin.py analyze "..." --deliverable none   # 仅分析，不生成报告/PPT
+python SmartFin.py analyze "..." --mock-search        # 离线联调
 ```
 
 详细命令说明见 [`金融分析命令_lly.md`](./金融分析命令_lly.md)。
@@ -115,7 +115,7 @@ src/agents/data_analysis/
 | `src/agents/report/report_coordinator.py` | 组装 FINAL_REPORT，插入金融数据分析章节 |
 | `src/agents/ppt/ppt_coordinator.py` | 生成 PPT 时调用 `ppt_section` 注入分析页 |
 | `src/agents/html/document_html_agent.py` | HTML 报告渲染，挂载 ECharts 图表 |
-| `xunlong.py` | `analyze` 子命令 CLI 入口 |
+| `SmartFin.py` | `analyze` 子命令 CLI 入口 |
 | `src/api.py` | `/api/v1/data_analysis/charts` 与 `/api/v1/data_analysis/file` 接口 |
 | `fixtures/mock_search.json` | `--mock-search` 离线测试用的模拟搜索结果 |
 
@@ -299,13 +299,13 @@ python -m pytest tests/unit/test_data_analysis.py -q
 **CLI 离线联调：**
 
 ```bash
-python xunlong.py analyze "分析2024年银行业营收趋势" --mock-search -v
+python SmartFin.py analyze "分析2024年银行业营收趋势" --mock-search -v
 ```
 
 **查看分析 JSON：**
 
 ```bash
-python xunlong.py analyze "..." --deliverable none -v
+python SmartFin.py analyze "..." --deliverable none -v
 # 打开 storage/{project_id}/intermediate/03_data_analysis.json
 ```
 

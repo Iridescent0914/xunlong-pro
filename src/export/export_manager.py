@@ -121,18 +121,13 @@ class ExportManager:
         
 
         Returns:
-            'ppt', 'report', 'fiction'  'unknown'
+            'ppt', 'report', 'unknown'
         """
         reports_dir = project_dir / "reports"
 
         # PPT
         if (reports_dir / "PPT_DATA.json").exists():
             return "ppt"
-
-        # 
-        metadata = self._load_metadata(project_dir)
-        if metadata and "fiction" in str(metadata.get("query", "")).lower():
-            return "fiction"
 
         # 
         if (reports_dir / "FINAL_REPORT.md").exists():
@@ -155,7 +150,7 @@ class ExportManager:
             }
 
         # /PPTX
-        if project_type in ["report", "fiction"] and export_type == "pptx":
+        if project_type == "report" and export_type == "pptx":
             return {
                 "status": "error",
                 "error": f"{project_type}PPTXPDFDOCXMD"

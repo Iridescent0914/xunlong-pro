@@ -301,7 +301,7 @@ class TemplateManager:
         
 
         Args:
-            agent_type: Agent (document, fiction, ppt)
+            agent_type: Agent (document, ppt)
             template_name: 
             template_file: 
             metadata: 

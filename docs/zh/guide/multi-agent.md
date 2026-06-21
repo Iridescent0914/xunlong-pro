@@ -1,6 +1,6 @@
 # 多智能体系统
 
-XunLong的强大之处在于其精密的多智能体架构。系统不依赖单一的AI提示，而是由多个专业智能体协同工作，交付高质量的内容。
+SmartFin的强大之处在于其精密的多智能体架构。系统不依赖单一的AI提示，而是由多个专业智能体协同工作，交付高质量的内容。
 
 ## 系统概览
 
@@ -273,7 +273,7 @@ class WorkflowState(TypedDict):
 
 ## 并行执行
 
-XunLong通过并行化最大化效率：
+SmartFin通过并行化最大化效率：
 
 ```mermaid
 gantt
@@ -353,10 +353,10 @@ class AgentErrorHandler:
 
 ### 添加自定义智能体
 
-XunLong的架构支持自定义智能体：
+SmartFin的架构支持自定义智能体：
 
 ```python
-from xunlong.agents.base import BaseAgent
+from SmartFin.agents.base import BaseAgent
 
 class CustomAgent(BaseAgent):
     def __init__(self):

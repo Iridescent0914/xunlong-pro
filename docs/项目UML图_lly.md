@@ -60,7 +60,7 @@ graph TB
 
 ### 核心智能体（金融数据分析模式）
 
-> **模式说明**：用户通过 `xunlong analyze` 进入金融数据分析模式。协调器**先完成网页搜索**，再调用金融数据分析智能体；智能体内部检索 **RAG 年报证据**，与 `search_results` 一并交给 **LLM 抽取数值表**，生成结构化 `data_analysis_results`，最后按 `--deliverable` 产出报告 / PPT / 仅分析 JSON。
+> **模式说明**：用户通过 `SmartFin analyze` 进入金融数据分析模式。协调器**先完成网页搜索**，再调用金融数据分析智能体；智能体内部检索 **RAG 年报证据**，与 `search_results` 一并交给 **LLM 抽取数值表**，生成结构化 `data_analysis_results`，最后按 `--deliverable` 产出报告 / PPT / 仅分析 JSON。
 
 ```mermaid
 graph TD
@@ -230,7 +230,7 @@ sequenceDiagram
     participant HTML as 📄 document_html_agent
     participant Storage as 💾 存储
 
-    User->>CLI: xunlong analyze "query" [--deliverable report|ppt|none]
+    User->>CLI: SmartFin analyze "query" [--deliverable report|ppt|none]
     CLI->>Coord: context.output_type = financial_analysis
 
     Coord->>Coord: 任务分解 task_decomposer

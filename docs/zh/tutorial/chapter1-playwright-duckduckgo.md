@@ -1,12 +1,12 @@
 # 第 1 章 · 使用 Playwright 驱动 DuckDuckGo
 
-本章开启"XunLong 内部拆解"系列教程，主要讲解项目目前的搜索流程，以及为什么选择控制浏览器而不是调用爬虫类 API。
+本章开启"SmartFin 内部拆解"系列教程，主要讲解项目目前的搜索流程，以及为什么选择控制浏览器而不是调用爬虫类 API。
 
 ---
 
 ## 1. 为什么选择无头浏览器？
 
-XunLong 的搜索栈基于 Playwright（参考 `src/tools/web_searcher.py`）。协调器会通过 `src/browser.py` 启动 Chromium，自动化 DuckDuckGo 搜索，再复用同一浏览器访问每个结果页面。
+SmartFin 的搜索栈基于 Playwright（参考 `src/tools/web_searcher.py`）。协调器会通过 `src/browser.py` 启动 Chromium，自动化 DuckDuckGo 搜索，再复用同一浏览器访问每个结果页面。
 
 ### 1.1 动态内容无处不在
 
@@ -81,7 +81,7 @@ await asyncio.sleep(random.uniform(1.0, 2.5))
 
 ---
 
-## 2. XunLong 的搜索流程概览
+## 2. SmartFin 的搜索流程概览
 
 整体搜索流程由多个专门模块串联而成：
 
@@ -351,7 +351,7 @@ playwright install chromium
 ### 运行演示
 
 ```bash
-# 当前精简版已移除独立示例脚本；请使用 python xunlong.py ... 或 python run_api.py。
+# 当前精简版已移除独立示例脚本；请使用 python SmartFin.py ... 或 python run_api.py。
 ```
 
 您应该能看到搜索结果打印到控制台。
@@ -362,7 +362,7 @@ playwright install chromium
 
 ### 4.1 环境变量配置
 
-XunLong 支持多种环境变量来配置搜索行为：
+SmartFin 支持多种环境变量来配置搜索行为：
 
 ```bash
 # 浏览器配置
@@ -514,7 +514,7 @@ finally:
     await browser.close()  # 始终关闭浏览器
 ```
 
-### 4.5 与 XunLong 组件集成
+### 4.5 与 SmartFin 组件集成
 
 #### 存储集成
 
@@ -630,7 +630,7 @@ enhanced_results = await deep_searcher.search(
 - 高级内容提取技术
 - 处理懒加载内容和单页应用
 - 图片处理和增强
-- 与 XunLong 存储层的集成
+- 与 SmartFin 存储层的集成
 - 为特定站点构建自定义提取器
 
 敬请期待更多高级网页抓取技术！

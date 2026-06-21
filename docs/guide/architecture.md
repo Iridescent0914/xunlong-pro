@@ -1,6 +1,6 @@
 # System Architecture
 
-XunLong employs a sophisticated multi-agent architecture orchestrated by LangGraph to deliver high-quality content generation.
+SmartFin employs a sophisticated multi-agent architecture orchestrated by LangGraph to deliver high-quality content generation.
 
 ## Architecture Overview
 
@@ -17,7 +17,7 @@ graph TB
     subgraph "Core Agent Layer"
         SearchAgent[🔍 Search Agent<br/>Web Search & Content Extraction]
         ReportAgent[📄 Report Generator<br/>Business/Academic/Technical]
-        FictionAgent[📖 Fiction Generator<br/>Romance/Scifi/Mystery]
+
         PPTAgent[📊 PPT Generator<br/>Business/Creative/Minimal]
         IterationAgent[🔄 Iteration Agent<br/>Local/Partial/Global Modification]
     end
@@ -36,12 +36,10 @@ graph TB
     CLI --> Coordinator
     Coordinator --> SearchAgent
     Coordinator --> ReportAgent
-    Coordinator --> FictionAgent
     Coordinator --> PPTAgent
     Coordinator --> IterationAgent
 
     ReportAgent --> HTMLConverter
-    FictionAgent --> HTMLConverter
     PPTAgent --> HTMLConverter
 
     HTMLConverter --> ExportManager
@@ -49,7 +47,6 @@ graph TB
 
     SearchAgent -.invoke.-> LLMManager
     ReportAgent -.invoke.-> LLMManager
-    FictionAgent -.invoke.-> LLMManager
     PPTAgent -.invoke.-> LLMManager
     IterationAgent -.invoke.-> LLMManager
 
@@ -87,7 +84,6 @@ Multiple specialized agents working in parallel:
 
 - **Search Agent** - Executes web searches, extracts content, evaluates relevance
 - **Report Generator** - Creates structured research reports with citations
-- **Fiction Generator** - Writes creative stories with consistent characters and plot
 - **PPT Generator** - Designs professional presentations with layouts and color schemes
 - **Iteration Agent** - Handles content refinement requests
 
@@ -129,7 +125,7 @@ Built on LangGraph's state machine paradigm:
 
 ### Parallel Execution
 
-XunLong maximizes throughput through parallelization:
+SmartFin maximizes throughput through parallelization:
 - Multiple search queries execute simultaneously
 - Independent content sections generate in parallel
 - Export operations don't block generation

@@ -1,6 +1,6 @@
 # 安装指南
 
-本指南提供XunLong在不同操作系统上的详细安装步骤。
+本指南提供SmartFin在不同操作系统上的详细安装步骤。
 
 ## 系统要求
 
@@ -84,12 +84,12 @@ python --version
 
 ```bash
 # 使用HTTPS
-git clone https://github.com/jaguarliuu/xunlong.git
-cd XunLong
+git clone https://github.com/jaguarliuu/SmartFin.git
+cd SmartFin
 
 # 或使用SSH
-git clone git@github.com:jaguarliuu/xunlong.git
-cd XunLong
+git clone git@github.com:jaguarliuu/SmartFin.git
+cd SmartFin
 ```
 
 ::: tip 没有Git？
@@ -141,7 +141,7 @@ venv\Scripts\activate.bat
 :::
 
 ::: warning 保持虚拟环境激活
-运行XunLong之前，始终要激活虚拟环境。激活后终端提示符会显示 `(venv)`。
+运行SmartFin之前，始终要激活虚拟环境。激活后终端提示符会显示 `(venv)`。
 :::
 
 ### 4. 安装Python依赖
@@ -354,7 +354,7 @@ print('安装检查完成！')
 生成第一份报告：
 
 ```bash
-python xunlong.py report "测试报告" --verbose
+python SmartFin.py report "测试报告" --verbose
 ```
 
 如果成功，你应该看到：
@@ -364,7 +364,7 @@ python xunlong.py report "测试报告" --verbose
 
 ## 安装后配置
 
-### 更新XunLong
+### 更新SmartFin
 
 ```bash
 # 拉取最新更改
@@ -421,7 +421,7 @@ brew reinstall pango gdk-pixbuf libffi
 export DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH
 
 # 再次尝试
-python xunlong.py export <项目ID> pdf
+python SmartFin.py export <项目ID> pdf
 ```
 
 #### 问题：找不到Playwright浏览器
@@ -440,10 +440,10 @@ playwright install chromium --with-deps
 **解决方案：**
 ```bash
 # 使脚本可执行
-chmod +x xunlong.py
+chmod +x SmartFin.py
 
 # 或使用python运行
-python xunlong.py report "测试"
+python SmartFin.py report "测试"
 ```
 
 #### 问题：找不到API密钥
@@ -459,7 +459,7 @@ python xunlong.py report "测试"
 如果仍有问题：
 
 1. 查看 [常见问题](/zh/guide/faq)
-2. 搜索 [GitHub Issues](https://github.com/jaguarliuu/xunlong/issues)
+2. 搜索 [GitHub Issues](https://github.com/jaguarliuu/SmartFin/issues)
 3. 创建新issue，包含：
    - 操作系统和Python版本
    - 完整错误信息
@@ -467,7 +467,7 @@ python xunlong.py report "测试"
 
 ## 下一步
 
-现在XunLong已安装完成：
+现在SmartFin已安装完成：
 
 - 📖 阅读[快速开始指南](/zh/guide/getting-started)
 - 🏗️ 理解[系统架构](/zh/guide/architecture)

@@ -1,4 +1,4 @@
-# XunLong PPT生成系统 - 多页HTML架构设计 v2.0
+# SmartFin PPT生成系统 - 多页HTML架构设计 v2.0
 
 ## 一、架构概述
 
@@ -134,7 +134,7 @@ slide_{序号}_{类型}.html
         </div>
 
         <!-- AI水印 -->
-        <div class="ai-watermark">XunLong AI 生成</div>
+        <div class="ai-watermark">SmartFin AI 生成</div>
 
         <!-- 导航控制（可选） -->
         <div class="navigation-controls" style="display: none;">
@@ -413,7 +413,7 @@ slide_{序号}_{类型}.html
 ```json
 {
   "version": "2.0",
-  "generator": "XunLong AI",
+  "generator": "SmartFin AI",
   "format": "multi-html-slides",
   "output_config": {
     "slide_size": {

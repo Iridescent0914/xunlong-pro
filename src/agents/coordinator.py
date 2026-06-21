@@ -50,7 +50,6 @@ except ModuleNotFoundError:
         from ..storage import SearchStorage
 from .report import ReportCoordinator
 from .output_type_detector import OutputTypeDetector
-from .fiction import FictionElementsDesigner, FictionOutlineGenerator
 from .ppt import PPTCoordinator
 from .data_analysis import DataAnalysisAgent
 
@@ -68,7 +67,7 @@ class DeepSearchState(TypedDict):
     time_context: Dict[str, Any]
 
     # 
-    output_type: str  # "report", "fiction", "ppt", "financial_analysis"
+    output_type: str  # "report", "ppt", "financial_analysis"
     output_type_confidence: float
 
     # 金融数据分析（与 search_analyzer 的 analysis_results 分离）
@@ -93,11 +92,6 @@ class DeepSearchState(TypedDict):
     # 
     synthesis_results: Dict[str, Any]
     synthesis_status: str
-
-    # 
-    fiction_requirements: Dict[str, Any]  # 
-    fiction_elements: Dict[str, Any]  # 
-    fiction_outline: Dict[str, Any]  # 
 
     # PPT
     ppt_config: Dict[str, Any]  # PPT
@@ -167,10 +161,6 @@ class DeepSearchCoordinator:
 
         # 
         self.output_type_detector = OutputTypeDetector(self.llm_manager, self.prompt_manager)
-
-        # 
-        self.fiction_elements_designer = FictionElementsDesigner(self.llm_manager, self.prompt_manager)
-        self.fiction_outline_generator = FictionOutlineGenerator(self.llm_manager, self.prompt_manager)
         
         # LangGraph
         if LANGGRAPH_AVAILABLE:
@@ -209,9 +199,6 @@ class DeepSearchCoordinator:
             workflow.add_node("search_analyzer", self._search_analyzer_node)
             workflow.add_node("content_synthesizer", self._content_synthesizer_node)
             workflow.add_node("report_generator", self._report_generator_node)
-            workflow.add_node("fiction_elements_designer", self._fiction_elements_designer_node)
-            workflow.add_node("fiction_outline_generator", self._fiction_outline_generator_node)
-            workflow.add_node("fiction_writer", self._fiction_writer_node)
             workflow.add_node("ppt_generator", self._ppt_generator_node)
 
             # 
@@ -223,7 +210,6 @@ class DeepSearchCoordinator:
                 self._route_by_output_type,
                 {
                     "report": "task_decomposer",
-                    "fiction": "fiction_elements_designer",
                     "ppt": "task_decomposer",
                     "financial_analysis": "task_decomposer",
                 }
@@ -243,8 +229,7 @@ class DeepSearchCoordinator:
                 "deep_searcher",
                 self._route_after_deep_search,
                 {
-                    "search_analyzer": "search_analyzer",
-                    "fiction_outline_generator": "fiction_outline_generator"
+                    "search_analyzer": "search_analyzer"
                 }
             )
 
@@ -267,11 +252,6 @@ class DeepSearchCoordinator:
             workflow.add_edge("ppt_generator", END)
 
             # 
-            workflow.add_edge("fiction_elements_designer", "task_decomposer")  # 
-            workflow.add_edge("fiction_outline_generator", "fiction_writer")
-            workflow.add_edge("fiction_writer", END)
-            
-            # 
             compiled_workflow = workflow.compile()
             logger.info("LangGraph")
             
@@ -293,10 +273,6 @@ class DeepSearchCoordinator:
             context["output_type"] = state.get("output_type", "report")
 
             # 
-            if context["output_type"] == "fiction":
-                context["fiction_requirements"] = state.get("fiction_requirements", {})
-                context["fiction_elements"] = state.get("fiction_elements", {})
-
             result = await self.agents["task_decomposer"].process({
                 "query": state["query"],
                 "context": context
@@ -688,20 +664,8 @@ class DeepSearchCoordinator:
                     "agent": "output_type_detector"
                 })
 
-                # fiction
-                if output_type == "fiction":
-                    # fiction_requirements
-                    if "fiction_requirements" in context:
-                        fiction_requirements = context["fiction_requirements"]
-                        logger.info(f": {fiction_requirements}")
-                    else:
-                        fiction_requirements = self.output_type_detector.extract_fiction_requirements(query)
-                        logger.info(f": {fiction_requirements}")
-
-                    state["fiction_requirements"] = fiction_requirements
-
                 # pptPPT
-                elif output_type == "ppt":
+                if output_type == "ppt":
                     if "ppt_config" in context:
                         ppt_config = context["ppt_config"]
                         state["ppt_config"] = ppt_config
@@ -754,237 +718,11 @@ class DeepSearchCoordinator:
                     "agent": "output_type_detector"
                 })
 
-                # fiction
-                if output_type == "fiction":
-                    fiction_requirements = self.output_type_detector.extract_fiction_requirements(query)
-                    state["fiction_requirements"] = fiction_requirements
-                    logger.info(f": {fiction_requirements}")
-
         except Exception as e:
             logger.error(f": {e}")
             state["errors"].append(f": {e}")
             state["output_type"] = "report"  # 
             state["output_type_confidence"] = 0.5
-
-        return state
-
-    async def _fiction_elements_designer_node(self, state: DeepSearchState) -> DeepSearchState:
-        """TODO: Add docstring."""
-        try:
-            logger.info("...")
-
-            query = state.get("query", "")
-            fiction_requirements = state.get("fiction_requirements", {})
-
-            # 
-            result = await self.fiction_elements_designer.design_elements(
-                query=query,
-                requirements=fiction_requirements,
-                search_results=None  # 
-            )
-
-            if result["status"] == "success":
-                state["fiction_elements"] = result["elements"]
-                logger.info("")
-
-                state["messages"].append({
-                    "role": "assistant",
-                    "content": f"",
-                    "agent": "fiction_elements_designer"
-                })
-            else:
-                state["errors"].append(f": {result.get('error', '')}")
-
-        except Exception as e:
-            logger.error(f": {e}")
-            state["errors"].append(f": {e}")
-
-        return state
-
-    async def _fiction_outline_generator_node(self, state: DeepSearchState) -> DeepSearchState:
-        """TODO: Add docstring."""
-        try:
-            logger.info("...")
-
-            query = state.get("query", "")
-            fiction_elements = state.get("fiction_elements", {})
-            fiction_requirements = state.get("fiction_requirements", {})
-
-            # 
-            result = await self.fiction_outline_generator.generate_outline(
-                query=query,
-                elements=fiction_elements,
-                requirements=fiction_requirements
-            )
-
-            if result["status"] == "success":
-                state["fiction_outline"] = result["outline"]
-                total_chapters = result.get("total_chapters", 0)
-                logger.info(f" {total_chapters} ")
-
-                state["messages"].append({
-                    "role": "assistant",
-                    "content": f" {total_chapters} ",
-                    "agent": "fiction_outline_generator"
-                })
-            else:
-                state["errors"].append(f": {result.get('error', '')}")
-
-        except Exception as e:
-            logger.error(f": {e}")
-            state["errors"].append(f": {e}")
-
-        return state
-
-    async def _fiction_writer_node(self, state: DeepSearchState) -> DeepSearchState:
-        """ - SectionWriter"""
-        try:
-            logger.info("...")
-
-            query = state.get("query", "")
-            fiction_outline = state.get("fiction_outline", {})
-            fiction_elements = state.get("fiction_elements", {})
-            search_results = state.get("search_results", [])
-            synthesis_results = state.get("synthesis_results", {})
-
-            chapters = fiction_outline.get("chapters", [])
-
-            if not chapters:
-                raise ValueError("")
-
-            logger.info(f" {len(chapters)} ...")
-
-            #  + 
-            available_content = search_results.copy()
-            if synthesis_results and synthesis_results.get("synthesis"):
-                available_content.append({
-                    "title": "",
-                    "content": synthesis_results["synthesis"],
-                    "source": "content_synthesizer"
-                })
-
-            # 
-            write_tasks = []
-            for i, chapter in enumerate(chapters):
-                # 
-                section_requirements = {
-                    "id": chapter.get("id", i + 1),
-                    "title": f"{chapter.get('id', i + 1)}: {chapter.get('title', '')}",
-                    "requirements": self._build_chapter_writing_requirements(
-                        chapter,
-                        fiction_elements,
-                        fiction_outline,
-                        query
-                    ),
-                    "word_count": chapter.get("word_count", 800),
-                    "importance": 0.8
-                }
-
-                # 
-                context = None
-                if i > 0:
-                    context = {
-                        "previous_section_title": f"{chapters[i-1].get('id', i)}: {chapters[i-1].get('title', '')}",
-                        "previous_section_summary": chapters[i-1].get("writing_points", "")
-                    }
-                else:
-                    # 第一章：传入完整的世界观设定供 LLM 参考
-                    context = {}
-
-                # 标记类型，使 section_writer 走 fiction prompt 路径
-                context["report_type"] = "fiction"
-                context["fiction_elements"] = fiction_elements
-                context["fiction_outline"] = fiction_outline
-
-                # section_writer
-                task = self.report_coordinator.section_writer.write_section(
-                    section=section_requirements,
-                    available_content=available_content,
-                    context=context
-                )
-                write_tasks.append(task)
-
-            # 
-            chapter_results = await asyncio.gather(*write_tasks, return_exceptions=True)
-
-            # 
-            fiction_content = f"# {fiction_outline.get('title', '')}\n\n"
-            fiction_content += f"## 故事梗概\n\n{fiction_outline.get('synopsis', '')}\n\n"
-            fiction_content += "---\n\n"
-
-            total_words = 0
-            successful_chapters = 0
-
-            for i, result in enumerate(chapter_results):
-                if isinstance(result, Exception):
-                    logger.error(f" {i+1} : {result}")
-                    # 
-                    chapter = chapters[i]
-                    fiction_content += f"## {chapter.get('id', i+1)}: {chapter.get('title', '未命名章节')}\n\n"
-                    fiction_content += f"生成失败: {str(result)}\n\n"
-                    fiction_content += f"写作要点: {chapter.get('writing_points', '')}\n\n"
-                    fiction_content += "---\n\n"
-                else:
-                    # 
-                    chapter_content = result.get("content", "")
-                    chapter = chapters[i]
-                    chapter_id = chapter.get("id", i + 1)
-                    chapter_title = chapter.get("title", f"章节 {i+1}")
-
-                    fiction_content += f"## {chapter_id}: {chapter_title}\n\n"
-                    fiction_content += chapter_content + "\n\n"
-                    fiction_content += "---\n\n"
-
-                    total_words += len(chapter_content)
-                    successful_chapters += 1
-
-            # 
-            report_data = {
-                "title": fiction_outline.get("title", ""),
-                "content": fiction_content,
-                "word_count": total_words,
-                "metadata": {
-                    "type": "fiction",
-                    "total_chapters": len(chapters),
-                    "successful_chapters": successful_chapters,
-                    "genre": state.get("fiction_requirements", {}).get("genre", ""),
-                    "elements": fiction_elements
-                }
-            }
-
-            # HTML
-            html_content = None
-            output_format = state.get("context", {}).get("output_format", "md")
-            if output_format == "html":
-                logger.info("HTML")
-                html_content = await self._convert_fiction_to_html(
-                    report_data,
-                    state.get("context", {})
-                )
-
-            state["final_report"] = {
-                "result": {
-                    "report": report_data,
-                    "html_content": html_content,
-                    "output_format": output_format,
-                    "status": "success"
-                },
-                "status": "success"
-            }
-            state["report_status"] = "success"
-
-            logger.info(f" {len(chapters)}  {successful_chapters}  {total_words}")
-
-            state["messages"].append({
-                "role": "assistant",
-                "content": f" {len(chapters)}  {successful_chapters}  {total_words}",
-                "agent": "fiction_writer"
-            })
-
-        except Exception as e:
-            logger.error(f": {e}")
-            state["errors"].append(f": {e}")
-            state["report_status"] = "failed"
 
         return state
 
@@ -1059,77 +797,6 @@ class DeepSearchCoordinator:
 
         return state
 
-    def _build_chapter_writing_requirements(
-        self,
-        chapter: Dict[str, Any],
-        fiction_elements: Dict[str, Any],
-        fiction_outline: Dict[str, Any],
-        query: str
-    ) -> str:
-        """TODO: Add docstring."""
-
-        # 
-        characters = fiction_elements.get("characters", [])
-        place = fiction_elements.get("place", {})
-        theme = fiction_elements.get("theme", {})
-
-        # 
-        writing_points = chapter.get("writing_points", "")
-        key_scenes = chapter.get("key_scenes", [])
-        characters_involved = chapter.get("characters_involved", [])
-        suspense = chapter.get("suspense", "")
-
-        requirements = f"""# 
-
-## 
-{query}
-
-## 
-{writing_points}
-
-## 
-{', '.join(key_scenes) if key_scenes else ''}
-
-## 
-{', '.join(characters_involved) if characters_involved else ''}
-
-## 
-"""
-        # 
-        for char in characters:
-            if char.get("name") in characters_involved:
-                requirements += f"- **{char.get('name')}**: {char.get('occupation', '')}, {char.get('personality', '')}\n"
-
-        requirements += f"""
-
-## 场景设定
-- **主要场景**: {place.get('main_location', '')}
-- **场景描述**: {place.get('description', '')}
-
-## 主题基调
-- **核心主题**: {theme.get('core_theme', '')}
-- **基调风格**: {theme.get('tone', '')}
-
-## 悬念设置
-{suspense}
-
-## 写作要求
-1. **逻辑连贯**: 保持情节逻辑清晰
-2. **细节丰富**: 注重场景和人物细节
-3. **人物鲜明**: 突出角色性格特征
-4. **氛围营造**: 营造合适的叙事氛围
-5. **字数控制**: 约 {chapter.get('word_count', 800)} 字
-6. **情节推进**: 确保故事向前发展
-
-
-- 使用生动的描写手法
-- 注意对话的自然性
-- 保持节奏感
-- 适当使用修辞手法
-"""
-
-        return requirements
-
     def _route_by_output_type(self, state: DeepSearchState) -> str:
         """TODO: Add docstring."""
         output_type = state.get("output_type", "report")
@@ -1141,12 +808,8 @@ class DeepSearchCoordinator:
         return "deep_searcher"
 
     def _route_after_deep_search(self, state: DeepSearchState) -> str:
-        """ - fiction"""
-        output_type = state.get("output_type", "report")
-        if output_type == "fiction":
-            return "fiction_outline_generator"
-        else:
-            return "search_analyzer"
+        """After deep search, continue to search analysis."""
+        return "search_analyzer"
 
     def _financial_deliverable(self, state: DeepSearchState) -> str:
         context = state.get("context") or {}
@@ -1178,11 +841,7 @@ class DeepSearchCoordinator:
 
     def _route_after_synthesis(self, state: DeepSearchState) -> str:
         """TODO: Add docstring."""
-        output_type = state.get("output_type", "report")
-        if output_type == "fiction":
-            return "fiction_outline_generator"
-        else:
-            return "report_generator"
+        return "report_generator"
 
     async def process_query(self, query: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """TODO: Add docstring."""
@@ -1276,11 +935,6 @@ class DeepSearchCoordinator:
                 # 
                 "synthesis_results": {},
                 "synthesis_status": "pending",
-
-                # 
-                "fiction_requirements": {},
-                "fiction_elements": {},
-                "fiction_outline": {},
 
                 # PPT
                 "ppt_config": {},
@@ -1377,24 +1031,7 @@ class DeepSearchCoordinator:
 
             output_type = state.get("output_type", "report")
 
-            if output_type == "fiction":
-                # 
-                logger.info(" 2/6: ")
-                state = await self._fiction_elements_designer_node(state)
-
-                logger.info(" 3/6: ")
-                state = await self._task_decomposer_node(state)
-
-                logger.info(" 4/6: ")
-                state = await self._deep_searcher_node(state)
-
-                logger.info(" 5/6: ")
-                state = await self._fiction_outline_generator_node(state)
-
-                logger.info(" 6/6: ")
-                state = await self._fiction_writer_node(state)
-
-            elif output_type == "ppt":
+            if output_type == "ppt":
                 # PPT
                 logger.info(" 2/5: 任务分解")
                 state = await self._task_decomposer_node(state)
@@ -1582,46 +1219,6 @@ class DeepSearchCoordinator:
             logger.error(f"Quick answer failed: {e}")
             return f"Error: {e}"
     
-    async def _convert_fiction_to_html(
-        self,
-        fiction_data: Dict[str, Any],
-        context: Dict[str, Any]
-    ) -> str:
-        """HTML"""
-        try:
-            from .html import FictionHTMLAgent
-
-            # HTML
-            template = context.get('html_template', 'novel')
-            theme = context.get('html_theme', 'sepia')
-
-            # HTML
-            html_agent = FictionHTMLAgent()
-
-            # 
-            metadata = {
-                'title': fiction_data.get('title', ''),
-                'author': 'XunLong AI',
-                'genre': fiction_data.get('metadata', {}).get('genre', ''),
-                'synopsis': ''  # elements
-            }
-
-            # HTML
-            html_content = html_agent.convert_to_html(
-                content=fiction_data.get('content', ''),
-                metadata=metadata,
-                template=template,
-                theme=theme
-            )
-
-            logger.info(f"HTML: {template}, : {theme}")
-            return html_content
-
-        except Exception as e:
-            logger.error(f"HTML: {e}")
-            # Markdown
-            return fiction_data.get('content', '')
-
     def get_agent_status(self) -> Dict[str, Any]:
         """TODO: Add docstring."""
         return {

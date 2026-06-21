@@ -1,6 +1,6 @@
 # 源代码修改记录
 
-> 本文档记录本次对 XunLong 源码的主要修改，分为**原有功能修复**和 **Prompt 完善**两大部分。
+> 本文档记录本次对 SmartFin 源码的主要修改，分为**原有功能修复**和 **Prompt 完善**两大部分。
 
 ---
 
@@ -168,7 +168,7 @@ async def root():
     index_path = frontend_static / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
-    return {"name": "XunLong API", ...}
+    return {"name": "SmartFin API", ...}
 ```
 
 修改后：**只需启动 `python run_api.py`**，访问 `http://localhost:8000` 即可看到前端页面。

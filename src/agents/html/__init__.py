@@ -3,13 +3,11 @@ HTML
 
 MarkdownHTML
 - Document
-- Fiction
-- PPTPPT
+- PPT
 """
 
 from .base_html_agent import BaseHTMLAgent, TemplateManager, get_template_manager
 from .document_html_agent import DocumentHTMLAgent
-from .fiction_html_agent import FictionHTMLAgent
 from .ppt_html_agent import PPTHTMLAgent
 from .template_registry import (
     TemplateRegistry,
@@ -23,7 +21,6 @@ __all__ = [
     'TemplateManager',
     'get_template_manager',
     'DocumentHTMLAgent',
-    'FictionHTMLAgent',
     'PPTHTMLAgent',
     'TemplateRegistry',
     'TemplateInfo',

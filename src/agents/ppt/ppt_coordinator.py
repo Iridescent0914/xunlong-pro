@@ -267,7 +267,7 @@ class PPTCoordinator:
                     'colors': outline['colors'],
                     'style': style,
                     'theme': theme,
-                    'author': 'XunLong AI',
+                    'author': 'SmartFin AI',
                     'date': datetime.now().strftime('%Y-%m-%d')
                 },
                 output_dir=output_dir
@@ -336,7 +336,7 @@ class PPTCoordinator:
                 slide_data['content'] = {
                     'title': outline['title'],
                     'subtitle': outline.get('subtitle', ''),
-                    'author': 'XunLong AI',
+                    'author': 'SmartFin AI',
                     'date': datetime.now().strftime('%Y-%m-%d')
                 }
 
@@ -1150,7 +1150,7 @@ JSON
                 "theme": theme,
                 "slide_count": len(slides_sorted),
                 "generated_at": datetime.now().isoformat(),
-                "generator": "XunLong PPT Generator"
+                "generator": "SmartFin PPT Generator"
             }
         }
 
@@ -1298,7 +1298,7 @@ HTML
             'slides': rendered_slides,
             'metadata': ppt_data.get('metadata', {}),
             'generated_at': ppt_data.get('metadata', {}).get('generated_at', ''),
-            'generator': 'XunLong PPT Generator'
+            'generator': 'SmartFin PPT Generator'
         }
 
         # HTML

@@ -1,21 +1,21 @@
 # CLI 参考
 
-XunLong提供全面的命令行界面，用于所有内容生成任务。
+SmartFin提供全面的命令行界面，用于所有内容生成任务。
 
 ## 安装
 
 ```bash
-# 安装XunLong
+# 安装SmartFin
 pip install -r requirements.txt
 
 # 验证安装
-python xunlong.py --version
+python SmartFin.py --version
 ```
 
 ## 全局选项
 
 ```bash
-python xunlong.py [命令] [选项]
+python SmartFin.py [命令] [选项]
 ```
 
 | 选项 | 说明 |
@@ -27,13 +27,13 @@ python xunlong.py [命令] [选项]
 
 | 命令 | 用途 | 快速示例 |
 |------|------|----------|
-| [`report`](#report-命令) | 生成研究报告 | `xunlong.py report "AI趋势"` |
-| [`fiction`](#fiction-命令) | 创作小说 | `xunlong.py fiction "推理小说"` |
-| [`ppt`](#ppt-命令) | 生成演示文稿 | `xunlong.py ppt "产品发布"` |
-| [`export`](#export-命令) | 导出为不同格式 | `xunlong.py export <id> --type pdf` |
-| [`iterate`](#iterate-命令) | 优化已有内容 | `xunlong.py iterate <id> "添加示例"` |
-| [`ask`](#ask-命令) | 快速问答（实验性） | `xunlong.py ask "什么是AI？"` |
-| [`status`](#status-命令) | 检查系统状态 | `xunlong.py status` |
+| [`report`](#report-命令) | 生成研究报告 | `SmartFin.py report "AI趋势"` |
+| [`fiction`](#fiction-命令) | 创作小说 | `SmartFin.py fiction "推理小说"` |
+| [`ppt`](#ppt-命令) | 生成演示文稿 | `SmartFin.py ppt "产品发布"` |
+| [`export`](#export-命令) | 导出为不同格式 | `SmartFin.py export <id> --type pdf` |
+| [`iterate`](#iterate-命令) | 优化已有内容 | `SmartFin.py iterate <id> "添加示例"` |
+| [`ask`](#ask-命令) | 快速问答（实验性） | `SmartFin.py ask "什么是AI？"` |
+| [`status`](#status-命令) | 检查系统状态 | `SmartFin.py status` |
 
 ---
 
@@ -44,7 +44,7 @@ python xunlong.py [命令] [选项]
 ### 语法
 
 ```bash
-python xunlong.py report 查询内容 [选项]
+python SmartFin.py report 查询内容 [选项]
 ```
 
 ### 参数
@@ -107,12 +107,12 @@ python xunlong.py report 查询内容 [选项]
 
 **基础用法：**
 ```bash
-python xunlong.py report "2025年人工智能趋势"
+python SmartFin.py report "2025年人工智能趋势"
 ```
 
 **自定义深度和结果数：**
 ```bash
-python xunlong.py report "区块链技术" \
+python SmartFin.py report "区块链技术" \
   --type analysis \
   --depth deep \
   --max-results 30
@@ -120,14 +120,14 @@ python xunlong.py report "区块链技术" \
 
 **Markdown输出：**
 ```bash
-python xunlong.py report "量子计算" \
+python SmartFin.py report "量子计算" \
   -o md \
   -v
 ```
 
 **技术报告with深色主题：**
 ```bash
-python xunlong.py report "Kubernetes最佳实践" \
+python SmartFin.py report "Kubernetes最佳实践" \
   --type research \
   --html-template technical \
   --html-theme dark
@@ -142,7 +142,7 @@ python xunlong.py report "Kubernetes最佳实践" \
 ### 语法
 
 ```bash
-python xunlong.py fiction 查询内容 [选项]
+python SmartFin.py fiction 查询内容 [选项]
 ```
 
 ### 参数
@@ -203,12 +203,12 @@ python xunlong.py fiction 查询内容 [选项]
 
 **基础推理故事：**
 ```bash
-python xunlong.py fiction "侦探调查密室杀人案"
+python SmartFin.py fiction "侦探调查密室杀人案"
 ```
 
 **科幻中篇：**
 ```bash
-python xunlong.py fiction "与外星人首次接触" \
+python SmartFin.py fiction "与外星人首次接触" \
   --genre scifi \
   --length medium \
   --viewpoint third
@@ -216,7 +216,7 @@ python xunlong.py fiction "与外星人首次接触" \
 
 **有约束的推理：**
 ```bash
-python xunlong.py fiction "别墅谋杀案" \
+python SmartFin.py fiction "别墅谋杀案" \
   --genre mystery \
   -c "暴风雪孤立" \
   -c "8个嫌疑人" \
@@ -226,7 +226,7 @@ python xunlong.py fiction "别墅谋杀案" \
 
 **长篇奇幻史诗：**
 ```bash
-python xunlong.py fiction "少年英雄拯救王国" \
+python SmartFin.py fiction "少年英雄拯救王国" \
   --genre fantasy \
   --length long \
   --viewpoint omniscient \
@@ -242,7 +242,7 @@ python xunlong.py fiction "少年英雄拯救王国" \
 ### 语法
 
 ```bash
-python xunlong.py ppt 主题 [选项]
+python SmartFin.py ppt 主题 [选项]
 ```
 
 ### 参数
@@ -313,12 +313,12 @@ python xunlong.py ppt 主题 [选项]
 
 **基础演示：**
 ```bash
-python xunlong.py ppt "人工智能概述"
+python SmartFin.py ppt "人工智能概述"
 ```
 
 **商务演示：**
 ```bash
-python xunlong.py ppt "第四季度销售业绩" \
+python SmartFin.py ppt "第四季度销售业绩" \
   --style business \
   --slides 15 \
   --theme blue
@@ -326,7 +326,7 @@ python xunlong.py ppt "第四季度销售业绩" \
 
 **学术报告：**
 ```bash
-python xunlong.py ppt "机器学习研究" \
+python SmartFin.py ppt "机器学习研究" \
   --style academic \
   --depth deep \
   --slides 25
@@ -334,7 +334,7 @@ python xunlong.py ppt "机器学习研究" \
 
 **投资路演with演说稿：**
 ```bash
-python xunlong.py ppt "创业种子轮融资" \
+python SmartFin.py ppt "创业种子轮融资" \
   --style red \
   --slides 10 \
   --speech-notes "向风险投资人展示" \
@@ -350,7 +350,7 @@ python xunlong.py ppt "创业种子轮融资" \
 ### 语法
 
 ```bash
-python xunlong.py export 项目ID --type 格式 [选项]
+python SmartFin.py export 项目ID --type 格式 [选项]
 ```
 
 ### 参数
@@ -380,19 +380,19 @@ python xunlong.py export 项目ID --type 格式 [选项]
 
 **导出为PowerPoint：**
 ```bash
-python xunlong.py export 20251005_143022_ai趋势 --type pptx
+python SmartFin.py export 20251005_143022_ai趋势 --type pptx
 ```
 
 **导出为PDF with自定义路径：**
 ```bash
-python xunlong.py export 20251005_180344_报告 \
+python SmartFin.py export 20251005_180344_报告 \
   --type pdf \
   --output ~/桌面/我的报告.pdf
 ```
 
 **导出为Word：**
 ```bash
-python xunlong.py export 20251005_215421_小说 \
+python SmartFin.py export 20251005_215421_小说 \
   --type docx \
   -v
 ```
@@ -422,7 +422,7 @@ pip install python-pptx python-docx markdown2 weasyprint
 ### 语法
 
 ```bash
-python xunlong.py iterate 项目ID 需求描述 [选项]
+python SmartFin.py iterate 项目ID 需求描述 [选项]
 ```
 
 ### 参数
@@ -443,37 +443,37 @@ python xunlong.py iterate 项目ID 需求描述 [选项]
 **报告：**
 ```bash
 # 添加内容
-python xunlong.py iterate 20251005_143022 "添加未来趋势章节"
+python SmartFin.py iterate 20251005_143022 "添加未来趋势章节"
 
 # 更新数据
-python xunlong.py iterate 20251005_143022 "用2025年数据更新统计"
+python SmartFin.py iterate 20251005_143022 "用2025年数据更新统计"
 
 # 提高清晰度
-python xunlong.py iterate 20251005_143022 "简化技术解释"
+python SmartFin.py iterate 20251005_143022 "简化技术解释"
 ```
 
 **小说：**
 ```bash
 # 角色发展
-python xunlong.py iterate 20251005_180344 "让第3章的主角更纠结"
+python SmartFin.py iterate 20251005_180344 "让第3章的主角更纠结"
 
 # 情节增强
-python xunlong.py iterate 20251005_180344 "在第5章添加伏笔"
+python SmartFin.py iterate 20251005_180344 "在第5章添加伏笔"
 
 # 节奏调整
-python xunlong.py iterate 20251005_180344 "放慢高潮场景的节奏"
+python SmartFin.py iterate 20251005_180344 "放慢高潮场景的节奏"
 ```
 
 **PPT：**
 ```bash
 # 添加页面
-python xunlong.py iterate 20251005_215421 "在第5页后添加2页市场分析"
+python SmartFin.py iterate 20251005_215421 "在第5页后添加2页市场分析"
 
 # 修改内容
-python xunlong.py iterate 20251005_215421 "将第3页图表改为饼图"
+python SmartFin.py iterate 20251005_215421 "将第3页图表改为饼图"
 
 # 重新排序
-python xunlong.py iterate 20251005_215421 "将总结页移到问答页之前"
+python SmartFin.py iterate 20251005_215421 "将总结页移到问答页之前"
 ```
 
 ---
@@ -485,7 +485,7 @@ python xunlong.py iterate 20251005_215421 "将总结页移到问答页之前"
 ### 语法
 
 ```bash
-python xunlong.py ask 问题 [选项]
+python SmartFin.py ask 问题 [选项]
 ```
 
 ### 参数
@@ -513,10 +513,10 @@ python xunlong.py ask 问题 [选项]
 
 ```bash
 # 基础问题
-python xunlong.py ask "什么是量子计算？"
+python SmartFin.py ask "什么是量子计算？"
 
 # 高质量回答
-python xunlong.py ask "解释机器学习" --model quality -v
+python SmartFin.py ask "解释机器学习" --model quality -v
 ```
 
 **注意：** 此功能目前正在开发中。
@@ -530,7 +530,7 @@ python xunlong.py ask "解释机器学习" --model quality -v
 ### 语法
 
 ```bash
-python xunlong.py status
+python SmartFin.py status
 ```
 
 ### 输出信息
@@ -543,14 +543,14 @@ python xunlong.py status
 ### 示例
 
 ```bash
-python xunlong.py status
+python SmartFin.py status
 ```
 
 **输出：**
 ```
-=== XunLong 系统状态 ===
+=== SmartFin 系统状态 ===
 
-系统: XunLong v1.0.0
+系统: SmartFin v1.0.0
 状态: ✓ 运行中
 
 LLM配置: 3个
@@ -569,7 +569,7 @@ LLM配置: 3个
 
 ```bash
 # 步骤1: 生成报告
-python xunlong.py report "2025年AI行业分析" \
+python SmartFin.py report "2025年AI行业分析" \
   --type comprehensive \
   --depth deep \
   -o md
@@ -578,46 +578,46 @@ python xunlong.py report "2025年AI行业分析" \
 # (例如: 20251005_143022_ai_industry_analysis)
 
 # 步骤3: 导出为PDF
-python xunlong.py export 20251005_143022_ai_industry_analysis --type pdf
+python SmartFin.py export 20251005_143022_ai_industry_analysis --type pdf
 ```
 
 ### 2. 创作小说 → 迭代 → 导出
 
 ```bash
 # 步骤1: 生成故事
-python xunlong.py fiction "侦探推理" \
+python SmartFin.py fiction "侦探推理" \
   --genre mystery \
   --length medium
 
 # 步骤2: 优化
-python xunlong.py iterate 20251005_180344_侦探推理 \
+python SmartFin.py iterate 20251005_180344_侦探推理 \
   "在第3章添加更多线索"
 
 # 步骤3: 导出为DOCX
-python xunlong.py export 20251005_180344_侦探推理 --type docx
+python SmartFin.py export 20251005_180344_侦探推理 --type docx
 ```
 
 ### 3. 创建PPT → 添加页面 → 导出
 
 ```bash
 # 步骤1: 生成PPT
-python xunlong.py ppt "2025产品发布" \
+python SmartFin.py ppt "2025产品发布" \
   --style business \
   --slides 12
 
 # 步骤2: 添加页面
-python xunlong.py iterate 20251005_215421_产品发布 \
+python SmartFin.py iterate 20251005_215421_产品发布 \
   "添加3页定价策略内容"
 
 # 步骤3: 导出为PowerPoint
-python xunlong.py export 20251005_215421_产品发布 --type pptx
+python SmartFin.py export 20251005_215421_产品发布 --type pptx
 ```
 
 ---
 
 ## 环境变量
 
-通过环境变量配置XunLong行为：
+通过环境变量配置SmartFin行为：
 
 ```bash
 # LLM API密钥
@@ -630,8 +630,8 @@ export LANGFUSE_PUBLIC_KEY="your-key"
 export LANGFUSE_HOST="https://cloud.langfuse.com"
 
 # 默认设置
-export XUNLONG_DEFAULT_DEPTH="deep"
-export XUNLONG_DEFAULT_FORMAT="html"
+export SmartFin_DEFAULT_DEPTH="deep"
+export SmartFin_DEFAULT_FORMAT="html"
 ```
 
 ---
@@ -641,7 +641,7 @@ export XUNLONG_DEFAULT_FORMAT="html"
 ### 1. 使用详细模式调试
 
 ```bash
-python xunlong.py report "主题" -v
+python SmartFin.py report "主题" -v
 ```
 
 显示详细执行步骤。
@@ -652,8 +652,8 @@ python xunlong.py report "主题" -v
 
 ```bash
 # 良好实践: 保存到变量
-PROJECT_ID=$(python xunlong.py report "主题" | grep "项目ID" | cut -d: -f2)
-python xunlong.py export $PROJECT_ID --type pdf
+PROJECT_ID=$(python SmartFin.py report "主题" | grep "项目ID" | cut -d: -f2)
+python SmartFin.py export $PROJECT_ID --type pdf
 ```
 
 ### 3. 组合格式
@@ -662,10 +662,10 @@ python xunlong.py export $PROJECT_ID --type pdf
 
 ```bash
 # 生成HTML
-python xunlong.py report "主题" -o html
+python SmartFin.py report "主题" -o html
 
 # 导出相同项目为Markdown
-python xunlong.py export <project-id> --type md
+python SmartFin.py export <project-id> --type md
 ```
 
 ### 4. 迭代优化
@@ -674,11 +674,11 @@ python xunlong.py export <project-id> --type md
 
 ```bash
 # 1. 快速生成
-python xunlong.py report "主题" --depth surface
+python SmartFin.py report "主题" --depth surface
 
 # 2. 审核输出
 # 3. 迭代改进
-python xunlong.py iterate <id> "添加更多示例"
+python SmartFin.py iterate <id> "添加更多示例"
 ```
 
 ### 5. 使用适当深度
@@ -698,11 +698,11 @@ python xunlong.py iterate <id> "添加更多示例"
 
 ```bash
 # 明确使用python
-python xunlong.py --help
+python SmartFin.py --help
 
 # 或设置可执行
-chmod +x xunlong.py
-./xunlong.py --help
+chmod +x SmartFin.py
+./SmartFin.py --help
 ```
 
 ### 缺少依赖
@@ -732,7 +732,7 @@ export OPENAI_API_KEY="sk-..."
 ls storage/
 
 # 使用完整项目ID（包括时间戳）
-python xunlong.py export 20251005_143022_完整名称 --type pdf
+python SmartFin.py export 20251005_143022_完整名称 --type pdf
 ```
 
 ---

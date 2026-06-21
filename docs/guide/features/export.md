@@ -1,6 +1,6 @@
 # Export Formats
 
-XunLong supports multiple export formats to suit different use cases and platforms.
+SmartFin supports multiple export formats to suit different use cases and platforms.
 
 ## Overview
 
@@ -16,10 +16,10 @@ Export your content to:
 
 ```bash
 # Export to single format
-python xunlong.py export <project-id> --format pdf
+python SmartFin.py export <project-id> --format pdf
 
 # Export to multiple formats
-python xunlong.py export <project-id> --format md,html,pdf,docx
+python SmartFin.py export <project-id> --format md,html,pdf,docx
 ```
 
 ## Markdown Export
@@ -35,7 +35,7 @@ python xunlong.py export <project-id> --format md,html,pdf,docx
 ### Usage
 
 ```bash
-python xunlong.py export <project-id> --format md
+python SmartFin.py export <project-id> --format md
 ```
 
 ### Output Structure
@@ -61,12 +61,12 @@ Content here...
 
 ```bash
 # Include table of contents
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format md \
   --include-toc
 
 # Add metadata
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format md \
   --include-metadata
 ```
@@ -92,24 +92,24 @@ python xunlong.py export <project-id> \
 ### Usage
 
 ```bash
-python xunlong.py export <project-id> --format html
+python SmartFin.py export <project-id> --format html
 ```
 
 ### Templates
 
 ```bash
 # Business template
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template business
 
 # Academic template
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template academic
 
 # Minimal template
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template minimal
 ```
@@ -118,12 +118,12 @@ python xunlong.py export <project-id> \
 
 ```bash
 # Custom CSS
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --css custom_styles.css
 
 # Inline styles
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --inline-css
 ```
@@ -167,24 +167,24 @@ python xunlong.py export <project-id> \
 ### Usage
 
 ```bash
-python xunlong.py export <project-id> --format pdf
+python SmartFin.py export <project-id> --format pdf
 ```
 
 ### Page Settings
 
 ```bash
 # Letter size (US)
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --page-size letter
 
 # A4 size (International)
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --page-size a4
 
 # Custom margins
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --margins "1in,1in,1in,1in"  # top,right,bottom,left
 ```
@@ -192,7 +192,7 @@ python xunlong.py export <project-id> \
 ### Headers and Footers
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --header-left "Report Title" \
   --header-right "Company Name" \
@@ -205,17 +205,17 @@ python xunlong.py export <project-id> \
 
 ```bash
 # Print quality (high DPI)
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --quality print
 
 # Screen quality (lower file size)
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --quality screen
 
 # Draft quality (fastest)
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --quality draft
 ```
@@ -230,7 +230,7 @@ Clickable internal and external links
 
 **Metadata:**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --title "Report Title" \
   --author "Author Name" \
@@ -240,7 +240,7 @@ python xunlong.py export <project-id> \
 
 **Password Protection:**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --password "SecurePassword123"
 ```
@@ -266,19 +266,19 @@ python xunlong.py export <project-id> \
 ### Usage
 
 ```bash
-python xunlong.py export <project-id> --format docx
+python SmartFin.py export <project-id> --format docx
 ```
 
 ### Styling
 
 ```bash
 # Apply Word template
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --template corporate_template.docx
 
 # Custom styles
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --heading-style "Arial,16,bold" \
   --body-style "Calibri,11,normal"
@@ -301,7 +301,7 @@ python xunlong.py export <project-id> \
 
 **Metadata:**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --title "Document Title" \
   --author "Author Name" \
@@ -329,19 +329,19 @@ python xunlong.py export <project-id> \
 ### Usage
 
 ```bash
-python xunlong.py export <project-id> --format pptx
+python SmartFin.py export <project-id> --format pptx
 ```
 
 ### Themes
 
 ```bash
 # Apply theme
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --theme business-blue
 
 # Custom colors
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --primary-color "#2E86AB" \
   --accent-color "#F18F01"
@@ -364,7 +364,7 @@ Included automatically if available
 
 **Animations:**
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --animations subtle
 ```
@@ -393,13 +393,13 @@ Consistent formatting across all slides
 ### Usage
 
 ```bash
-python xunlong.py export <project-id> --format epub
+python SmartFin.py export <project-id> --format epub
 ```
 
 ### Metadata
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format epub \
   --title "Book Title" \
   --author "Author Name" \
@@ -411,7 +411,7 @@ python xunlong.py export <project-id> \
 ### Cover Image
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format epub \
   --cover cover_image.jpg
 ```
@@ -438,7 +438,6 @@ python xunlong.py export <project-id> \
 ### Best For
 
 - E-books
-- Fiction novels
 - Long-form content
 - Mobile reading
 - Digital publishing
@@ -448,7 +447,7 @@ python xunlong.py export <project-id> \
 ### Export All Formats
 
 ```bash
-python xunlong.py export <project-id> --format all
+python SmartFin.py export <project-id> --format all
 ```
 
 Generates:
@@ -462,14 +461,14 @@ Generates:
 ### Selective Export
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format md,pdf,docx
 ```
 
 ### Export Multiple Projects
 
 ```bash
-python xunlong.py export-batch \
+python SmartFin.py export-batch \
   --projects project1,project2,project3 \
   --format pdf
 ```
@@ -480,13 +479,13 @@ python xunlong.py export-batch \
 
 ```bash
 # Compress images
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --compress-images \
   --image-quality 85
 
 # Optimize file size
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format docx \
   --optimize-size
 ```
@@ -495,13 +494,13 @@ python xunlong.py export <project-id> \
 
 ```bash
 # Text watermark
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --watermark "CONFIDENTIAL" \
   --watermark-opacity 0.3
 
 # Image watermark
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --watermark-image logo.png
 ```
@@ -509,7 +508,7 @@ python xunlong.py export <project-id> \
 ### Custom Output Path
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --output /path/to/custom/location.pdf
 ```
@@ -518,7 +517,7 @@ python xunlong.py export <project-id> \
 
 ```bash
 # Run custom script after export
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --post-process "<your-script-path>"
 ```
@@ -573,7 +572,6 @@ python xunlong.py export <project-id> \
 
 ### Choose EPUB when:
 - Publishing e-books
-- Fiction novels
 - Mobile reading
 - E-reader distribution
 
@@ -590,7 +588,7 @@ python xunlong.py export <project-id> \
 --preserve-styles
 
 # Check source format quality
-python xunlong.py validate <project-id>
+python SmartFin.py validate <project-id>
 ```
 
 ### Issue: Large file size
@@ -615,10 +613,10 @@ python xunlong.py validate <project-id>
 cat storage/<project-id>/logs/export.log
 
 # Verify format support
-python xunlong.py export-formats
+python SmartFin.py export-formats
 
 # Try different format
-python xunlong.py export <project-id> --format md
+python SmartFin.py export <project-id> --format md
 ```
 
 ### Issue: Fonts not embedded (PDF)
@@ -626,7 +624,7 @@ python xunlong.py export <project-id> --format md
 **Solutions:**
 ```bash
 # Embed fonts
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --embed-fonts
 ```
@@ -634,7 +632,7 @@ python xunlong.py export <project-id> \
 ## API Reference
 
 ```bash
-python xunlong.py export <project-id> [options]
+python SmartFin.py export <project-id> [options]
 ```
 
 | Argument | Type | Default | Description |
@@ -656,7 +654,7 @@ python xunlong.py export <project-id> [options]
 ### Professional Report
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf,docx \
   --template business \
   --header-left "Q4 Report 2025" \
@@ -668,7 +666,7 @@ python xunlong.py export <project-id> \
 ### Academic Paper
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pdf \
   --template academic \
   --page-size a4 \
@@ -680,28 +678,17 @@ python xunlong.py export <project-id> \
 ### Web Documentation
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format html \
   --template minimal \
   --inline-css \
   --optimize-size
 ```
 
-### E-Book
-
-```bash
-python xunlong.py export <project-id> \
-  --format epub \
-  --title "My Novel" \
-  --author "Jane Doe" \
-  --cover cover.jpg \
-  --isbn "978-1234567890"
-```
-
 ### Presentation Deck
 
 ```bash
-python xunlong.py export <project-id> \
+python SmartFin.py export <project-id> \
   --format pptx \
   --theme corporate-blue \
   --animations subtle \
@@ -711,6 +698,5 @@ python xunlong.py export <project-id> \
 ## Next Steps
 
 - Learn about [Report Generation](/guide/features/report)
-- Explore [Fiction Writing](/guide/features/fiction)
 - Try [PPT Creation](/guide/features/ppt)
 - Understand [Content Iteration](/guide/features/iteration)

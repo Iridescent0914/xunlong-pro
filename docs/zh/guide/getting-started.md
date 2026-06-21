@@ -1,6 +1,6 @@
 # 快速开始
 
-本指南将帮助你在几分钟内开始使用XunLong。
+本指南将帮助你在几分钟内开始使用SmartFin。
 
 ## 前置要求
 
@@ -15,8 +15,8 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/jaguarliuu/xunlong.git
-cd XunLong
+git clone https://github.com/jaguarliuu/SmartFin.git
+cd SmartFin
 ```
 
 ### 2. 创建虚拟环境
@@ -83,7 +83,7 @@ DEEPSEEK_API_KEY=your_key_here
 ### 生成报告
 
 ```bash
-python xunlong.py report "2025年人工智能行业概览"
+python SmartFin.py report "2025年人工智能行业概览"
 ```
 
 这将：
@@ -116,5 +116,5 @@ cat storage/20251005_*/reports/FINAL_REPORT.md
 如果遇到任何问题：
 
 - 查看[常见问题](/zh/guide/faq)
-- 搜索[GitHub Issues](https://github.com/jaguarliuu/xunlong/issues)
+- 搜索[GitHub Issues](https://github.com/jaguarliuu/SmartFin/issues)
 - 加入我们的社区讨论

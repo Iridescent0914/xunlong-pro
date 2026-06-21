@@ -1,12 +1,12 @@
 # Chapter 1 · Driving DuckDuckGo with Playwright
 
-This chapter opens the "XunLong Internals" tutorial series. We unpack how the project performs web search today and why it orchestrates a full browser instead of using crawler APIs.
+This chapter opens the "SmartFin Internals" tutorial series. We unpack how the project performs web search today and why it orchestrates a full browser instead of using crawler APIs.
 
 ---
 
 ## 1. Why a Headless Browser?
 
-XunLong's search stack is built around Playwright (see `src/tools/web_searcher.py`). The coordinator spins up a Chromium instance and automates DuckDuckGo, then reuses the same runtime to visit each result.
+SmartFin's search stack is built around Playwright (see `src/tools/web_searcher.py`). The coordinator spins up a Chromium instance and automates DuckDuckGo, then reuses the same runtime to visit each result.
 
 We take the browser-driven path for several compelling reasons:
 
@@ -44,7 +44,7 @@ By handling DuckDuckGo in-house we keep control of:
 
 ---
 
-## 2. How Search Works in XunLong
+## 2. How Search Works in SmartFin
 
 The search pipeline is a sophisticated chain of specialized modules that work together to deliver high-quality search results:
 
@@ -303,7 +303,7 @@ playwright install firefox webkit
 # Standalone examples were removed from the trimmed project.
 
 # With different queries
-# Use python xunlong.py ... or python run_api.py for current workflows.
+# Use python SmartFin.py ... or python run_api.py for current workflows.
 # See README.md for the supported entry points.
 ```
 
@@ -315,7 +315,7 @@ You should see the top results printed to the console with titles, URLs, and sni
 
 ### 4.1 Environment Variables
 
-XunLong supports various environment variables for configuring search behavior:
+SmartFin supports various environment variables for configuring search behavior:
 
 ```bash
 # Browser configuration
@@ -467,7 +467,7 @@ finally:
     await browser.close()  # Always close browser
 ```
 
-### 4.5 Integration with XunLong Components
+### 4.5 Integration with SmartFin Components
 
 #### Storage Integration
 
@@ -583,7 +583,7 @@ Chapter 2 will dive deeper into:
 - Advanced content extraction techniques
 - Handling lazy-loaded content and SPAs
 - Image processing and enhancement
-- Integration with XunLong's storage layer
+- Integration with SmartFin's storage layer
 - Building custom extractors for specific sites
 
 Stay tuned for more advanced web scraping techniques!

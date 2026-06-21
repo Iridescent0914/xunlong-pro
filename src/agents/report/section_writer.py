@@ -191,17 +191,13 @@ class SectionWriter:
         relevant_content: List[Dict[str, Any]],
         context: Optional[Dict[str, Any]]
     ) -> str:
-        """根据类型选择 fiction 或 report 的 prompt。"""
+        """根据类型选择对应的 prompt。"""
 
         section_id = section.get("id")
         title = section.get("title")
         requirements = section.get("requirements")
         word_count = section.get("word_count", 500)
         report_type = context.get("report_type", "comprehensive") if context else "comprehensive"
-
-        # fiction 走专用 prompt，与报告完全隔离
-        if report_type == "fiction":
-            return self._build_fiction_writing_prompt(section, context, relevant_content, word_count)
 
         # report 走 YAML prompt，失败时回退到硬编码 prompt
         try:
@@ -357,89 +353,6 @@ class SectionWriter:
             )
         lines.append("")
         return "\n".join(lines)
-
-    def _build_fiction_writing_prompt(
-        self,
-        section: Dict[str, Any],
-        context: Dict[str, Any],
-        relevant_content: List[Dict[str, Any]],
-        word_count: int
-    ) -> str:
-        """构建小说章节写作 prompt，与报告 prompt 完全隔离。"""
-        section_id = section.get("id")
-        title = section.get("title")
-
-        fiction_elements = context.get("fiction_elements", {})
-        characters = fiction_elements.get("characters", [])
-        time_info = fiction_elements.get("time", {})
-        place_info = fiction_elements.get("place", {})
-        plot_info = fiction_elements.get("plot", {})
-        theme_info = fiction_elements.get("theme", {})
-
-        character_profiles = []
-        for c in characters[:5]:
-            character_profiles.append(
-                f"- **{c.get('name', '')}**（{c.get('role', '')}）: "
-                f"{c.get('personality', '')}。动机: {c.get('motivation', '')}"
-            )
-
-        prev_title = context.get("previous_section_title", "")
-        prev_summary = context.get("previous_section_summary", "")
-
-        ref_section = ""
-        if relevant_content:
-            ref_parts = []
-            for c in relevant_content[:3]:
-                ref_parts.append(f"- {c.get('title', '')}: {c.get('content', '')[:200]}...")
-            if ref_parts:
-                ref_section = "## 参考资料\n" + "\n".join(ref_parts) + "\n\n"
-
-        prompt = f"""# 小说章节写作
-
-## 本章信息
-- 章节序号: {section_id}
-- 章节标题: {title}
-- 目标字数: 约 {word_count} 字（允许上下浮动20%）
-
-## 故事设定（必须严格遵守）
-
-### 时间背景
-{time_info.get('period', '当代')} | {time_info.get('duration', '')}
-
-### 主要场景
-{place_info.get('main_location', '')}: {place_info.get('description', '')}
-
-### 登场人物
-{chr(10).join(character_profiles) if character_profiles else '（见正文）'}
-
-### 核心主题
-{theme_info.get('core_theme', '')}
-情感基调: {theme_info.get('tone', '')}
-
-### 情节走向
-{plot_info.get('core_conflict', '')}
-起点事件: {plot_info.get('inciting_incident', '')}
-转折点: {', '.join(plot_info.get('turning_points', []))}
-高潮: {plot_info.get('climax', '')}
-结局: {plot_info.get('resolution', '')}
-
-{ref_section}## 章节衔接
-{"上一章: " + prev_title if prev_title else ""}
-{"上一章梗概: " + prev_summary if prev_summary else ""}
-
-## 写作指令
-
-1. **纯小说文体**：直接开始叙事，不要插入任何元数据表格、人物设定框、背景说明等。
-2. **禁止**：不要输出 Markdown 表格、`## 人物设定`、`## 背景设定`、`**角色**` 等非故事内容。
-3. **字数**：确保本章内容达到约 {word_count} 字。
-4. **衔接自然**：本章开头需与上一章末尾形成情绪或事件上的承接。
-5. **仅输出正文**：只输出本章的故事情节，不要有任何前言、后记、总结。
-
-直接开始写：
-
-"""
-
-        return prompt
 
     def _collect_section_images(
         self,

@@ -1,4 +1,4 @@
-# XunLong 前端设计文档
+# SmartFin 前端设计文档
 
 > 本文档说明前端项目的结构、技术栈与启动方法。
 
@@ -9,7 +9,7 @@
 项目当前只保留一套前端实现：`frontend-static/`。该前端由 FastAPI 后端直接托管，访问 `http://localhost:8000` 即可打开。
 
 ```
-xunlong-pro-main/
+SmartFin-pro-main/
 └── frontend-static/      # 纯 HTML + CSS + JavaScript 单文件前端
     ├── index.html         # 完整 SPA，所有交互逻辑内联（约 2000 行）
     ├── index_old.html     # 历史备份版本
@@ -72,7 +72,7 @@ DELETE /api/v1/tasks/{task_id}  → 取消任务
 
 ```bash
 # 1. 进入项目根目录
-cd xunlong-pro-main
+cd SmartFin-pro-main
 
 # 2. 确保 .env 文件存在（从 .env.example 复制并填入密钥）
 copy .env.example .env   # Windows

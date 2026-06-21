@@ -310,13 +310,13 @@ NASDAQ:AAPL
 启用 Yahoo RAG 后运行：
 
 ```powershell
-python xunlong.py analyze "Agilent 2025 earnings call revenue growth and margin guidance" --depth deep -m 8 -o html -v
+python SmartFin.py analyze "Agilent 2025 earnings call revenue growth and margin guidance" --depth deep -m 8 -o html -v
 ```
 
 中文 query：
 
 ```powershell
-python xunlong.py analyze "分析 Agilent 2025 年 earnings call 中的收入增长、利润率指引和风险因素，并结合网页搜索资料" --depth deep -m 8 -o html -v
+python SmartFin.py analyze "分析 Agilent 2025 年 earnings call 中的收入增长、利润率指引和风险因素，并结合网页搜索资料" --depth deep -m 8 -o html -v
 ```
 
 运行时关注日志：

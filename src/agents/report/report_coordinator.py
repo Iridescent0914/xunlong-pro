@@ -589,7 +589,7 @@ class ReportCoordinator:
             # sections
             metadata = {
                 'title': report.get('title', query),
-                'author': 'XunLong AI',
+                'author': 'SmartFin AI',
                 'date': report.get('metadata', {}).get('generation_time', ''),
                 'keywords': [],  # 
                 'sections': report.get('sections', []),  # sectionsvisualizations

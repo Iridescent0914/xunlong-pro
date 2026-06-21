@@ -1,6 +1,6 @@
 # 报告生成
 
-XunLong擅长在最少输入的情况下生成全面、研究充分的报告。
+SmartFin擅长在最少输入的情况下生成全面、研究充分的报告。
 
 ## 概览
 
@@ -22,14 +22,14 @@ XunLong擅长在最少输入的情况下生成全面、研究充分的报告。
 ## 快速开始
 
 ```bash
-python xunlong.py report "2025年AI行业趋势"
+python SmartFin.py report "2025年AI行业趋势"
 ```
 
-就这么简单！XunLong会处理其余的一切。
+就这么简单！SmartFin会处理其余的一切。
 
 ## 报告风格
 
-XunLong支持三种专业报告风格：
+SmartFin支持三种专业报告风格：
 
 ### 商务风格 💼
 
@@ -44,7 +44,7 @@ XunLong支持三种专业报告风格：
 
 **示例：**
 ```bash
-python xunlong.py report "电动汽车市场分析" \
+python SmartFin.py report "电动汽车市场分析" \
   --style business \
   --depth comprehensive
 ```
@@ -74,7 +74,7 @@ python xunlong.py report "电动汽车市场分析" \
 
 **示例：**
 ```bash
-python xunlong.py report "机器学习在医疗保健中的应用" \
+python SmartFin.py report "机器学习在医疗保健中的应用" \
   --style academic \
   --depth comprehensive
 ```
@@ -104,7 +104,7 @@ python xunlong.py report "机器学习在医疗保健中的应用" \
 
 **示例：**
 ```bash
-python xunlong.py report "GraphQL vs REST API对比" \
+python SmartFin.py report "GraphQL vs REST API对比" \
   --style technical \
   --depth comprehensive
 ```
@@ -134,13 +134,13 @@ python xunlong.py report "GraphQL vs REST API对比" \
 
 ```bash
 # 快速概览
-python xunlong.py report "量子计算" --depth overview
+python SmartFin.py report "量子计算" --depth overview
 
 # 平衡报告（默认）
-python xunlong.py report "量子计算" --depth standard
+python SmartFin.py report "量子计算" --depth standard
 
 # 深度剖析
-python xunlong.py report "量子计算" --depth comprehensive
+python SmartFin.py report "量子计算" --depth comprehensive
 ```
 
 ## 高级功能
@@ -160,7 +160,7 @@ python xunlong.py report "量子计算" --depth comprehensive
 精确指定您想要的章节：
 
 ```bash
-python xunlong.py report "AI伦理" \
+python SmartFin.py report "AI伦理" \
   --sections "引言,当前挑战,案例研究,未来展望"
 ```
 
@@ -172,7 +172,7 @@ python xunlong.py report "AI伦理" \
 仍可手动覆盖默认窗口：
 
 ```bash
-python xunlong.py report "新冠疫苗" \
+python SmartFin.py report "新冠疫苗" \
   --time-range "last-6-months"
 ```
 
@@ -181,8 +181,8 @@ python xunlong.py report "新冠疫苗" \
 生成多语言报告：
 
 ```bash
-python xunlong.py report "气候变化影响" --language zh-CN
-python xunlong.py report "Climate Change Impact" --language en-US
+python SmartFin.py report "气候变化影响" --language zh-CN
+python SmartFin.py report "Climate Change Impact" --language en-US
 ```
 
 ### 来源过滤
@@ -191,15 +191,15 @@ python xunlong.py report "Climate Change Impact" --language en-US
 
 ```bash
 # 仅学术来源
-python xunlong.py report "暗物质" \
+python SmartFin.py report "暗物质" \
   --sources academic
 
 # 仅新闻来源
-python xunlong.py report "科技行业裁员" \
+python SmartFin.py report "科技行业裁员" \
   --sources news
 
 # 所有来源（默认）
-python xunlong.py report "AI趋势" \
+python SmartFin.py report "AI趋势" \
   --sources all
 ```
 
@@ -208,7 +208,7 @@ python xunlong.py report "AI趋势" \
 ### Markdown（默认）
 
 ```bash
-python xunlong.py report "主题" --format md
+python SmartFin.py report "主题" --format md
 ```
 
 **特点：**
@@ -220,7 +220,7 @@ python xunlong.py report "主题" --format md
 ### HTML
 
 ```bash
-python xunlong.py report "主题" --format html
+python SmartFin.py report "主题" --format html
 ```
 
 **特点：**
@@ -232,7 +232,7 @@ python xunlong.py report "主题" --format html
 ### PDF
 
 ```bash
-python xunlong.py report "主题" --format pdf
+python SmartFin.py report "主题" --format pdf
 ```
 
 **特点：**
@@ -244,7 +244,7 @@ python xunlong.py report "主题" --format pdf
 ### DOCX
 
 ```bash
-python xunlong.py report "主题" --format docx
+python SmartFin.py report "主题" --format docx
 ```
 
 **特点：**
@@ -256,7 +256,7 @@ python xunlong.py report "主题" --format docx
 ### 多种格式
 
 ```bash
-python xunlong.py report "主题" --format md,html,pdf,docx
+python SmartFin.py report "主题" --format md,html,pdf,docx
 ```
 
 所有格式同时生成。
@@ -283,7 +283,7 @@ python xunlong.py report "主题" --format md,html,pdf,docx
 
 ### 质量指标
 
-XunLong追踪：
+SmartFin追踪：
 - **引用覆盖率**: 引用声明的百分比（目标: >80%）
 - **来源多样性**: 独特来源数量（目标: >10）
 - **可读性分数**: Flesch易读性（目标: 60-70）
@@ -291,7 +291,7 @@ XunLong追踪：
 
 查看指标：
 ```bash
-python xunlong.py stats <project-id>
+python SmartFin.py stats <project-id>
 ```
 
 ### 事实核查
@@ -307,7 +307,7 @@ python xunlong.py stats <project-id>
 ### 1. 生成初始报告
 
 ```bash
-python xunlong.py report "2025年可再生能源趋势" \
+python SmartFin.py report "2025年可再生能源趋势" \
   --style business \
   --depth standard \
   --format md,pdf
@@ -339,14 +339,14 @@ cat storage/20251005_143022_renewable_energy/reports/FINAL_REPORT.md
 ### 3. 请求修改
 
 ```bash
-python xunlong.py iterate 20251005_143022 \
+python SmartFin.py iterate 20251005_143022 \
   "添加关于太阳能成本的章节并扩展风能章节"
 ```
 
 ### 4. 导出其他格式
 
 ```bash
-python xunlong.py export 20251005_143022 --format docx,html
+python SmartFin.py export 20251005_143022 --format docx,html
 ```
 
 ## 最佳实践
@@ -377,21 +377,21 @@ python xunlong.py export 20251005_143022 --format docx,html
 
 **快速（约5分钟）：**
 ```bash
-python xunlong.py report "主题" \
+python SmartFin.py report "主题" \
   --depth overview \
   --model gpt-3.5-turbo
 ```
 
 **平衡（约10分钟）：**
 ```bash
-python xunlong.py report "主题" \
+python SmartFin.py report "主题" \
   --depth standard \
   --model gpt-4o-mini
 ```
 
 **高质量（约20分钟）：**
 ```bash
-python xunlong.py report "主题" \
+python SmartFin.py report "主题" \
   --depth comprehensive \
   --model gpt-4o
 ```
@@ -425,7 +425,7 @@ python xunlong.py report "主题" \
 **解决方案：**
 ```bash
 # 从检查点恢复
-python xunlong.py resume <project-id>
+python SmartFin.py resume <project-id>
 
 # 检查错误日志
 cat storage/<project-id>/logs/generation.log

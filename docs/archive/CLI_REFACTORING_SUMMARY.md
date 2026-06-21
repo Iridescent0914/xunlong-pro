@@ -2,7 +2,7 @@
 
 ## 📊 重构概览
 
-成功将XunLong系统从简单的命令行参数解析升级为专业的CLI框架，并设计了完整的前端API接口规范。
+成功将SmartFin系统从简单的命令行参数解析升级为专业的CLI框架，并设计了完整的前端API接口规范。
 
 ---
 
@@ -23,7 +23,7 @@ else:
 
 **现在**:
 ```python
-# xunlong.py - 使用Click框架
+# SmartFin.py - 使用Click框架
 @cli.command()
 @click.argument('query')
 @click.option('--genre', '-g', type=click.Choice([...]))
@@ -78,7 +78,7 @@ async def _output_type_detector_node(self, state):
 #### report - 报告生成
 
 ```bash
-python xunlong.py report "查询" \
+python SmartFin.py report "查询" \
   --type comprehensive \
   --depth deep \
   --max-results 30 \
@@ -94,7 +94,7 @@ python xunlong.py report "查询" \
 #### fiction - 小说创作
 
 ```bash
-python xunlong.py fiction "查询" \
+python SmartFin.py fiction "查询" \
   --genre mystery \
   --length short \
   --viewpoint first \
@@ -113,7 +113,7 @@ python xunlong.py fiction "查询" \
 #### ppt - PPT生成（预留）
 
 ```bash
-python xunlong.py ppt "查询" \
+python SmartFin.py ppt "查询" \
   --theme business \
   --slides 15 \
   --verbose
@@ -122,7 +122,7 @@ python xunlong.py ppt "查询" \
 #### ask - 快速问答（预留）
 
 ```bash
-python xunlong.py ask "问题" \
+python SmartFin.py ask "问题" \
   --model balanced \
   --verbose
 ```
@@ -130,7 +130,7 @@ python xunlong.py ask "问题" \
 #### status - 系统状态
 
 ```bash
-python xunlong.py status
+python SmartFin.py status
 ```
 
 ### 4. API接口规范
@@ -208,8 +208,8 @@ GET  /api/v1/tasks               # 任务列表
 ### 新增文件
 
 ```
-XunLong/
-├── xunlong.py                              # 新的CLI入口（主要）
+SmartFin/
+├── SmartFin.py                              # 新的CLI入口（主要）
 ├── docs/
 │   ├── CLI_USAGE.md                        # CLI使用文档
 │   ├── API_SPECIFICATION.md                # API接口规范
@@ -233,7 +233,7 @@ src/agents/coordinator.py
 
 ```bash
 # 推荐：使用新的专业CLI
-python xunlong.py fiction "密室推理小说" -g mystery -l short
+python SmartFin.py fiction "密室推理小说" -g mystery -l short
 
 # 兼容：旧的方式仍然可用
 python main_agent.py search "查询"
@@ -243,12 +243,12 @@ python main_agent.py search "查询"
 
 ```bash
 # ~/.bashrc 或 ~/.zshrc
-alias xunlong="python /path/to/xunlong.py"
+alias SmartFin="python /path/to/SmartFin.py"
 
 # 使用
-xunlong fiction "推理小说" -g mystery
-xunlong report "AI医疗" -t comprehensive
-xunlong status
+SmartFin fiction "推理小说" -g mystery
+SmartFin report "AI医疗" -t comprehensive
+SmartFin status
 ```
 
 ---
@@ -265,7 +265,7 @@ xunlong status
 
 推荐用户逐步迁移到新的CLI：
 
-1. **学习阶段**: 查看 `python xunlong.py --help`
+1. **学习阶段**: 查看 `python SmartFin.py --help`
 2. **试用阶段**: 使用新命令完成简单任务
 3. **迁移阶段**: 将工作流迁移到新CLI
 4. **优化阶段**: 使用高级参数优化结果
@@ -293,32 +293,32 @@ xunlong status
 
 ```bash
 # 日报
-xunlong report "今日AI新闻" -t daily -d surface
+SmartFin report "今日AI新闻" -t daily -d surface
 
 # 深度研究
-xunlong report "AI伦理研究" -t research -d deep -m 50 -v
+SmartFin report "AI伦理研究" -t research -d deep -m 50 -v
 
 # 技术分析
-xunlong report "GPT-4分析" -t analysis -v
+SmartFin report "GPT-4分析" -t analysis -v
 ```
 
 ### 2. 小说创作
 
 ```bash
 # 短篇推理
-xunlong fiction "密室案件" -g mystery -l short -c "本格推理"
+SmartFin fiction "密室案件" -g mystery -l short -c "本格推理"
 
 # 中篇科幻
-xunlong fiction "火星殖民" -g scifi -l medium -vp third
+SmartFin fiction "火星殖民" -g scifi -l medium -vp third
 
 # 特殊视角
-xunlong fiction "凶手视角的推理" -g mystery -vp first -c "暴风雪山庄"
+SmartFin fiction "凶手视角的推理" -g mystery -vp first -c "暴风雪山庄"
 ```
 
 ### 3. 查看状态
 
 ```bash
-xunlong status
+SmartFin status
 ```
 
 ---
@@ -341,9 +341,9 @@ xunlong status
 
 ### 长期（探索中）
 
-- [ ] 交互式模式 `xunlong interactive`
-- [ ] 配置文件支持 `--config xunlong.yaml`
-- [ ] 远程API调用 `--remote https://api.xunlong.com`
+- [ ] 交互式模式 `SmartFin interactive`
+- [ ] 配置文件支持 `--config SmartFin.yaml`
+- [ ] 远程API调用 `--remote https://api.SmartFin.com`
 - [ ] GUI桌面应用
 
 ---
@@ -398,4 +398,4 @@ xunlong status
 
 **CLI重构完成** ✅
 
-XunLong现在拥有了专业的CLI系统，为用户和开发者提供了更好的体验！🚀
+SmartFin现在拥有了专业的CLI系统，为用户和开发者提供了更好的体验！🚀

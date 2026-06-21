@@ -1,6 +1,6 @@
 # PPT制作
 
-XunLong可以根据您的主题或内容自动生成专业的PowerPoint演示文稿。
+SmartFin可以根据您的主题或内容自动生成专业的PowerPoint演示文稿。
 
 ## 概览
 
@@ -14,17 +14,17 @@ PPT制作功能：
 ## 快速开始
 
 ```bash
-python xunlong.py ppt "产品发布策略" --slides 15
+python SmartFin.py ppt "产品发布策略" --slides 15
 ```
 
-XunLong将创建一个完整、可供演示的演示文稿。
+SmartFin将创建一个完整、可供演示的演示文稿。
 
 ### 利用现有材料
 
 通过 `--input-file` 传入 `.txt` / `.pdf` / `.docx` 文档，系统会先解析文本，再基于这些材料规划幻灯片结构。
 
 ```bash
-python xunlong.py ppt "董事会战略更新" \
+python SmartFin.py ppt "董事会战略更新" \
   --style business \
   --input-file ./docs/strategy_brief.docx \
   --speech-notes "季度董事会汇报"
@@ -47,7 +47,7 @@ python xunlong.py ppt "董事会战略更新" \
 
 **示例：**
 ```bash
-python xunlong.py ppt "第四季度销售业绩回顾" \
+python SmartFin.py ppt "第四季度销售业绩回顾" \
   --style business \
   --slides 20 \
   --theme corporate
@@ -75,7 +75,7 @@ python xunlong.py ppt "第四季度销售业绩回顾" \
 
 **示例：**
 ```bash
-python xunlong.py ppt "新品牌形象提案" \
+python SmartFin.py ppt "新品牌形象提案" \
   --style creative \
   --slides 18 \
   --theme vibrant
@@ -102,7 +102,7 @@ python xunlong.py ppt "新品牌形象提案" \
 
 **示例：**
 ```bash
-python xunlong.py ppt "机器学习入门" \
+python SmartFin.py ppt "机器学习入门" \
   --style minimal \
   --slides 25 \
   --theme clean
@@ -128,7 +128,7 @@ python xunlong.py ppt "机器学习入门" \
 
 **示例：**
 ```bash
-python xunlong.py ppt "Python编程基础" \
+python SmartFin.py ppt "Python编程基础" \
   --style educational \
   --slides 30 \
   --include-exercises
@@ -167,7 +167,7 @@ graph LR
 定义您自己的幻灯片序列：
 
 ```bash
-python xunlong.py ppt "2025营销计划" \
+python SmartFin.py ppt "2025营销计划" \
   --structure "标题,议程,形势分析,目标受众,策略,战术,预算,时间表,指标,问答"
 ```
 
@@ -178,7 +178,7 @@ python xunlong.py ppt "2025营销计划" \
 包含图表和图形：
 
 ```bash
-python xunlong.py ppt "第三季度销售业绩" \
+python SmartFin.py ppt "第三季度销售业绩" \
   --data sales_data.csv \
   --charts "line,bar,pie"
 ```
@@ -195,7 +195,7 @@ python xunlong.py ppt "第三季度销售业绩" \
 生成详细的演讲备注：
 
 ```bash
-python xunlong.py ppt "产品演示" \
+python SmartFin.py ppt "产品演示" \
   --slides 12 \
   --speaker-notes detailed
 ```
@@ -212,7 +212,7 @@ python xunlong.py ppt "产品演示" \
 为每张幻灯片获取AI建议的图像：
 
 ```bash
-python xunlong.py ppt "旅游目的地营销" \
+python SmartFin.py ppt "旅游目的地营销" \
   --slides 15 \
   --suggest-images \
   --image-style photography
@@ -228,7 +228,7 @@ python xunlong.py ppt "旅游目的地营销" \
 ### 动画和过渡
 
 ```bash
-python xunlong.py ppt "产品发布" \
+python SmartFin.py ppt "产品发布" \
   --animations subtle \
   --transitions fade
 ```
@@ -245,25 +245,25 @@ python xunlong.py ppt "产品发布" \
 
 ```bash
 # 专业蓝色
-python xunlong.py ppt "主题" --theme corporate-blue
+python SmartFin.py ppt "主题" --theme corporate-blue
 
 # 现代渐变
-python xunlong.py ppt "主题" --theme modern-gradient
+python SmartFin.py ppt "主题" --theme modern-gradient
 
 # 极简单色
-python xunlong.py ppt "主题" --theme minimal-mono
+python SmartFin.py ppt "主题" --theme minimal-mono
 
 # 鲜艳创意
-python xunlong.py ppt "主题" --theme vibrant-creative
+python SmartFin.py ppt "主题" --theme vibrant-creative
 
 # 自然灵感
-python xunlong.py ppt "主题" --theme nature-green
+python SmartFin.py ppt "主题" --theme nature-green
 ```
 
 ### 自定义颜色
 
 ```bash
-python xunlong.py ppt "品牌演示" \
+python SmartFin.py ppt "品牌演示" \
   --primary-color "#2E86AB" \
   --secondary-color "#A23B72" \
   --accent-color "#F18F01"
@@ -272,7 +272,7 @@ python xunlong.py ppt "品牌演示" \
 ### 字体选择
 
 ```bash
-python xunlong.py ppt "技术会议演讲" \
+python SmartFin.py ppt "技术会议演讲" \
   --heading-font "Montserrat" \
   --body-font "Open Sans"
 ```
@@ -282,33 +282,33 @@ python xunlong.py ppt "技术会议演讲" \
 ### 从头开始
 
 ```bash
-python xunlong.py ppt "气候变化解决方案" \
+python SmartFin.py ppt "气候变化解决方案" \
   --slides 18 \
   --research true
 ```
 
-XunLong自动研究和生成内容。
+SmartFin自动研究和生成内容。
 
 ### 从现有报告
 
 ```bash
-python xunlong.py ppt-from-report <report-project-id> \
+python SmartFin.py ppt-from-report <report-project-id> \
   --slides 15
 ```
 
-将您的XunLong报告转换为演示文稿。
+将您的SmartFin报告转换为演示文稿。
 
 ### 从Markdown
 
 ```bash
-python xunlong.py ppt-from-markdown content.md \
+python SmartFin.py ppt-from-markdown content.md \
   --style business
 ```
 
 ### 从大纲
 
 ```bash
-python xunlong.py ppt-from-outline outline.txt \
+python SmartFin.py ppt-from-outline outline.txt \
   --slides 20 \
   --expand-content
 ```
@@ -318,7 +318,7 @@ python xunlong.py ppt-from-outline outline.txt \
 ### 1. 生成演示文稿
 
 ```bash
-python xunlong.py ppt "数字化转型战略" \
+python SmartFin.py ppt "数字化转型战略" \
   --style business \
   --slides 18 \
   --theme corporate-blue \
@@ -348,14 +348,14 @@ python xunlong.py ppt "数字化转型战略" \
 ### 3. 请求修改
 
 ```bash
-python xunlong.py iterate 20251005_143022 \
+python SmartFin.py iterate 20251005_143022 \
   "添加关于实施时间表的幻灯片并扩展预算部分"
 ```
 
 ### 4. 重新生成特定幻灯片
 
 ```bash
-python xunlong.py ppt-regenerate 20251005_143022 \
+python SmartFin.py ppt-regenerate 20251005_143022 \
   --slides 5,6,7 \
   --reason "需要更详细的数据"
 ```
@@ -418,7 +418,7 @@ python xunlong.py ppt-regenerate 20251005_143022 \
 
 **快速生成（约3分钟）：**
 ```bash
-python xunlong.py ppt "主题" \
+python SmartFin.py ppt "主题" \
   --slides 10 \
   --style minimal \
   --no-research
@@ -426,7 +426,7 @@ python xunlong.py ppt "主题" \
 
 **平衡（约7分钟）：**
 ```bash
-python xunlong.py ppt "主题" \
+python SmartFin.py ppt "主题" \
   --slides 18 \
   --style business \
   --research true
@@ -434,7 +434,7 @@ python xunlong.py ppt "主题" \
 
 **高质量（约15分钟）：**
 ```bash
-python xunlong.py ppt "主题" \
+python SmartFin.py ppt "主题" \
   --slides 30 \
   --style business \
   --speaker-notes detailed \
@@ -465,7 +465,7 @@ python xunlong.py ppt "主题" \
 **解决方案：**
 ```bash
 # 单独生成备注
-python xunlong.py ppt-add-notes <project-id> \
+python SmartFin.py ppt-add-notes <project-id> \
   --detail-level comprehensive
 ```
 
@@ -479,7 +479,7 @@ python xunlong.py ppt-add-notes <project-id> \
 ## API参考
 
 ```bash
-python xunlong.py ppt <topic> [options]
+python SmartFin.py ppt <topic> [options]
 ```
 
 | 参数 | 类型 | 默认值 | 描述 |
@@ -502,7 +502,7 @@ python xunlong.py ppt <topic> [options]
 ### 投资者推介
 
 ```bash
-python xunlong.py ppt "创业种子轮推介" \
+python SmartFin.py ppt "创业种子轮推介" \
   --style business \
   --slides 12 \
   --structure "问题,解决方案,市场,产品,牵引力,团队,财务,要求" \
@@ -513,7 +513,7 @@ python xunlong.py ppt "创业种子轮推介" \
 ### 会议演讲
 
 ```bash
-python xunlong.py ppt "构建可扩展的微服务" \
+python SmartFin.py ppt "构建可扩展的微服务" \
   --style minimal \
   --slides 25 \
   --theme clean \
@@ -524,7 +524,7 @@ python xunlong.py ppt "构建可扩展的微服务" \
 ### 培训研讨会
 
 ```bash
-python xunlong.py ppt "Excel高级技巧" \
+python SmartFin.py ppt "Excel高级技巧" \
   --style educational \
   --slides 40 \
   --include-exercises \
@@ -534,7 +534,7 @@ python xunlong.py ppt "Excel高级技巧" \
 ### 营销演示
 
 ```bash
-python xunlong.py ppt "新产品发布活动" \
+python SmartFin.py ppt "新产品发布活动" \
   --style creative \
   --slides 20 \
   --theme vibrant-creative \
@@ -545,7 +545,7 @@ python xunlong.py ppt "新产品发布活动" \
 ### 将报告转换为PPT
 
 ```bash
-python xunlong.py ppt-from-report <report-project-id> \
+python SmartFin.py ppt-from-report <report-project-id> \
   --slides 18 \
   --style business \
   --highlight-key-findings

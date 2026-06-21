@@ -444,7 +444,7 @@ class PPTHTMLAgent(BaseHTMLAgent):
                 'metadata': ppt_data.get('metadata', {}),
                 'theme': theme,
                 'generated_at': ppt_data.get('metadata', {}).get('generated_at', ''),
-                'generator': 'XunLong PPT Generator'
+                'generator': 'SmartFin PPT Generator'
             }
 
             # HTML

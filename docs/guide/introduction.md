@@ -1,6 +1,6 @@
-# What is XunLong?
+# What is SmartFin?
 
-**XunLong** (寻龙, meaning "Dragon Seeker") is an AI-powered multi-modal content generation system that automates the creation of research reports, creative fiction, and professional presentations.
+**SmartFin** (寻龙, meaning "Dragon Seeker") is an AI-powered multi-modal content generation system that automates the creation of research reports and professional presentations.
 
 ## The Vision
 
@@ -11,23 +11,22 @@ In today's information age, content creation is both crucial and time-consuming.
 - 🎨 **Formatting** - Designing layouts and ensuring visual appeal
 - 🔄 **Iterations** - Revising and refining until satisfactory
 
-**XunLong automates this entire workflow**, allowing you to generate professional-quality content in minutes instead of hours.
+**SmartFin automates this entire workflow**, allowing you to generate professional-quality content in minutes instead of hours.
 
-## What Makes XunLong Different?
+## What Makes SmartFin Different?
 
 ### 1. Multi-Modal Generation
 
-Unlike single-purpose AI tools, XunLong supports **three distinct content types**:
+Unlike single-purpose AI tools, SmartFin supports **three distinct content types**:
 
 | Mode | Purpose | Output Formats |
 |------|---------|----------------|
 | **Report** | Research reports, analysis documents, white papers | MD, HTML, PDF, DOCX |
-| **Fiction** | Novels, short stories, creative writing | MD, HTML, PDF, DOCX |
 | **PPT** | Business presentations, pitch decks, slides | JSON, HTML, PPTX |
 
 ### 2. Intelligence Through Multi-Agent Architecture
 
-XunLong doesn't rely on a single AI prompt. Instead, it orchestrates **multiple specialized agents** that collaborate:
+SmartFin doesn't rely on a single AI prompt. Instead, it orchestrates **multiple specialized agents** that collaborate:
 
 ```mermaid
 graph LR
@@ -52,18 +51,18 @@ graph LR
 
 ### 3. Real Web Search
 
-XunLong doesn't hallucinate facts. It performs **actual web searches** using Playwright and Perplexity to gather current, factual information before generating content.
+SmartFin doesn't hallucinate facts. It performs **actual web searches** using Playwright and Perplexity to gather current, factual information before generating content.
 
 ### 4. Iterative Refinement
 
-Not satisfied with the initial output? XunLong supports **intelligent iterations**:
+Not satisfied with the initial output? SmartFin supports **intelligent iterations**:
 
 ```bash
 # Initial generation
-python xunlong.py report "AI Industry 2025"
+python SmartFin.py report "AI Industry 2025"
 
 # Iterate and refine
-python xunlong.py iterate <project_id> "Add more case studies in chapter 3"
+python SmartFin.py iterate <project_id> "Add more case studies in chapter 3"
 ```
 
 The system understands context and makes targeted modifications without regenerating everything.
@@ -84,22 +83,13 @@ Generate comprehensive research reports:
 
 **Example:**
 ```bash
-python xunlong.py report "Quantum Computing Applications in Finance" \
+python SmartFin.py report "Quantum Computing Applications in Finance" \
   --style academic \
   --depth comprehensive
 ```
 
-### ✍️ For Writers & Content Creators
-
-Create engaging fiction:
-- Novels and novellas
-- Short stories
-- Creative narratives
-- Character-driven plots
-
-**Example:**
-```bash
-python xunlong.py fiction "A detective story set in cyberpunk Tokyo" \
+### 🚀 For Business Leaders & Entrepreneurs
+python SmartFin.py report "A detective story set in cyberpunk Tokyo" \
   --style mystery \
   --chapters 15
 ```
@@ -114,7 +104,7 @@ Build professional presentations:
 
 **Example:**
 ```bash
-python xunlong.py ppt "Q4 2025 Sales Review" \
+python SmartFin.py ppt "Q4 2025 Sales Review" \
   --slides 20 \
   --style business \
   --speech-notes "Executive presentation"
@@ -126,10 +116,10 @@ python xunlong.py ppt "Q4 2025 Sales Review" \
 
 1. **Input Your Request**
    ```bash
-   python xunlong.py report "Your Topic Here"
+   python SmartFin.py report "Your Topic Here"
    ```
 
-2. **Let XunLong Work**
+2. **Let SmartFin Work**
    - Analyzes your request
    - Searches for information
    - Generates structured content
@@ -163,7 +153,7 @@ sequenceDiagram
 
 ## Technology Stack
 
-XunLong is built on proven, industry-standard technologies:
+SmartFin is built on proven, industry-standard technologies:
 
 - **LangGraph** - Workflow orchestration
 - **LangChain** - LLM integration framework
@@ -206,9 +196,9 @@ XunLong is built on proven, industry-standard technologies:
 
 ## Comparison
 
-| Feature | XunLong | ChatGPT | Traditional Tools |
+| Feature | SmartFin | ChatGPT | Traditional Tools |
 |---------|---------|---------|-------------------|
-| Multi-modal | ✅ Reports, Fiction, PPT | ❌ Text only | ❌ Specialized |
+| Multi-modal | ✅ Reports, PPT | ❌ Text only | ❌ Specialized |
 | Real search | ✅ Live web search | ⚠️ Limited | ❌ Manual |
 | Export | ✅ PDF, DOCX, PPTX | ❌ Copy-paste | ✅ Native |
 | Iteration | ✅ Context-aware | ⚠️ New chat | ❌ Manual edit |
@@ -218,7 +208,7 @@ XunLong is built on proven, industry-standard technologies:
 
 ## Limitations
 
-**XunLong is designed for content generation, not as a:**
+**SmartFin is designed for content generation, not as a:**
 - ❌ Real-time chat interface
 - ❌ Code execution environment
 - ❌ Data analysis platform
@@ -232,7 +222,7 @@ XunLong is built on proven, industry-standard technologies:
 
 ## Philosophy
 
-XunLong follows these core principles:
+SmartFin follows these core principles:
 
 1. **Quality over Speed** - Takes time to research and generate properly
 2. **Transparency** - Every step is visible and trackable
@@ -244,18 +234,18 @@ XunLong follows these core principles:
 
 Ready to get started?
 
-- 📦 [Install XunLong](/guide/installation)
+- 📦 [Install SmartFin](/guide/installation)
 - 🚀 [Quick Start Guide](/guide/getting-started)
 - 🏗️ [Understand the Architecture](/guide/architecture)
 - 📚 [Explore Features](/guide/features/report)
 
 ## Community & Support
 
-- 🐛 [Report Issues](https://github.com/jaguarliuu/xunlong/issues)
-- 💬 [Discussions](https://github.com/jaguarliuu/xunlong/discussions)
+- 🐛 [Report Issues](https://github.com/jaguarliuu/SmartFin/issues)
+- 💬 [Discussions](https://github.com/jaguarliuu/SmartFin/discussions)
 - 📖 [Contributing Guide](/community/contributing)
 - 📰 [Changelog](/community/changelog)
 
 ---
 
-**XunLong** - Empowering content creators with AI
+**SmartFin** - Empowering content creators with AI

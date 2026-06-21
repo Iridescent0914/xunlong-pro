@@ -627,9 +627,9 @@ class MultiSlidePPTGenerator:
         metadata = {
             "AIGC": {
                 "Label": "1",
-                "ContentProducer": "xunlong",
+                "ContentProducer": "SmartFin",
                 "ProduceID": project_id,
-                "ContentPropagator": "xunlong",
+                "ContentPropagator": "SmartFin",
                 "PropagateID": project_id
             }
         }

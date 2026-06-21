@@ -2,19 +2,19 @@
 layout: home
 
 hero:
-  name: "XunLong"
+  name: "SmartFin"
   text: "AI-Powered Content Generation"
-  tagline: Multi-Modal Content Creation System for Reports, Fiction & Presentations
+  tagline: Multi-Modal Content Creation System for Reports & Presentations
   image:
     src: /icon.png
-    alt: XunLong
+    alt: SmartFin
   actions:
     - theme: brand
       text: Get Started
       link: /guide/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/jaguarliuu/xunlong
+      link: https://github.com/jaguarliuu/SmartFin
 
 features:
   - icon: 🤖
@@ -22,7 +22,7 @@ features:
     details: LangGraph-based agent orchestration with task decomposition and parallel execution
   - icon: 📊
     title: Multi-Modal Generation
-    details: Generate Reports, Fiction, and PPT presentations with professional quality
+    details: Generate Reports and PPT presentations with professional quality
   - icon: 🧩
     title: Section-Level Report Agents
     details: Each chapter is authored, evaluated, and visualized by dedicated micro-agents
@@ -50,25 +50,19 @@ features:
 pip install -r requirements.txt
 
 # Generate a report
-python xunlong.py report "AI Industry Trends 2024"
-
-# Create fiction
-python xunlong.py fiction "A mystery novel" --genre mystery --length medium
+python SmartFin.py report "AI Industry Trends 2024"
 
 # Generate PPT
-python xunlong.py ppt "Product Launch Strategy" --slides 15
+python SmartFin.py ppt "Product Launch Strategy" --slides 15
 
 # Generate a report from an existing brief
-python xunlong.py report "AI Startup Business Plan" --input-file ./docs/company_overview.pdf
+python SmartFin.py report "AI Startup Business Plan" --input-file ./docs/company_overview.pdf
 ```
 
 ## Features
 
 ### 📊 Report Generation
 Create comprehensive, well-researched reports with automated web search and citation management.
-
-### 📖 Fiction Writing
-Generate engaging stories with character development, plot structure, and narrative consistency.
 
 ### 🎬 PPT Creation
 Design professional presentations with custom layouts, themes, and speaker notes.
@@ -79,7 +73,7 @@ Refine and modify generated content with intelligent iteration and version contr
 ### 📤 Multi-Format Export
 Export to HTML, PDF, DOCX, PPTX with professional templates.
 
-## Why XunLong?
+## Why SmartFin?
 
 - **Multi-Agent Architecture**: Specialized agents working in harmony
 - **Intelligent Search**: Automated research and information gathering

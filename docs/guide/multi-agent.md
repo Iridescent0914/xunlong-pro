@@ -1,6 +1,6 @@
 # Multi-Agent System
 
-XunLong's power comes from its sophisticated multi-agent architecture. Instead of relying on a single AI prompt, multiple specialized agents collaborate to deliver high-quality content.
+SmartFin's power comes from its sophisticated multi-agent architecture. Instead of relying on a single AI prompt, multiple specialized agents collaborate to deliver high-quality content.
 
 ## Overview
 
@@ -113,12 +113,6 @@ graph LR
 - Maintains academic tone
 - Adds citations
 - Creates tables and charts
-
-#### Fiction Generator  
-- Develops characters and plot
-- Maintains narrative consistency
-- Adapts writing style
-- Creates chapter outlines
 
 #### PPT Generator
 - Designs slide layouts
@@ -273,7 +267,7 @@ class WorkflowState(TypedDict):
 
 ## Parallel Execution
 
-XunLong maximizes efficiency through parallelization:
+SmartFin maximizes efficiency through parallelization:
 
 ```mermaid
 gantt
@@ -353,10 +347,10 @@ Dashboard
 
 ### Adding Custom Agents
 
-XunLong's architecture supports custom agents:
+SmartFin's architecture supports custom agents:
 
 ```python
-from xunlong.agents.base import BaseAgent
+from SmartFin.agents.base import BaseAgent
 
 class CustomAgent(BaseAgent):
     def __init__(self):

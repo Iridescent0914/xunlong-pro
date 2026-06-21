@@ -1,6 +1,6 @@
 # API 使用指南
 
-XunLong 前前只保留一个 API 入口：
+SmartFin 前前只保留一个 API 入口：
 
 ```bash
 python run_api.py
